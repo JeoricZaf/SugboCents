@@ -1,6 +1,14 @@
 ﻿(function () {
   var APP_KEY = "sugbocents.v1";
 
+  var DEFAULT_QUICK_ADD_ITEMS = [
+    { id: "qa_jeep",   category: "Jeep",            emoji: "🚌", amount: 18,  color: "#d8efe2" },
+    { id: "qa_food",   category: "Food",             emoji: "🍜", amount: 120, color: "#ffedd5" },
+    { id: "qa_load",   category: "Load",             emoji: "📱", amount: 50,  color: "#dbeafe" },
+    { id: "qa_school", category: "School Supplies",  emoji: "📚", amount: 80,  color: "#f3e8ff" },
+    { id: "qa_laundry",category: "Laundry",          emoji: "🧺", amount: 60,  color: "#fee2e2" }
+  ];
+
   function loadStore() {
     try {
       var raw = localStorage.getItem(APP_KEY);
@@ -45,6 +53,43 @@
     }) || null;
   }
 
+  async function syncFromFirestore(userId) {
+    if (!window.FirestoreService) {
+      return;
+    }
+
+    var store = loadStore();
+    var user = getUserById(store, userId);
+    if (!user) {
+      return;
+    }
+
+    var firestoreUser = await window.FirestoreService.getUserDoc(userId);
+    if (firestoreUser) {
+      if (typeof firestoreUser.weeklyBudget === "number") {
+        user.weeklyBudget = sanitizeAmount(firestoreUser.weeklyBudget);
+      }
+      if (firestoreUser.firstName) {
+        user.firstName = sanitizeName(firestoreUser.firstName);
+      }
+      if (firestoreUser.lastName) {
+        user.lastName = sanitizeName(firestoreUser.lastName);
+      }
+    }
+
+    var firestoreExpenses = await window.FirestoreService.getExpenseDocs(userId);
+    if (Array.isArray(firestoreExpenses) && firestoreExpenses.length > 0) {
+      user.expenses = firestoreExpenses;
+    }
+
+    var firestoreQuickAdd = await window.FirestoreService.getQuickAddItemDocs(userId);
+    if (Array.isArray(firestoreQuickAdd) && firestoreQuickAdd.length > 0) {
+      user.quickAddItems = firestoreQuickAdd;
+    }
+
+    saveStore(store);
+  }
+
   function ensureLocalUserFromSession(sessionUser) {
     if (!sessionUser || !sessionUser.id) {
       return;
@@ -74,6 +119,16 @@
         expenses: [],
         createdAt: nowIso()
       });
+
+      if (window.FirestoreService) {
+        window.FirestoreService.setUserDoc(sessionUser.id, {
+          firstName: firstName,
+          lastName: lastName,
+          email: sanitizeEmail(sessionUser.email),
+          weeklyBudget: 0,
+          createdAt: nowIso()
+        });
+      }
     } else {
       if (sessionUser.email) {
         existing.email = sanitizeEmail(sessionUser.email);
@@ -131,11 +186,18 @@
             clearSession();
           }
 
-          if (!resolved) {
-            resolved = true;
-            unsubscribe();
-            resolve();
-          }
+          var currentSession = loadStore();
+          var currentUserId = currentSession.session ? currentSession.session.userId : null;
+          var syncPromise = (user && currentUserId && window.FirestoreService)
+            ? syncFromFirestore(currentUserId)
+            : Promise.resolve();
+          syncPromise.then(function () {
+            if (!resolved) {
+              resolved = true;
+              unsubscribe();
+              resolve();
+            }
+          });
         });
 
         setTimeout(function () {
@@ -326,6 +388,11 @@
 
     user.weeklyBudget = Math.max(0, sanitizeAmount(amount));
     saveStore(store);
+
+    if (window.FirestoreService) {
+      window.FirestoreService.setUserDoc(store.session.userId, { weeklyBudget: user.weeklyBudget });
+    }
+
     return { ok: true, weeklyBudget: user.weeklyBudget };
   }
 
@@ -364,6 +431,11 @@
 
     user.expenses.unshift(entry);
     saveStore(store);
+
+    if (window.FirestoreService) {
+      window.FirestoreService.addExpenseDoc(store.session.userId, entry);
+    }
+
     return { ok: true, expense: entry };
   }
 
@@ -406,7 +478,7 @@
     };
   }
 
-  function resetCurrentUserData() {
+  async function resetCurrentUserData() {
     var store = loadStore();
     if (!store.session) {
       return { ok: false, error: "No active session." };
@@ -417,9 +489,94 @@
       return { ok: false, error: "User not found." };
     }
 
+    var userId = store.session.userId;
     user.weeklyBudget = 0;
     user.expenses = [];
+    user.quickAddItems = [];
     saveStore(store);
+
+    if (window.FirestoreService) {
+      try {
+        await window.FirestoreService.clearExpenseDocs(userId);
+        await window.FirestoreService.setUserDoc(userId, { weeklyBudget: 0, quickAddItems: [] });
+        await window.FirestoreService.setQuickAddItems(userId, []);
+      } catch (e) {
+        console.warn("[StorageAPI] resetCurrentUserData Firebase error:", e);
+      }
+    }
+
+    return { ok: true };
+  }
+
+  function removeExpense(expenseId) {
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+
+    var user = getUserById(store, store.session.userId);
+    if (!user || !Array.isArray(user.expenses)) {
+      return { ok: false, error: "User not found." };
+    }
+
+    var idx = -1;
+    for (var i = 0; i < user.expenses.length; i++) {
+      if (user.expenses[i].id === expenseId) {
+        idx = i;
+        break;
+      }
+    }
+
+    if (idx === -1) {
+      return { ok: false, error: "Expense not found." };
+    }
+
+    user.expenses.splice(idx, 1);
+    saveStore(store);
+
+    if (window.FirestoreService && window.FirestoreService.deleteExpenseDoc) {
+      window.FirestoreService.deleteExpenseDoc(store.session.userId, expenseId);
+    }
+
+    return { ok: true };
+  }
+
+  function getQuickAddItems() {
+    var store = loadStore();
+    if (!store.session) {
+      return [];
+    }
+
+    var user = getUserById(store, store.session.userId);
+    if (!user || !Array.isArray(user.quickAddItems)) {
+      return [];
+    }
+
+    return user.quickAddItems.slice();
+  }
+
+  function saveQuickAddItems(items) {
+    if (!Array.isArray(items)) {
+      return { ok: false, error: "Items must be an array." };
+    }
+
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { ok: false, error: "User not found." };
+    }
+
+    user.quickAddItems = items;
+    saveStore(store);
+
+    if (window.FirestoreService && window.FirestoreService.setQuickAddItems) {
+      window.FirestoreService.setQuickAddItems(store.session.userId, items);
+    }
+
     return { ok: true };
   }
 
@@ -435,7 +592,10 @@
     addExpense: addExpense,
     getExpenses: getExpenses,
     getBudgetSummary: getBudgetSummary,
-    resetCurrentUserData: resetCurrentUserData
+    resetCurrentUserData: resetCurrentUserData,
+    removeExpense: removeExpense,
+    getQuickAddItems: getQuickAddItems,
+    saveQuickAddItems: saveQuickAddItems
   };
 })();
 

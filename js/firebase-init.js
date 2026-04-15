@@ -3,7 +3,8 @@
     mode: "pending",
     reason: "",
     app: null,
-    auth: null
+    auth: null,
+    db: null
   };
 
   // Replace this object in production, or set window.__SUGBOCENTS_FIREBASE_CONFIG before this script runs.
@@ -66,6 +67,9 @@
           return loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js");
         })
         .then(function () {
+          return loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js");
+        })
+        .then(function () {
           if (!window.firebase) {
             throw new Error("Firebase SDK unavailable");
           }
@@ -74,6 +78,7 @@
             ? window.firebase.app()
             : window.firebase.initializeApp(config);
           state.auth = window.firebase.auth();
+          state.db = window.firebase.firestore();
           state.mode = "firebase";
           state.reason = "";
         });
@@ -96,6 +101,9 @@
     },
     getAuth: function () {
       return state.auth;
+    },
+    getDb: function () {
+      return state.db;
     }
   };
 })();
