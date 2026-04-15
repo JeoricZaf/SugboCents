@@ -26,8 +26,8 @@ const SHELL_FILES = [
   "assets/images/reviews/Julian_Review.jpg",
   "assets/images/reviews/Oliver_Review.jpg",
   "assets/images/reviews/Jon_Review.jpg",
-  "icons/icon-192.svg",
-  "icons/icon-512.svg"
+  "icons/icon-192.png",
+  "icons/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
