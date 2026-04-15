@@ -630,6 +630,13 @@
       initModal();
       initLogExpense();
 
+      window.addEventListener("sugbocents:synced", function () {
+        renderGreeting();
+        updateBudgetCard();
+        renderRecentExpenses();
+        renderQuickAddButtons();
+      }, { once: true });
+
       var addNewBtn = document.getElementById("addNewQaBtn");
       if (addNewBtn) {
         addNewBtn.addEventListener("click", function () {

@@ -88,6 +88,7 @@
     }
 
     saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:synced"));
   }
 
   function ensureLocalUserFromSession(sessionUser) {
