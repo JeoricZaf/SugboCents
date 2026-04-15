@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1f6b46" />
+  <title>SugboCents - Budget smarter every week</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/landing.css" />
+</head>
+<body class="landing-body">
+  <header class="site-header" role="banner">
+    <div class="site-header-inner">
+      <a class="landing-brand" href="landing.html" aria-label="SugboCents home">
+        <span class="brand-mark">SC</span>
+        <span class="brand-text">SugboCents</span>
+      </a>
+      <nav class="landing-top-actions" aria-label="Primary actions">
+        <a class="landing-link" href="login.html">Login</a>
+        <a class="landing-pill" href="register.html">Create account</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="landing-main">
+    <section class="section-band hero-band" data-reveal>
+      <div class="section-inner hero-section">
+        <div class="hero-copy">
+          <p class="landing-kicker">Built for Cebu students and first-time budgeters</p>
+          <h1 class="landing-title">
+            <span>Track smarter.</span>
+            <span>Spend clearer.</span>
+            <span>Build better</span>
+            <span>weekly habits.</span>
+          </h1>
+          <p class="landing-copy">
+            SugboCents is a focused expense tracker that helps you set a weekly budget,
+            monitor your daily spend, and keep momentum without complex finance dashboards.
+          </p>
+          <div class="landing-cta-row">
+            <a class="landing-cta-primary" href="register.html">Start free</a>
+            <a class="landing-cta-secondary" href="login.html">I already have an account</a>
+          </div>
+        </div>
+
+        <aside class="app-showcase" aria-label="SugboCents app preview">
+          <div class="app-screen">
+            <div class="app-screen-top">
+              <p class="app-screen-title">SugboCents this week</p>
+              <span class="app-screen-status">Today</span>
+            </div>
+            <p class="app-screen-budget">Weekly budget: <strong>PHP 2,500.00</strong></p>
+
+            <div class="app-screen-remaining">
+              <span>Remaining</span>
+              <p id="loopRemainingValue" class="loop-remaining-value">PHP 2,500.00</p>
+            </div>
+
+            <div class="loop-actions" aria-hidden="true">
+              <button class="loop-action" type="button" data-loop-category="Jeep" data-loop-amount="18">
+                Jeep
+                <small>- PHP 18.00</small>
+              </button>
+              <button class="loop-action" type="button" data-loop-category="Food" data-loop-amount="135">
+                Food
+                <small>- PHP 135.00</small>
+              </button>
+              <button class="loop-action" type="button" data-loop-category="Load" data-loop-amount="50">
+                Load
+                <small>- PHP 50.00</small>
+              </button>
+            </div>
+
+            <ul id="loopLogs" class="loop-log-list" aria-live="polite"></ul>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section-band section-alt" data-reveal>
+      <div class="section-inner">
+        <div class="section-header">
+          <h2 class="section-title">Designed for fast, everyday tracking</h2>
+          <p class="section-copy">A clear interface with focused controls so you can log, review, and adjust quickly.</p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-item" data-reveal>
+            <span class="feature-icon" aria-hidden="true">
+              <i class="bi bi-lightning-charge-fill"></i>
+            </span>
+            <h3>Quick logging</h3>
+            <p>Tap common expenses like Jeep, Food, and Load so entries feel as fast as messaging.</p>
+          </article>
+
+          <article class="feature-item" data-reveal>
+            <span class="feature-icon" aria-hidden="true">
+              <i class="bi bi-check-circle-fill"></i>
+            </span>
+            <h3>Clear budget signals</h3>
+            <p>Monitor remaining budget with simple visual feedback that stays easy to read at a glance.</p>
+          </article>
+
+          <article class="feature-item" data-reveal>
+            <span class="feature-icon" aria-hidden="true">
+              <i class="bi bi-phone-fill"></i>
+            </span>
+            <h3>PWA ready</h3>
+            <p>Install SugboCents to your home screen and use it like an app while keeping website flexibility.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-band" data-reveal>
+      <div class="section-inner">
+        <div class="section-header">
+          <h2 class="section-title">How it works</h2>
+        </div>
+        <ol class="steps-list">
+          <li>
+            <span class="step-number">1</span>
+            <p>Create your account.</p>
+          </li>
+          <li>
+            <span class="step-number">2</span>
+            <p>Set your weekly budget after login and start your week with a clear limit.</p>
+          </li>
+          <li>
+            <span class="step-number">3</span>
+            <p>Tap quick categories like Jeep, Food, and Load to keep your remaining budget up to date.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section-band section-alt" data-reveal aria-label="Student reviews">
+      <div class="section-inner">
+        <div class="section-header reviews-header">
+          <h2 class="section-title">Proven results on SugboCents</h2>
+        </div>
+
+        <div class="review-grid">
+          <article class="review-card" data-reveal>
+            <p class="review-stars" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+            <p class="review-quote">"I used to forget to list my small daily rides, but quick logging makes it effortless after every class."</p>
+            <div class="review-person">
+              <img class="review-avatar member-photo" src="assets/images/reviews/Savion_Review.png" alt="Savion Benedict Go" loading="lazy" data-fallback="SG" />
+              <div>
+                <p class="review-name">Savion Benedict Go</p>
+                <p class="review-role">BSIS Student</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="review-card" data-reveal>
+            <p class="review-stars" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+            <p class="review-quote">"The weekly budget view is clear, so I instantly know if I can still buy coffee or need to slow down."</p>
+            <div class="review-person">
+              <img class="review-avatar member-photo" src="assets/images/reviews/Julian_Review.jpg" alt="Julian Michael Canlapan" loading="lazy" data-fallback="JC" />
+              <div>
+                <p class="review-name">Julian Michael Canlapan</p>
+                <p class="review-role">BSIS Student</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="review-card" data-reveal>
+            <p class="review-stars" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+            <p class="review-quote">"As someone who commutes daily, the Jeep and Load entries help me track where my allowance really goes."</p>
+            <div class="review-person">
+              <img class="review-avatar member-photo" src="assets/images/reviews/Oliver_Review.jpg" alt="Oliver Jones" loading="lazy" data-fallback="OJ" />
+              <div>
+                <p class="review-name">Oliver Jones</p>
+                <p class="review-role">BSCS Student</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="review-card" data-reveal>
+            <p class="review-stars" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+            <p class="review-quote">"I like that I can open it quickly before I spend, then decide if a purchase still fits my weekly plan."</p>
+            <div class="review-person">
+              <img class="review-avatar member-photo" src="assets/images/reviews/Jon_Review.jpg" alt="Jon Michael Young" loading="lazy" data-fallback="JY" />
+              <div>
+                <p class="review-name">Jon Michael Young</p>
+                <p class="review-role">BSIT Student</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="review-card" data-reveal>
+            <p class="review-stars" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+            <p class="review-quote">"Even on a busy school day, I can log expenses in seconds and avoid the end-of-week budgeting panic."</p>
+            <div class="review-person">
+              <span class="review-avatar review-avatar-placeholder" role="img" aria-label="Placeholder photo for Jeoric Iden Zafra">JZ</span>
+              <div>
+                <p class="review-name">Jeoric Iden Zafra</p>
+                <p class="review-role">BSCS Student</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-band" data-reveal>
+      <div class="section-inner final-cta-wrap">
+        <h2 class="section-title">Ready to own your weekly budget?</h2>
+        <p class="section-copy">Start in less than a minute and keep your spending habits visible every day.</p>
+        <div class="landing-cta-row centered">
+          <a class="landing-cta-secondary" href="login.html">Login</a>
+          <a class="landing-cta-primary" href="register.html">Create account</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="landing-footer" data-reveal>
+    <div class="section-inner footer-simple">
+      <a class="landing-brand footer-brand" href="landing.html" aria-label="SugboCents home">
+        <span class="brand-mark">SC</span>
+        <span class="brand-text">SugboCents</span>
+      </a>
+      <p>&copy; 2026 SugboCents. All rights reserved.</p>
+      <div class="footer-inline-links" aria-label="Footer utility links">
+        <a class="footer-icon-link" href="#" aria-label="Facebook">
+          <i class="bi bi-facebook" aria-hidden="true"></i>
+        </a>
+        <a class="footer-icon-link" href="#" aria-label="Instagram">
+          <i class="bi bi-instagram" aria-hidden="true"></i>
+        </a>
+        <a class="footer-icon-link" href="#" aria-label="GitHub">
+          <i class="bi bi-github" aria-hidden="true"></i>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/landing.js"></script>
+</body>
+</html>

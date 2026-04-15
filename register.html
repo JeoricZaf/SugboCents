@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1f6b46" />
+  <title>SugboCents - Register</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css?v=20260415-auth4" />
+</head>
+<body data-page="register" data-guest-only="true" class="min-h-screen antialiased">
+  <a href="landing.html" class="auth-global-back" aria-label="Back to landing page">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to home
+  </a>
+  <main class="auth-shell auth-shell-refined">
+    <section class="auth-layout">
+      <div class="auth-panel">
+        <p class="eyebrow">SugboCents</p>
+        <h1 class="auth-title">Create account</h1>
+        <p class="auth-subtitle">Set up your profile to start tracking weekly spending with a clean dashboard flow.</p>
+
+        <form id="registerForm" class="auth-form" novalidate>
+          <div class="auth-grid-2">
+            <div class="auth-field">
+              <label for="registerFirstName" class="label">First name</label>
+              <input id="registerFirstName" name="firstName" type="text" class="input" placeholder="e.g., Savion" required />
+              <p id="registerFirstNameError" class="field-error"></p>
+            </div>
+
+            <div class="auth-field">
+              <label for="registerLastName" class="label">Last name</label>
+              <input id="registerLastName" name="lastName" type="text" class="input" placeholder="e.g., Go" required />
+              <p id="registerLastNameError" class="field-error"></p>
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="registerEmail" class="label">Email</label>
+            <input id="registerEmail" name="email" type="email" class="input" placeholder="you@example.com" required />
+            <p id="registerEmailError" class="field-error"></p>
+          </div>
+
+          <div class="auth-field">
+            <label for="registerPassword" class="label">Password</label>
+            <input id="registerPassword" name="password" type="password" class="input" placeholder="At least 8 characters" required />
+            <p id="registerPasswordError" class="field-error"></p>
+          </div>
+
+          <div class="auth-field">
+            <label for="registerConfirmPassword" class="label">Confirm password</label>
+            <input id="registerConfirmPassword" name="confirmPassword" type="password" class="input" placeholder="Retype your password" required />
+            <p id="registerConfirmPasswordError" class="field-error"></p>
+          </div>
+
+          <p id="registerFormError" class="form-error"></p>
+
+          <button id="registerSubmit" type="submit" class="btn-primary w-full">Create account</button>
+        </form>
+
+        <p class="auth-footnote">
+          Already have an account?
+          <a href="login.html">Login</a>
+        </p>
+      </div>
+
+      <aside class="auth-side" aria-label="Registration message">
+        <p class="auth-side-kicker">Get started</p>
+        <h2 class="auth-side-title">Start your saving journey today.</h2>
+        <p class="auth-side-message">Create your account and build a better spending routine with clear, simple tracking.</p>
+        <p class="auth-side-note">Set up once, then keep your progress with your account.</p>
+      </aside>
+    </section>
+  </main>
+
+  <script src="js/firebase-init.js"></script>
+  <script src="js/firebase-auth-service.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
+

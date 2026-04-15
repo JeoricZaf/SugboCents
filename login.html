@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1f6b46" />
+  <title>SugboCents - Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css?v=20260415-auth4" />
+</head>
+<body data-page="login" data-guest-only="true" class="min-h-screen antialiased">
+  <a href="landing.html" class="auth-global-back" aria-label="Back to landing page">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to home
+  </a>
+  <main class="auth-shell auth-shell-refined">
+    <section class="auth-layout">
+      <div class="auth-panel">
+        <p class="eyebrow">SugboCents</p>
+        <h1 class="auth-title">Welcome back</h1>
+        <p class="auth-subtitle">Sign in with your email to continue your weekly budget tracking.</p>
+
+        <form id="loginForm" class="auth-form" novalidate>
+          <div class="auth-field">
+            <label for="loginEmail" class="label">Email</label>
+            <input id="loginEmail" name="email" type="email" class="input" placeholder="you@example.com" required />
+            <p id="loginEmailError" class="field-error"></p>
+          </div>
+
+          <div class="auth-field">
+            <label for="loginPassword" class="label">Password</label>
+            <input id="loginPassword" name="password" type="password" class="input" placeholder="At least 8 characters" required />
+            <p id="loginPasswordError" class="field-error"></p>
+          </div>
+
+          <p id="loginFormError" class="form-error"></p>
+
+          <button id="loginSubmit" type="submit" class="btn-primary w-full">Login</button>
+        </form>
+
+        <p class="auth-footnote">
+          New here?
+          <a href="register.html">Create an account</a>
+        </p>
+      </div>
+
+      <aside class="auth-side login-side" aria-label="Login welcome message">
+        <p class="auth-side-kicker">Sign in</p>
+        <h2 class="auth-side-title">Get right back into your week.</h2>
+        <p class="auth-side-message">Jump back in to review your latest expenses,<br>and keep your week on track.</p>
+        <p class="auth-side-note">One quick login, then you are back where you left off.</p>
+      </aside>
+    </section>
+  </main>
+
+  <script src="js/firebase-init.js"></script>
+  <script src="js/firebase-auth-service.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
+

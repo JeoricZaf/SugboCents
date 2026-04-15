@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1f6b46" />
+  <title>SugboCents - Settings</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="settings" data-protected="true" class="bg-mist min-h-screen antialiased">
+  <main class="pb-28 pt-6 px-5 max-w-lg mx-auto">
+    <header>
+      <p class="eyebrow">Customize your week</p>
+      <h1 class="mt-1 text-2xl font-extrabold text-ink">Settings</h1>
+    </header>
+
+    <section class="card-panel p-5 mt-6">
+      <h2 class="text-base font-bold text-ink">Edit weekly budget</h2>
+      <p class="text-sm text-slate-600 mt-1">Update your budget cap for this week.</p>
+
+      <form id="budgetForm" class="mt-4 space-y-3" novalidate>
+        <div>
+          <label for="weeklyBudget" class="label">Weekly budget (PHP)</label>
+          <input id="weeklyBudget" name="weeklyBudget" type="number" min="0" step="0.01" class="input" placeholder="e.g., 2000" required />
+          <p id="weeklyBudgetError" class="field-error"></p>
+        </div>
+        <button id="saveBudgetButton" type="submit" class="btn-primary w-full">Save budget</button>
+      </form>
+    </section>
+
+    <section class="card-panel p-5 mt-4">
+      <h2 class="text-base font-bold text-ink">Account</h2>
+      <p class="text-sm text-slate-600 mt-1">Manage your current session.</p>
+      <button id="logoutButton" type="button" class="btn-outline w-full mt-4">Logout</button>
+    </section>
+
+    <section class="card-panel p-5 mt-4">
+      <h2 class="text-base font-bold text-ink">Danger zone</h2>
+      <p class="text-sm text-slate-600 mt-1">Reset app data for your account. This cannot be undone.</p>
+      <button id="resetAppButton" type="button" class="btn-danger w-full mt-4">Clear my data</button>
+      <p id="settingsActionMessage" class="text-sm mt-3 text-slate-600"></p>
+    </section>
+
+    <section class="mt-6 text-center text-xs text-slate-500">
+      SugboCents Sprint 1 - Version 1.0.0
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <a href="dashboard.html" data-nav="dashboard" class="nav-link">
+      <span class="nav-icon">âŒ‚</span>
+      <span class="nav-text">Dashboard</span>
+    </a>
+    <a href="settings.html" data-nav="settings" class="nav-link">
+      <span class="nav-icon">âš™</span>
+      <span class="nav-text">Settings</span>
+    </a>
+  </nav>
+
+  <script src="js/firebase-init.js"></script>
+  <script src="js/firebase-auth-service.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
+

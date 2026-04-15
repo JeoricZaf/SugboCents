@@ -1,0 +1,12 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="SugboCents icon">
+  <defs>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2d7f56"/>
+      <stop offset="100%" stop-color="#17472f"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="118" fill="url(#g2)"/>
+  <circle cx="256" cy="256" r="144" fill="#e6f4ec" opacity="0.94"/>
+  <text x="256" y="286" text-anchor="middle" font-size="196" font-family="Plus Jakarta Sans, Segoe UI, sans-serif" font-weight="800" fill="#1f6b46">â‚±</text>
+</svg>
+
