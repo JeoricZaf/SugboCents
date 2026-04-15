@@ -26,6 +26,7 @@ const SHELL_FILES = [
   "assets/images/reviews/Julian_Review.jpg",
   "assets/images/reviews/Oliver_Review.jpg",
   "assets/images/reviews/Jon_Review.jpg",
+  "assets/images/reviews/Jeoric_Review.png",
   "icons/icon-192.png",
   "icons/icon-512.png"
 ];
