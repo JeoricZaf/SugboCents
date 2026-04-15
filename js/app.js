@@ -36,11 +36,20 @@
       return;
     }
 
-    if (page === "dashboard" || page === "settings") {
-      var user = window.StorageAPI.getCurrentUser();
-      var welcome = document.getElementById("welcomeUser");
-      if (welcome && user) {
-        welcome.textContent = user.firstName ? "Hi, " + user.firstName : user.email;
+    // Populate sidebar user widget on all protected pages
+    var user = window.StorageAPI.getCurrentUser();
+    if (user) {
+      var sidebarName = document.getElementById("sidebarName");
+      var sidebarAvatar = document.getElementById("sidebarAvatar");
+      if (sidebarName) {
+        sidebarName.textContent = user.firstName ? user.firstName + (user.lastName ? " " + user.lastName : "") : user.email;
+      }
+      if (sidebarAvatar) {
+        var initials = user.firstName ? user.firstName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : "U");
+        if (user.lastName) {
+          initials += user.lastName.charAt(0).toUpperCase();
+        }
+        sidebarAvatar.textContent = initials;
       }
     }
   }
