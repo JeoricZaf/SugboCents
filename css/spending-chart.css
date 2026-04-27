@@ -1,0 +1,181 @@
+/* Spending Chart Component Styles */
+
+.spending-chart-section {
+  margin-top: 1.5rem;
+}
+
+.spending-chart-container {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.spending-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.spending-chart-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink-900);
+  margin: 0;
+}
+
+.spending-chart-period {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.spending-chart-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 120px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  background: #fafbfc;
+  border-radius: var(--radius-lg);
+  padding: 0.75rem;
+}
+
+.spending-chart-canvas-wrapper[data-layout="vertical"] {
+  min-height: 280px;
+}
+
+.spending-chart-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.chart-bar-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  flex: 1;
+  height: 100%;
+  gap: 0.5rem;
+}
+
+.chart-bar {
+  flex: 1;
+  background: linear-gradient(90deg, var(--brand-700), var(--brand-800));
+  border-radius: var(--radius-lg);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  min-height: 8px;
+  position: relative;
+}
+
+.chart-bar:hover {
+  opacity: 0.85;
+  filter: brightness(1.1);
+}
+
+.chart-bar-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--ink-900);
+  text-align: left;
+  word-break: break-word;
+  line-height: 1.1;
+  max-width: 100px;
+}
+
+.chart-bar-amount {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--brand-800);
+  text-align: center;
+  margin-left: 0.5rem;
+}
+
+.spending-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  justify-content: flex-start;
+}
+
+.legend-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  padding: 0.4rem 0.6rem;
+  min-width: fit-content;
+  flex-shrink: 0;
+}
+
+.legend-label-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+}
+
+.legend-color {
+  display: none;
+}
+
+.legend-category {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legend-amount {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #1f6b46;
+  text-align: left;
+  margin: 0;
+}
+
+.spending-chart-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #94a3b8;
+}
+
+.spending-chart-empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.spending-chart-empty-text {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1023px) {
+  .spending-chart-container {
+    padding: 1rem;
+  }
+
+  .spending-chart-canvas-wrapper {
+    min-height: 280px;
+    margin-bottom: 1rem;
+    padding: 0.6rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .spending-chart-canvas-wrapper {
+    min-height: 120px;
+  }
+}
