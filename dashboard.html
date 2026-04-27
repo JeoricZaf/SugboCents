@@ -12,6 +12,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/spending-chart.css" />
+  <link rel="stylesheet" href="css/mascot.css" />
   <link rel="stylesheet" href="css/dark-mode.css" />
 </head>
 <body data-page="dashboard" data-protected="true" class="bg-mist min-h-screen antialiased">
@@ -146,6 +147,16 @@
       <p id="emptyExpenseState" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses yet. Log one above, or use Quick add for recurring costs.</p>
     </section>
 
+    <!-- category statistics widgets -->
+    <section class="mt-7" id="categoryStatsSection">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-bold text-ink">This week's stats</h2>
+        <a href="stats.html" class="text-xs font-bold text-emerald-700">View all →</a>
+      </div>
+      <div id="categoryStatsGrid" class="grid grid-cols-2 gap-3"></div>
+      <p id="categoryStatsEmpty" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses recorded yet this week.</p>
+    </section>
+
     <!-- spending chart component -->
     <section class="spending-chart-section" id="spendingChartSection">
       <div class="spending-chart-container">
@@ -228,6 +239,7 @@
   <script src="js/app.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/spending-chart.js"></script>
+  <script src="js/mascot.js"></script>
   <script src="js/dark-mode.js"></script>
 </body>
 </html>

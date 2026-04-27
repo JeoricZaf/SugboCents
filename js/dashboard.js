@@ -214,6 +214,7 @@
 
         updateBudgetCard();
         renderRecentExpenses();
+        renderCategoryStats();
         if (window.SpendingChart) { window.SpendingChart.update(); }
 
         // brief visual feedback: pulse the button
@@ -473,6 +474,7 @@
       descInput.value = "";
       updateBudgetCard();
       renderRecentExpenses();
+      renderCategoryStats();
       if (window.SpendingChart) { window.SpendingChart.update(); }
 
       // brief visual confirmation on the button
@@ -506,6 +508,7 @@
     // Optimistically hide from list
     updateBudgetCard();
     renderRecentExpenses();
+    renderCategoryStats();
     if (window.SpendingChart) { window.SpendingChart.update(); }
 
     var toast   = document.getElementById("undoToast");
@@ -536,6 +539,7 @@
     if (toast) { toast.classList.add("hidden"); }
     updateBudgetCard();
     renderRecentExpenses();
+    renderCategoryStats();
     if (window.SpendingChart) { window.SpendingChart.update(); }
   }
 
@@ -548,7 +552,98 @@
     if (toast) { toast.classList.add("hidden"); }
     updateBudgetCard();
     renderRecentExpenses();
+    renderCategoryStats();
     if (window.SpendingChart) { window.SpendingChart.update(); }
+  }
+
+  // ── category statistics widgets ──────────────────────────
+  var CATEGORY_STAT_COLORS = {
+    "Jeep":             { bg: "#d8efe2", text: "#14532d", emoji: "🚌" },
+    "Food":             { bg: "#ffedd5", text: "#7c2d12", emoji: "🍜" },
+    "Load":             { bg: "#dbeafe", text: "#1e3a5f", emoji: "📱" },
+    "Laundry":          { bg: "#fee2e2", text: "#7f1d1d", emoji: "🧺" },
+    "School Supplies":  { bg: "#f3e8ff", text: "#4c1d95", emoji: "📚" },
+    "Coffee":           { bg: "#fef9c3", text: "#713f12", emoji: "☕" },
+    "Other":            { bg: "#e2e8f0", text: "#1e293b", emoji: "💸" }
+  };
+
+  var STAT_FALLBACK_COLORS = [
+    { bg: "#d8efe2", text: "#14532d" },
+    { bg: "#ffedd5", text: "#7c2d12" },
+    { bg: "#dbeafe", text: "#1e3a5f" },
+    { bg: "#fee2e2", text: "#7f1d1d" },
+    { bg: "#f3e8ff", text: "#4c1d95" }
+  ];
+
+  function renderCategoryStats() {
+    var grid = document.getElementById("categoryStatsGrid");
+    var empty = document.getElementById("categoryStatsEmpty");
+    if (!grid || !empty) { return; }
+
+    if (!window.StorageAPI) {
+      grid.innerHTML = "";
+      empty.classList.remove("hidden");
+      return;
+    }
+
+    var user = window.StorageAPI.getCurrentUser();
+    if (!user || !Array.isArray(user.expenses) || user.expenses.length === 0) {
+      grid.innerHTML = "";
+      empty.classList.remove("hidden");
+      return;
+    }
+
+    // filter to current week
+    var now = new Date();
+    var dayOfWeek = now.getDay();
+    var weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+    weekStart.setHours(0, 0, 0, 0);
+    var weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+
+    var totals = {};
+    user.expenses.forEach(function (exp) {
+      var d = new Date(exp.timestamp);
+      if (d >= weekStart && d < weekEnd) {
+        var cat = exp.category || "Other";
+        totals[cat] = (totals[cat] || 0) + (Number(exp.amount) || 0);
+      }
+    });
+
+    var categories = Object.keys(totals).sort(function (a, b) {
+      return totals[b] - totals[a];
+    });
+
+    if (categories.length === 0) {
+      grid.innerHTML = "";
+      empty.classList.remove("hidden");
+      return;
+    }
+
+    empty.classList.add("hidden");
+
+    var html = "";
+    var totalSpent = categories.reduce(function (s, c) { return s + totals[c]; }, 0);
+
+    categories.forEach(function (cat, idx) {
+      var amount = totals[cat];
+      var pct = totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0;
+      var colorInfo = CATEGORY_STAT_COLORS[cat] || STAT_FALLBACK_COLORS[idx % STAT_FALLBACK_COLORS.length];
+      var emoji = (CATEGORY_STAT_COLORS[cat] && CATEGORY_STAT_COLORS[cat].emoji) ? CATEGORY_STAT_COLORS[cat].emoji : "💸";
+
+      html +=
+        '<div class="card-panel p-3" style="background:' + colorInfo.bg + '; border-radius: 1.1rem;">' +
+          '<div class="flex items-center gap-2 mb-1.5">' +
+            '<span style="font-size:1.2rem;">' + emoji + '</span>' +
+            '<p class="text-xs font-bold" style="color:' + colorInfo.text + '; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">' + escapeHtml(cat) + '</p>' +
+          '</div>' +
+          '<p class="text-base font-extrabold" style="color:' + colorInfo.text + ';">' + formatPhp(amount) + '</p>' +
+          '<p class="text-xs mt-0.5" style="color:' + colorInfo.text + '; opacity:0.7;">' + pct + '% of week</p>' +
+        '</div>';
+    });
+
+    grid.innerHTML = html;
   }
 
   // ── settings page ────────────────────────────────────────
@@ -657,6 +752,7 @@
       updateBudgetCard();
       renderStreakCard();
       renderRecentExpenses();
+      renderCategoryStats();
       initModal();
       initLogExpense();
 
@@ -666,6 +762,7 @@
         renderStreakCard();
         renderRecentExpenses();
         renderQuickAddButtons();
+        renderCategoryStats();
       }, { once: true });
 
       var addNewBtn = document.getElementById("addNewQaBtn");

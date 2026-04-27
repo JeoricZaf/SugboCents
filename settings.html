@@ -61,7 +61,29 @@
       <h1 class="mt-1 text-2xl font-extrabold text-ink">Settings</h1>
     </header>
 
+    <!-- Profile basics -->
     <section class="card-panel p-5 mt-6">
+      <h2 class="text-base font-bold text-ink">Profile</h2>
+      <p class="text-sm text-slate-600 mt-1">Update your display name.</p>
+      <form id="profileForm" class="mt-4 space-y-3" novalidate>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="label" for="profileFirstName">First name</label>
+            <input id="profileFirstName" type="text" class="input" maxlength="40" placeholder="First name" />
+            <p id="profileFirstNameError" class="field-error"></p>
+          </div>
+          <div>
+            <label class="label" for="profileLastName">Last name</label>
+            <input id="profileLastName" type="text" class="input" maxlength="40" placeholder="Last name" />
+            <p id="profileLastNameError" class="field-error"></p>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary w-full">Save profile</button>
+        <p id="profileSaveMsg" class="text-sm mt-1 hidden"></p>
+      </form>
+    </section>
+
+    <section class="card-panel p-5 mt-4">
       <h2 class="text-base font-bold text-ink">Edit weekly budget</h2>
       <p class="text-sm text-slate-600 mt-1">Update your budget cap for this week.</p>
 
@@ -78,6 +100,56 @@
       </form>
     </section>
 
+    <!-- Streak preferences -->
+    <section class="card-panel p-5 mt-4">
+      <h2 class="text-base font-bold text-ink">🔥 Streak &amp; goals</h2>
+      <p class="text-sm text-slate-600 mt-1">Control how streaks and goal tracking behave.</p>
+      <div class="mt-4 space-y-4">
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <div>
+            <p class="text-sm font-semibold text-ink">Enable streak tracking</p>
+            <p class="text-xs text-slate-500">Count consecutive save-goal completions.</p>
+          </div>
+          <input id="streakEnabled" type="checkbox" class="sr-only peer" />
+          <div class="relative w-10 h-6 bg-slate-200 rounded-full transition peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-4"></div>
+        </label>
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <div>
+            <p class="text-sm font-semibold text-ink">Goal reminders</p>
+            <p class="text-xs text-slate-500">Show a reminder banner when goals are close.</p>
+          </div>
+          <input id="streakNotifications" type="checkbox" class="sr-only peer" />
+          <div class="relative w-10 h-6 bg-slate-200 rounded-full transition peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-4"></div>
+        </label>
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <div>
+            <p class="text-sm font-semibold text-ink">Weekly summary</p>
+            <p class="text-xs text-slate-500">Show a summary card on your dashboard each week.</p>
+          </div>
+          <input id="streakWeeklySummary" type="checkbox" class="sr-only peer" />
+          <div class="relative w-10 h-6 bg-slate-200 rounded-full transition peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-4"></div>
+        </label>
+      </div>
+      <p id="streakSaveMsg" class="text-sm mt-3 hidden"></p>
+    </section>
+
+    <!-- Display preferences -->
+    <section class="card-panel p-5 mt-4">
+      <h2 class="text-base font-bold text-ink">Display</h2>
+      <p class="text-sm text-slate-600 mt-1">Customize how information is shown.</p>
+      <div class="mt-4">
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <div>
+            <p class="text-sm font-semibold text-ink">Compact expense list</p>
+            <p class="text-xs text-slate-500">Show expenses in a denser layout.</p>
+          </div>
+          <input id="compactExpenses" type="checkbox" class="sr-only peer" />
+          <div class="relative w-10 h-6 bg-slate-200 rounded-full transition peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-4"></div>
+        </label>
+      </div>
+      <p id="displaySaveMsg" class="text-sm mt-3 hidden"></p>
+    </section>
+
     <section class="card-panel p-5 mt-4">
       <h2 class="text-base font-bold text-ink">Account</h2>
       <p class="text-sm text-slate-600 mt-1">Manage your current session.</p>
@@ -92,7 +164,7 @@
     </section>
 
     <section class="mt-6 text-center text-xs text-slate-500">
-      SugboCents Sprint 1 - Version 1.0.0
+      SugboCents Sprint 2 - Version 2.0.0
     </section>
   </main>
   </div><!-- /app-main -->
@@ -130,6 +202,7 @@
   <script src="js/firestore-service.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/settings.js"></script>
   <script src="js/dark-mode.js"></script>
 </body>
 </html>
