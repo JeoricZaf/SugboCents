@@ -216,45 +216,101 @@
       moved = false;
       startX = clientX;
       startY = clientY;
+      
+      fab.style.transition = "none";
+      
       var rect = fab.getBoundingClientRect();
       origRight  = window.innerWidth  - rect.right;
       origBottom = window.innerHeight - rect.bottom;
-      fab.style.transition = "none";
     }
 
     function onMove(clientX, clientY) {
       if (!isDragging) { return; }
       var dx = clientX - startX;
       var dy = clientY - startY;
+      
       if (Math.abs(dx) > 4 || Math.abs(dy) > 4) { moved = true; }
-      var newRight  = Math.max(4, origRight  - dx);
-      var newBottom = Math.max(4, origBottom + dy);
-      newRight  = Math.min(window.innerWidth  - 48, newRight);
-      newBottom = Math.min(window.innerHeight - 48, newBottom);
+      
+      var newRight  = Math.max(0, origRight  - dx);
+      var newBottom = Math.max(0, origBottom - dy); 
+      
+      newRight  = Math.min(window.innerWidth  - fab.offsetWidth, newRight);
+      newBottom = Math.min(window.innerHeight - fab.offsetHeight, newBottom);
+      
       fab.style.right  = newRight  + "px";
       fab.style.bottom = newBottom + "px";
     }
 
     function onEnd() {
+      if (!isDragging) { return; } 
       isDragging = false;
-      fab.style.transition = "";
+      
       if (!moved) {
+        fab.style.transition = ""; 
         var chatbox = document.getElementById("mascotChatbox");
         if (chatbox && chatbox.classList.contains("hidden")) {
           openChat();
         } else {
           closeChat();
         }
+      } else {
+        // ── DISTANCE-BASED CORNER SNAPPING LOGIC ──
+        
+        var rect = fab.getBoundingClientRect();
+        
+        // 1. Calculate how far the widget's edges are from the screen's edges
+        var distLeft = rect.left;
+        var distRight = window.innerWidth - rect.right;
+        var distTop = rect.top;
+        var distBottom = window.innerHeight - rect.bottom;
+        
+        // 2. Figure out which quadrant the widget is in
+        var isLeftHalf = distLeft < distRight;
+        var isTopHalf = distTop < distBottom;
+        
+        var minDistX = isLeftHalf ? distLeft : distRight;
+        var minDistY = isTopHalf ? distTop : distBottom;
+        
+        // 3. Calculate straight-line distance to the nearest corner
+        var distanceToCorner = Math.sqrt((minDistX * minDistX) + (minDistY * minDistY));
+        
+        // 🎛️ SETTING: How close (in pixels) it needs to be to snap to the corner
+        var snapThreshold = 150; 
+        
+        if (distanceToCorner <= snapThreshold) {
+          // --> It's close to a corner: SNAP IT
+          fab.style.transition = "right 0.3s ease-out, bottom 0.3s ease-out";
+          
+          var margin = 20; // 20px gap from the edge of the screen
+          
+          var targetRight = isLeftHalf ? (window.innerWidth - rect.width - margin) : margin;
+          var targetBottom = isTopHalf ? (window.innerHeight - rect.height - margin) : margin;
+          
+          fab.style.right = targetRight + "px";
+          fab.style.bottom = targetBottom + "px";
+          
+          // Clean up transition after animation completes
+          setTimeout(function() {
+             fab.style.transition = ""; 
+          }, 300);
+          
+        } else {
+          // --> It's far from a corner: LEAVE IT THERE
+          fab.style.transition = "";
+        }
       }
     }
 
+    // Event Listeners
     fab.addEventListener("mousedown", function (e) {
       e.preventDefault();
       onStart(e.clientX, e.clientY);
     });
+    
     document.addEventListener("mousemove", function (e) {
       onMove(e.clientX, e.clientY);
     });
+    
     document.addEventListener("mouseup", function () {
       onEnd();
     });
@@ -263,11 +319,14 @@
       var t = e.touches[0];
       onStart(t.clientX, t.clientY);
     }, { passive: true });
+    
     document.addEventListener("touchmove", function (e) {
       if (!isDragging) { return; }
+      e.preventDefault(); 
       var t = e.touches[0];
       onMove(t.clientX, t.clientY);
-    }, { passive: true });
+    }, { passive: false });
+    
     document.addEventListener("touchend", function () {
       onEnd();
     });
