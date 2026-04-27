@@ -581,6 +581,202 @@
     return { ok: true };
   }
 
+  // ── Sprint 2: Profile update ─────────────────────────────
+
+  function updateUserProfile(data) {
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { ok: false, error: "User not found." };
+    }
+    if (data && data.firstName !== undefined) {
+      user.firstName = sanitizeName(data.firstName);
+    }
+    if (data && data.lastName !== undefined) {
+      user.lastName = sanitizeName(data.lastName);
+    }
+    if (data && data.username !== undefined) {
+      user.username = sanitizeName(data.username);
+    }
+    saveStore(store);
+    if (window.FirestoreService) {
+      window.FirestoreService.setUserDoc(store.session.userId, {
+        firstName: user.firstName,
+        lastName: user.lastName
+      });
+    }
+    return { ok: true };
+  }
+
+  // ── Sprint 2: Preferences ────────────────────────────────
+
+  function getPreferences() {
+    var store = loadStore();
+    if (!store.session) {
+      return {};
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return {};
+    }
+    return user.preferences ? Object.assign({}, user.preferences) : {};
+  }
+
+  function savePreferences(prefs) {
+    if (typeof prefs !== "object" || prefs === null) {
+      return { ok: false, error: "Preferences must be an object." };
+    }
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { ok: false, error: "User not found." };
+    }
+    if (!user.preferences) {
+      user.preferences = {};
+    }
+    var keys = Object.keys(prefs);
+    for (var i = 0; i < keys.length; i++) {
+      user.preferences[keys[i]] = prefs[keys[i]];
+    }
+    saveStore(store);
+    return { ok: true };
+  }
+
+  // ── Sprint 2: Goals ──────────────────────────────────────
+
+  function getGoals() {
+    var store = loadStore();
+    if (!store.session) {
+      return [];
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user || !Array.isArray(user.goals)) {
+      return [];
+    }
+    return user.goals.slice();
+  }
+
+  function addGoal(data) {
+    if (!data || !data.name) {
+      return { ok: false, error: "Goal name is required." };
+    }
+    var targetAmount = sanitizeAmount(data.targetAmount);
+    if (targetAmount <= 0) {
+      return { ok: false, error: "Target amount must be greater than zero." };
+    }
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { ok: false, error: "User not found." };
+    }
+    var goal = {
+      id: "goal_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+      name: sanitizeName(data.name),
+      targetAmount: targetAmount,
+      savedAmount: 0,
+      deadline: data.deadline ? String(data.deadline) : "",
+      createdAt: nowIso(),
+      completed: false
+    };
+    if (!Array.isArray(user.goals)) {
+      user.goals = [];
+    }
+    user.goals.unshift(goal);
+    saveStore(store);
+    return { ok: true, goal: goal };
+  }
+
+  function updateGoalProgress(goalId, savedAmount) {
+    var amount = sanitizeAmount(savedAmount);
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user || !Array.isArray(user.goals)) {
+      return { ok: false, error: "User not found." };
+    }
+    var goal = null;
+    for (var i = 0; i < user.goals.length; i++) {
+      if (user.goals[i].id === goalId) {
+        goal = user.goals[i];
+        break;
+      }
+    }
+    if (!goal) {
+      return { ok: false, error: "Goal not found." };
+    }
+    goal.savedAmount = Math.max(0, amount);
+    goal.completed = goal.savedAmount >= goal.targetAmount;
+    saveStore(store);
+    return { ok: true, goal: goal };
+  }
+
+  function deleteGoal(goalId) {
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user || !Array.isArray(user.goals)) {
+      return { ok: false, error: "User not found." };
+    }
+    var idx = -1;
+    for (var i = 0; i < user.goals.length; i++) {
+      if (user.goals[i].id === goalId) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx === -1) {
+      return { ok: false, error: "Goal not found." };
+    }
+    user.goals.splice(idx, 1);
+    saveStore(store);
+    return { ok: true };
+  }
+
+  // ── Sprint 2: Streak ─────────────────────────────────────
+
+  function getStreakData() {
+    var store = loadStore();
+    if (!store.session) {
+      return { count: 0, lastMilestone: null };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { count: 0, lastMilestone: null };
+    }
+    return {
+      count: user.streakCount || 0,
+      lastMilestone: user.lastMilestone || null
+    };
+  }
+
+  function incrementStreak() {
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { ok: false, error: "User not found." };
+    }
+    user.streakCount = (user.streakCount || 0) + 1;
+    user.lastMilestone = nowIso();
+    saveStore(store);
+    return { ok: true, count: user.streakCount };
+  }
+
   window.StorageAPI = {
     resolveAuthState: resolveAuthState,
     getSession: getSession,
@@ -596,7 +792,16 @@
     resetCurrentUserData: resetCurrentUserData,
     removeExpense: removeExpense,
     getQuickAddItems: getQuickAddItems,
-    saveQuickAddItems: saveQuickAddItems
+    saveQuickAddItems: saveQuickAddItems,
+    updateUserProfile: updateUserProfile,
+    getPreferences: getPreferences,
+    savePreferences: savePreferences,
+    getGoals: getGoals,
+    addGoal: addGoal,
+    updateGoalProgress: updateGoalProgress,
+    deleteGoal: deleteGoal,
+    getStreakData: getStreakData,
+    incrementStreak: incrementStreak
   };
 })();
 
