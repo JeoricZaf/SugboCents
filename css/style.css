@@ -1289,8 +1289,16 @@ body.edit-mode .qa-add-new-btn {
 
 /* ── page greeting header ── */
 .page-greeting {
+  display: flex;
   margin-bottom: 1.75rem;
+  gap: 1rem;
 }
+  .greeting-text {
+    display:flex;
+    flex-direction: column;
+    align-items: flex-start;
+     gap: 0.25rem;
+  }
 
 .page-greeting-sub {
   font-size: 0.8rem;

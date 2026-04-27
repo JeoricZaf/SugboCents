@@ -1,10 +1,10 @@
 (function () {
   // ── Mascot state definitions ─────────────────────────────
   var STATES = {
-    happy:   { emoji: "😊", label: "Doing great!", cls: "mascot-happy" },
-    neutral: { emoji: "🙂", label: "On track",     cls: "mascot-neutral" },
-    worried: { emoji: "😟", label: "Heads up!",    cls: "mascot-worried" },
-    alarmed: { emoji: "😱", label: "Budget alert!", cls: "mascot-alarmed" }
+    happy:   { img: "/assets/images/mascot/mascot-happy.png",   fullbody: "/assets/images/mascot/fullbody-happy.png",  label: "Doing great!",  cls: "mascot-happy" },
+    neutral: { img: "/assets/images/mascot/mascot-neutral.png", fullbody: "/assets/images/mascot/fullbody-neutral.png", label: "On track",      cls: "mascot-neutral" },
+    worried: { img: "/assets/images/mascot/mascot-sad.png",     fullbody: "/assets/images/mascot/fullbody-sad.png",  label: "Heads up!",     cls: "mascot-worried" },
+    alarmed: { img: "/assets/images/mascot/mascot-shocked.png", fullbody: "/assets/images/mascot/fullbody-shocked.png", label: "Budget alert!", cls: "mascot-alarmed" }
   };
 
   // ── Rule-based chatbot responses ─────────────────────────
@@ -75,7 +75,7 @@
     return null;
   }
 
-  // ── Build DOM ────────────────────────────────────────────
+ // ── Build DOM ────────────────────────────────────────────
   function buildWidget() {
     var state = getMascotState();
     var stateObj = STATES[state];
@@ -86,7 +86,10 @@
     fab.className = "mascot-fab " + stateObj.cls;
     fab.setAttribute("aria-label", "Open Sugbo assistant");
     fab.setAttribute("title", "Chat with Sugbo");
-    fab.textContent = stateObj.emoji;
+    
+    // --> ADDED: Insert the image instead of textContent
+    fab.innerHTML = '<img src="' + stateObj.img + '" class="mascot-fab-img" alt="Sugbo" draggable="false" />';
+    
     document.body.appendChild(fab);
 
     // Chatbox
@@ -99,13 +102,19 @@
     var healthPct = getHealthPct();
     var healthCls = healthPct > 60 ? "" : (healthPct > 30 ? "health-warn" : "health-danger");
 
+    
+
     chatbox.innerHTML =
       '<div class="mascot-chatbox-header">' +
-        '<span class="mascot-avatar" id="mascotAvatarEmoji">' + stateObj.emoji + '</span>' +
+        // --> ADDED: Use an <img> tag for the chatbox avatar
+        '<img class="mascot-avatar" id="mascotAvatarImg" src="' + stateObj.fullbody + '" alt="Sugbo" draggable="false" />' +
         '<div>' +
           '<div class="mascot-name">Sugbo</div>' +
           '<div class="mascot-status" id="mascotStatusText">' + stateObj.label + '</div>' +
         '</div>' +
+
+
+        
         '<button class="mascot-chatbox-close" id="mascotCloseBtn" aria-label="Close chat">✕</button>' +
       '</div>' +
       '<div class="mascot-health-bar-wrap">' +
@@ -181,20 +190,27 @@
     if (chatbox) { chatbox.classList.add("hidden"); }
   }
 
+
   // ── Update mascot appearance ─────────────────────────────
   function updateMascotState() {
     var state = getMascotState();
     var stateObj = STATES[state];
     var fab = document.getElementById("mascotFab");
-    var emoji = document.getElementById("mascotAvatarEmoji");
+    var avatarImg = document.getElementById("mascotAvatarImg"); // Changed to target the image
     var statusText = document.getElementById("mascotStatusText");
     var fill = document.getElementById("mascotHealthFill");
 
     if (fab) {
       fab.className = "mascot-fab " + stateObj.cls;
-      fab.textContent = stateObj.emoji;
+      // Update the FAB image source safely
+      var fabImg = fab.querySelector('.mascot-fab-img');
+      if (fabImg) {
+        fabImg.src = stateObj.img;
+      }
     }
-    if (emoji) { emoji.textContent = stateObj.emoji; }
+    
+    // Update Chatbox Avatar image
+    if (avatarImg) { avatarImg.src = stateObj.img; }
     if (statusText) { statusText.textContent = stateObj.label; }
 
     var pct = getHealthPct();
@@ -301,47 +317,139 @@
       }
     }
 
-    // Event Listeners
-    fab.addEventListener("mousedown", function (e) {
-      e.preventDefault();
-      onStart(e.clientX, e.clientY);
-    });
-    
-    document.addEventListener("mousemove", function (e) {
-      onMove(e.clientX, e.clientY);
-    });
-    
-    document.addEventListener("mouseup", function () {
-      onEnd();
-    });
 
-    fab.addEventListener("touchstart", function (e) {
-      var t = e.touches[0];
-      onStart(t.clientX, t.clientY);
-    }, { passive: true });
-    
-    document.addEventListener("touchmove", function (e) {
-      if (!isDragging) { return; }
-      e.preventDefault(); 
-      var t = e.touches[0];
-      onMove(t.clientX, t.clientY);
-    }, { passive: false });
-    
-    document.addEventListener("touchend", function () {
-      onEnd();
-    });
-  }
+
+        // Event Listeners
+        fab.addEventListener("mousedown", function (e) {
+          e.preventDefault();
+          onStart(e.clientX, e.clientY);
+        });
+        
+        document.addEventListener("mousemove", function (e) {
+          onMove(e.clientX, e.clientY);
+        });
+        
+        document.addEventListener("mouseup", function () {
+          onEnd();
+        });
+
+        fab.addEventListener("touchstart", function (e) {
+          var t = e.touches[0];
+          onStart(t.clientX, t.clientY);
+        }, { passive: true });
+        
+        document.addEventListener("touchmove", function (e) {
+          if (!isDragging) { return; }
+          e.preventDefault(); 
+          var t = e.touches[0];
+          onMove(t.clientX, t.clientY);
+        }, { passive: false });
+        
+        document.addEventListener("touchend", function () {
+          onEnd();
+        });
+      }
+
+
+      
+
+  // ── Draggable Chatbox ─────────────────────────────────────
+      function makeChatboxDraggable(chatbox) {
+        // Only grab the header to drag, so the user can still type and scroll inside the chat!
+        var handle = chatbox.querySelector(".mascot-chatbox-header");
+        if (!handle) return;
+
+        var isDragging = false;
+        var startX, startY, origRight, origBottom;
+
+        function onStart(clientX, clientY, target) {
+          // Do not start dragging if the user clicked the close button
+          if (target && target.closest('#mascotCloseBtn')) {
+            return;
+          }
+          
+          isDragging = true;
+          startX = clientX;
+          startY = clientY;
+          
+          chatbox.style.transition = "none";
+          
+          var rect = chatbox.getBoundingClientRect();
+          origRight  = window.innerWidth  - rect.right;
+          origBottom = window.innerHeight - rect.bottom;
+        }
+
+        function onMove(clientX, clientY) {
+          if (!isDragging) { return; }
+          
+          var dx = clientX - startX;
+          var dy = clientY - startY;
+          
+          var newRight  = Math.max(0, origRight  - dx);
+          var newBottom = Math.max(0, origBottom - dy); 
+          
+          // Keep the chatbox from being dragged completely off the screen
+          newRight  = Math.min(window.innerWidth  - chatbox.offsetWidth, newRight);
+          newBottom = Math.min(window.innerHeight - chatbox.offsetHeight, newBottom);
+          
+          chatbox.style.right  = newRight  + "px";
+          chatbox.style.bottom = newBottom + "px";
+        }
+
+        function onEnd() {
+          if (!isDragging) { return; } 
+          isDragging = false;
+          chatbox.style.transition = ""; 
+          // No corner snapping here! It just stays exactly where dropped.
+        }
+
+        // Event Listeners for the Header
+        handle.addEventListener("mousedown", function (e) {
+          if (e.target.closest('#mascotCloseBtn')) return;
+          e.preventDefault(); // Prevents text highlighting while dragging
+          onStart(e.clientX, e.clientY, e.target);
+        });
+        
+        document.addEventListener("mousemove", function (e) {
+          onMove(e.clientX, e.clientY);
+        });
+        
+        document.addEventListener("mouseup", function () {
+          onEnd();
+        });
+
+        handle.addEventListener("touchstart", function (e) {
+          if (e.target.closest('#mascotCloseBtn')) return;
+          var t = e.touches[0];
+          onStart(t.clientX, t.clientY, e.target);
+        }, { passive: true });
+        
+        document.addEventListener("touchmove", function (e) {
+          if (!isDragging) { return; }
+          e.preventDefault(); // Stops the page from scrolling on mobile
+          var t = e.touches[0];
+          onMove(t.clientX, t.clientY);
+        }, { passive: false });
+        
+        document.addEventListener("touchend", function () {
+          onEnd();
+        });
+      }
+
 
   // ── Init ─────────────────────────────────────────────────
   function init() {
     buildWidget();
 
     var fab = document.getElementById("mascotFab");
+    var chatbox = document.getElementById("mascotChatbox"); // <-- ADD THIS
     var closeBtn = document.getElementById("mascotCloseBtn");
     var sendBtn = document.getElementById("mascotSendBtn");
     var input = document.getElementById("mascotInput");
 
     if (fab) { makeDraggable(fab); }
+
+    if (chatbox) { makeChatboxDraggable(chatbox); } // <-- ADD THIS
 
     if (closeBtn) {
       closeBtn.addEventListener("click", closeChat);
@@ -381,3 +489,70 @@
     update: updateMascotState
   };
 })();
+
+
+
+//MASCTOT ANIMATIONS IN DASHBOARD-------------------------------
+document.addEventListener("DOMContentLoaded", function() {
+  var mascotImg = document.getElementById("dashboardMascotImg");
+  var speechBubble = document.getElementById("mascotSpeechBubble");
+  
+  if (!mascotImg || !speechBubble) return; // Exit if not on the dashboard
+
+  // 📝 Update these paths with your actual GIF files!
+  var fullBodyGifs =[
+    "/assets/images/mascot/fullbody-wave.gif",
+    "/assets/images/mascot/fullbody-sleepy.gif",
+    "/assets/images/mascot/fullbody-shocked.gif",
+    "/assets/images/mascot/fullbody-confused.gif",
+    "/assets/images/mascot/fullbody-dance.gif",
+    // "/assets/images/mascot/full-jump.gif",
+    // "/assets/images/mascot/full-cheer.gif"
+  ];
+  
+  // 💬 Random encouraging messages
+  var encouragingMessages =[
+    "You've got this! 💪",
+    "Every peso counts! Keep it up. 🪙",
+    "I'm so proud of your progress! 🌟",
+    "Let's crush those savings goals today! 🎯",
+    "Looking good! Keep making smart choices. 🧠",
+    "Your financial future is looking bright! ☀️",
+    "Small steps lead to big savings! 🚀"
+  ];
+
+  var bubbleTimeout;
+
+  function interactWithMascot(isClick) {
+    // 1. Pick a random GIF
+    var randomGif = fullBodyGifs[Math.floor(Math.random() * fullBodyGifs.length)];
+    
+    // Force the GIF to restart its animation by adding a unique timestamp
+    mascotImg.src = randomGif + "?t=" + new Date().getTime();
+
+    // 2. show the speech bubble if the user clicked him or refresh
+    
+      var randomMsg = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
+      speechBubble.textContent = randomMsg;
+      
+      // Reset the animation so it pops up nicely even if clicked rapidly
+      speechBubble.classList.remove("show-bubble");
+      void speechBubble.offsetWidth; // Magic trick to trigger a DOM reflow
+      speechBubble.classList.add("show-bubble");
+
+      // Hide the bubble automatically after 4 seconds
+      clearTimeout(bubbleTimeout);
+      bubbleTimeout = setTimeout(function() {
+        speechBubble.classList.remove("show-bubble");
+      }, 4000);
+    
+  }
+
+  // Play a random animation when the dashboard first loads (No speech bubble)
+  interactWithMascot();
+
+  // Play a random animation AND show a speech bubble when clicked
+  mascotImg.addEventListener("click", function() {
+    interactWithMascot(true);
+  });
+});

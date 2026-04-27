@@ -43,6 +43,24 @@
   pointer-events: none;
 }
 
+/* Styling for the image inside the floating widget */
+.mascot-fab-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Keeps the image proportions from squishing */
+  pointer-events: none; /* VERY IMPORTANT: Prevents the image from breaking your dragging logic */
+  user-select: none;
+}
+
+/* Styling for the image in the top-left of the chatbox */
+img.mascot-avatar {
+  width: 40px; /* Adjust this to match your header size */
+  height: 40px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
 @keyframes mascot-pulse {
   0%   { opacity: 0.8; transform: scale(1); }
   100% { opacity: 0;   transform: scale(1.6); }
@@ -96,7 +114,12 @@
   padding: 0.85rem 1rem;
   background: linear-gradient(135deg, #2b8259 0%, #1f6b46 100%);
   color: #ffffff;
+  cursor: grab; /* Shows the open hand icon */
 }
+  
+  .mascot-chatbox-header:active {
+    cursor: grabbing; /* Shows the closed fist icon when dragging */
+  }
 
 .mascot-chatbox-header .mascot-avatar {
   font-size: 1.5rem;
@@ -113,7 +136,9 @@
   opacity: 0.8;
 }
 
+
 .mascot-chatbox-close {
+  
   margin-left: auto;
   background: rgba(255,255,255,0.2);
   border: none;
@@ -229,8 +254,9 @@
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0 1rem 0.6rem;
+  padding: 1rem;
   background: #fff;
+  
 }
 
 .mascot-health-label {
@@ -242,7 +268,7 @@
 
 .mascot-health-track {
   flex: 1;
-  height: 0.42rem;
+  height: 1rem;
   background: #e2e8f0;
   border-radius: 999px;
   overflow: hidden;
@@ -285,4 +311,93 @@
 
 .dark-mode .mascot-health-track {
   background: #334155;
+}
+
+
+
+/* DASHBOARD ANIMATION */
+
+/* Container for the full-body mascot */
+.dashboard-mascot-wrapper {
+  position: relative;
+  display: inline-block;
+  text-align: center;
+  
+  
+}
+
+/* The Mascot Image */
+#dashboardMascotImg {
+  height: 180px; /* Adjust this to make him bigger or smaller */
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+  user-select: none;
+  border: 5px solid rgb(42, 109, 20);
+  border-radius: 20px;
+  overflow:hidden;
+  padding: 5px;
+}
+
+#dashboardMascotImg:hover {
+  transform: scale(1.05); /* Slight zoom when hovering to show he's clickable */
+}
+
+/* The Speech Bubble - Moved to the RIGHT */
+.mascot-speech-bubble {
+  position: absolute;
+  top: 20%;             /* Vertically center relative to mascot */
+  left: 100%;           /* Place it directly to the right of the mascot */
+  transform: translateY(-50%) translateX(-10px); /* Start slightly left for slide-out effect */
+  margin-left: 15px;    /* Space so the bubble doesn't touch the image */
+  
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  
+  /* Use max-content so it hugs the text, but wrap to a new line if it gets too long */
+  width: max-content;
+  max-width: 220px;     
+  
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+
+/* The inner white triangle pointing LEFT towards the mascot */
+.mascot-speech-bubble::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 100%;          /* Stick it to the left edge of the bubble */
+  margin-top: -8px;     /* Vertically center the 8px triangle */
+  border-width: 8px;
+  border-style: solid;
+  border-color: transparent white transparent transparent; /* Pointing Left */
+}
+
+/* The outer grey border for the triangle */
+.mascot-speech-bubble::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 100%;          
+  margin-top: -10px;    
+  border-width: 10px;
+  border-style: solid;
+  border-color: transparent #e0e0e0 transparent transparent; /* Pointing Left */
+  z-index: -1;
+}
+
+/* The class added by JavaScript to show the bubble */
+.mascot-speech-bubble.show-bubble {
+  opacity: 1;
+  visibility: visible;
+  /* Slide gracefully into its final position */
+  transform: translateY(-50%) translateX(0); 
 }
