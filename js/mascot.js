@@ -513,7 +513,7 @@ document.addEventListener("DOMContentLoaded", function() {
   // 💬 Random encouraging messages
   var encouragingMessages =[
     "You've got this! 💪",
-    "Every peso counts! Keep it up. 🪙",
+    "Every peso counts! Keep it up. ❤️",
     "I'm so proud of your progress! 🌟",
     "Let's crush those savings goals today! 🎯",
     "Looking good! Keep making smart choices. 🧠",
