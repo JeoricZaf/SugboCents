@@ -117,6 +117,30 @@
     }
   }
 
+  function renderStreakCard() {
+    var countEl = document.getElementById("streakCount");
+    var descEl = document.getElementById("streakDescription");
+    if (!countEl) {
+      return;
+    }
+
+    var streakCount = 0;
+    if (window.StorageAPI) {
+      if (typeof window.StorageAPI.getSaveGoalStreak === "function") {
+        streakCount = Number(window.StorageAPI.getSaveGoalStreak() || 0);
+      } else if (typeof window.StorageAPI.getGoalStreak === "function") {
+        streakCount = Number(window.StorageAPI.getGoalStreak() || 0);
+      }
+    }
+
+    countEl.textContent = String(streakCount);
+    if (descEl) {
+      descEl.textContent = streakCount > 0
+        ? "You've hit your save goals " + streakCount + " time" + (streakCount !== 1 ? "s" : "") + "."
+        : "This will track completed save-goal milestones once enabled.";
+    }
+  }
+
   // ── quick-add grid ───────────────────────────────────────
   function renderQuickAddButtons() {
     var grid = document.getElementById("quickAddGrid");
@@ -626,6 +650,7 @@
       renderGreeting();
       renderQuickAddButtons();
       updateBudgetCard();
+      renderStreakCard();
       renderRecentExpenses();
       initModal();
       initLogExpense();
@@ -633,6 +658,7 @@
       window.addEventListener("sugbocents:synced", function () {
         renderGreeting();
         updateBudgetCard();
+        renderStreakCard();
         renderRecentExpenses();
         renderQuickAddButtons();
       }, { once: true });
