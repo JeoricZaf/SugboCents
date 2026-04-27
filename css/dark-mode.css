@@ -1,0 +1,463 @@
+/* Dark Mode Color Scheme */
+html.dark-mode {
+  --brand-900: #2d9d70;
+  --brand-800: #3bb881;
+  --brand-700: #4ac992;
+  --ink-900: #e8e8e8;
+  --mist: #0d1117;
+  --card: #161b22;
+  --danger: #f85149;
+  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+html.dark-mode body {
+  background-color: #0d1117;
+  color: #e8e8e8;
+}
+
+html.dark-mode .bg-mist {
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d2818 100%);
+}
+
+html.dark-mode .bg-white,
+html.dark-mode [class*="bg-slate-"],
+html.dark-mode [class*="bg-gray-"] {
+  background-color: var(--card);
+  color: #e8e8e8;
+}
+
+html.dark-mode .text-slate-900,
+html.dark-mode .text-gray-900,
+html.dark-mode .text-ink {
+  color: #e8e8e8;
+}
+
+html.dark-mode .text-slate-600,
+html.dark-mode .text-gray-600 {
+  color: #b0b0b0 !important;
+}
+
+html.dark-mode .text-slate-500,
+html.dark-mode .text-gray-500 {
+  color: #c0c0c0 !important;
+}
+
+html.dark-mode .text-slate-400,
+html.dark-mode .text-gray-400 {
+  color: #d0d0d0 !important;
+}
+
+html.dark-mode .text-slate-700,
+html.dark-mode .text-gray-700 {
+  color: #9a9a9a !important;
+}
+
+html.dark-mode .border-slate-200,
+html.dark-mode .border-gray-200,
+html.dark-mode [class*="border"] {
+  border-color: #262d37;
+}
+
+html.dark-mode .app-sidebar {
+  background-color: #0f1419;
+  border-right-color: #262d37;
+}
+
+html.dark-mode .sidebar-brand {
+  color: #e8e8e8;
+  border-bottom-color: #262d37;
+}
+
+html.dark-mode .sidebar-brand-mark {
+  background: linear-gradient(135deg, var(--brand-800), var(--brand-900));
+  color: #ffffff;
+}
+
+html.dark-mode .sidebar-nav-link {
+  color: #9ca3af;
+}
+
+html.dark-mode .sidebar-nav-link:hover {
+  background-color: #262d37;
+  color: #e8e8e8;
+}
+
+html.dark-mode .sidebar-nav-link.active {
+  background-color: rgba(61, 184, 129, 0.15);
+  color: var(--brand-800);
+  border-left-color: var(--brand-800);
+}
+
+html.dark-mode .sidebar-user {
+  color: #e8e8e8;
+  border-top-color: #262d37;
+}
+
+html.dark-mode .sidebar-user:hover {
+  background-color: #1e2330;
+}
+
+html.dark-mode .sidebar-user-avatar {
+  background: linear-gradient(135deg, var(--brand-700), var(--brand-800));
+  color: #ffffff;
+}
+
+html.dark-mode .sidebar-user-name {
+  color: #e8e8e8;
+  font-weight: 500;
+}
+
+html.dark-mode .sidebar-user-sub {
+  color: #a0a0a0;
+}
+
+html.dark-mode .quick-add-section {
+  background-color: var(--card);
+  border-color: #262d37;
+}
+
+html.dark-mode .quick-add-input {
+  background-color: #0d1117;
+  color: #e8e8e8;
+  border-color: #262d37;
+}
+
+html.dark-mode .quick-add-input::placeholder {
+  color: #5a6068;
+}
+
+html.dark-mode .quick-add-input:focus {
+  background-color: #0d1117;
+  border-color: var(--brand-800);
+  box-shadow: 0 0 0 3px rgba(61, 184, 129, 0.1);
+}
+
+html.dark-mode .btn-secondary,
+html.dark-mode button:not(.btn-primary) {
+  background-color: #262d37;
+  color: #e8e8e8;
+  border-color: #3a4050;
+}
+
+html.dark-mode .btn-secondary:hover {
+  background-color: #3a4050;
+  color: #e8e8e8;
+}
+
+html.dark-mode .budget-card,
+html.dark-mode .card,
+html.dark-mode [class*="rounded-lg"] {
+  background-color: var(--card);
+}
+
+html.dark-mode .streak-card,
+html.dark-mode .card-panel {
+  background-color: var(--card);
+}
+
+html.dark-mode .streak-card p,
+html.dark-mode .streak-card span,
+html.dark-mode .streak-card div,
+html.dark-mode .streak-card h2,
+html.dark-mode .streak-card h3,
+html.dark-mode .streak-card h4,
+html.dark-mode .streak-card a,
+html.dark-mode .streak-card * {
+  color: #0f172a !important;
+}
+
+html.dark-mode #streakCount {
+  color: #0f172a !important;
+  font-weight: 700;
+}
+
+html.dark-mode .expense-item {
+  border-color: #262d37;
+}
+
+html.dark-mode .expense-item:hover {
+  background-color: #1e2330;
+}
+
+/* Expense row styling in dark mode */
+html.dark-mode .expense-row {
+  border-color: #262d37;
+}
+
+html.dark-mode .expense-title {
+  color: #e8e8e8;
+  font-weight: 500;
+}
+
+html.dark-mode .expense-meta {
+  color: #b0b0b0;
+}
+
+html.dark-mode .expense-amount {
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+html.dark-mode .expense-delete-btn {
+  color: #9ca3af;
+}
+
+html.dark-mode .expense-delete-btn:hover {
+  color: #ff6b6b;
+}
+
+html.dark-mode .eyebrow {
+  background-color: rgba(61, 184, 129, 0.2);
+  color: var(--brand-700);
+}
+
+html.dark-mode .spending-chart-container {
+  background-color: var(--card);
+  box-shadow: var(--shadow-soft);
+}
+
+html.dark-mode .spending-chart-canvas-wrapper {
+  background-color: #1a2332;
+  border-radius: var(--radius-lg);
+}
+
+html.dark-mode .spending-chart-period {
+  color: #9ca3af;
+}
+
+html.dark-mode .spending-chart-legend {
+  border-top-color: #262d37;
+}
+
+html.dark-mode .legend-category {
+  color: #e8e8e8 !important;
+  font-weight: 600;
+}
+
+html.dark-mode .legend-amount {
+  color: #4ac992 !important;
+  font-weight: 700;
+}
+
+html.dark-mode .chart-bar-label {
+  color: #e8e8e8 !important;
+  font-weight: 600;
+}
+
+html.dark-mode .chart-bar-amount {
+  color: #4ac992 !important;
+  font-weight: 700;
+}
+
+html.dark-mode svg {
+  color: #9ca3af;
+}
+
+html.dark-mode .bottom-nav {
+  background-color: #161b22;
+  border-top-color: #262d37;
+}
+
+html.dark-mode .nav-link {
+  color: #6b7280;
+}
+
+html.dark-mode .nav-link:hover {
+  color: var(--brand-800);
+}
+
+html.dark-mode .page-greeting-title {
+  color: #e8e8e8;
+}
+
+html.dark-mode .page-greeting-sub {
+  color: #9ca3af;
+}
+
+html.dark-mode .budget-amount {
+  color: #4ac992;
+}
+
+html.dark-mode .eyebrow {
+  background-color: rgba(61, 184, 129, 0.2);
+}
+
+/* Sidebar brand wrapper with toggle button */
+.app-sidebar > div:first-child {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 0.6rem;
+}
+
+.app-sidebar > div:first-child .sidebar-brand {
+  padding: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+  flex: 1;
+  min-width: 0;
+}
+
+.dark-mode-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  color: #1f6b46;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+}
+
+.dark-mode-toggle:hover {
+  color: #2b8259;
+  background-color: #f1f5f9;
+}
+
+.dark-mode-toggle svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.dark-mode-toggle-mobile {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  color: #709bb4;
+  transition: color 0.2s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.dark-mode-toggle-mobile:hover {
+  color: #1f6b46;
+}
+
+.dark-mode-toggle-mobile .nav-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.dark-mode-toggle-mobile .nav-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+html.dark-mode .dark-mode-toggle {
+  color: var(--brand-800);
+}
+
+html.dark-mode .dark-mode-toggle:hover {
+  color: var(--brand-700);
+  background-color: #262d37;
+}
+
+html.dark-mode .dark-mode-toggle-mobile {
+  color: #6b7280;
+}
+
+html.dark-mode .dark-mode-toggle-mobile:hover {
+  color: var(--brand-800);
+}
+
+html.dark-mode .app-sidebar > div:first-child {
+  border-bottom-color: #262d37;
+}
+
+html.dark-mode .eyebrow {
+  background-color: rgba(61, 184, 129, 0.2);
+  color: var(--brand-700);
+}
+
+/* Quick-add button and category styling */
+html.dark-mode .quick-add {
+  color: #0f172a !important;
+}
+
+html.dark-mode .quick-add * {
+  color: #0f172a !important;
+}
+
+html.dark-mode .quick-add .text-slate-500 {
+  color: #1f2937 !important;
+}
+
+html.dark-mode .quick-add .text-xs {
+  color: #1f2937 !important;
+}
+
+/* Timestamps and date labels */
+html.dark-mode .timestamp,
+html.dark-mode [class*="time"] {
+  color: #9ca3af !important;
+}
+
+html.dark-mode .text-muted,
+html.dark-mode .text-secondary {
+  color: #b0b0b0 !important;
+}
+
+/* Expense item text styling */
+html.dark-mode .expense-item {
+  border-color: #262d37;
+  color: #e8e8e8;
+}
+
+html.dark-mode .expense-item .text-sm {
+  color: #9ca3af;
+}
+
+html.dark-mode .expense-item .text-xs {
+  color: #6b7280;
+}
+
+/* Modal and form inputs */
+html.dark-mode .modal-sheet {
+  background-color: var(--card);
+  color: #e8e8e8;
+}
+
+html.dark-mode .label {
+  color: #e8e8e8;
+  font-weight: 600;
+}
+
+html.dark-mode .field-error {
+  color: #fca5a5;
+  font-size: 0.875rem;
+}
+
+html.dark-mode .input::placeholder {
+  color: #5a6068;
+}
+
+/* Budget card text */
+html.dark-mode .budget-card {
+  background: linear-gradient(135deg, rgba(61, 184, 129, 0.1), rgba(74, 201, 146, 0.05));
+}
+
+html.dark-mode .budget-card .text-sm {
+  color: #a3d9bc;
+}
+
+html.dark-mode .budget-card .budget-amount {
+  color: #4ac992;
+}
+
+html.dark-mode .budget-card .budget-progress-bar {
+  background-color: rgba(61, 184, 129, 0.4);
+}
