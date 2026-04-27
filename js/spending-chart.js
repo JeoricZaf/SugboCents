@@ -112,6 +112,9 @@
     var maxAmount = Math.max(maxAmount, 1);
 
     var isMobile = window.innerWidth < 1024;
+    var isDarkMode = document.documentElement.classList.contains('dark-mode');
+    var categoryColor = isDarkMode ? '#e8e8e8' : '#0f172a';
+    var amountColor = isDarkMode ? '#4ac992' : '#1f6b46';
     var chartHtml = '<div class="spending-chart-canvas-wrapper" data-layout="' + (isMobile ? 'vertical' : 'horizontal') + '">';
 
     if (isMobile) {
@@ -157,7 +160,7 @@
           line1 = categoryText;
         }
         
-        chartHtml += '<text x="' + (xPos + 18) + '" y="250" font-weight="600" text-anchor="middle" fill="#0f172a" style="font-size: ' + categoryFontSize + ';">';
+        chartHtml += '<text x="' + (xPos + 18) + '" y="250" font-weight="600" text-anchor="middle" fill="' + categoryColor + '" style="font-size: ' + categoryFontSize + ';">';
         chartHtml += line1;
         if (line2) {
           chartHtml += '<tspan x="' + (xPos + 18) + '" dy="10">' + line2 + '</tspan>';
@@ -166,7 +169,7 @@
 
         // Amount label on bar
         if (barHeight > 25) {
-          chartHtml += '<text x="' + (xPos + 18) + '" y="' + (barY + barHeight / 2 + 3) + '" font-weight="700" text-anchor="middle" fill="#1f6b46" style="font-size: ' + verticalAmountFontSize + ';">';
+          chartHtml += '<text x="' + (xPos + 18) + '" y="' + (barY + barHeight / 2 + 3) + '" font-weight="700" text-anchor="middle" fill="' + amountColor + '" style="font-size: ' + verticalAmountFontSize + ';">';
           chartHtml += formatPhp(amount);
           chartHtml += '</text>';
         }
@@ -187,7 +190,7 @@
         var color = CATEGORY_COLORS[cat] || DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
 
         // Category label (left)
-        chartHtml += '<text x="5" y="' + (yPos + 13) + '" font-weight="600" fill="#0f172a" style="font-size: 8px;">';
+        chartHtml += '<text x="5" y="' + (yPos + 13) + '" font-weight="600" fill="' + categoryColor + '" style="font-size: 8px;">';
         chartHtml += escapeHtml(cat.substring(0, 20));
         chartHtml += '</text>';
 
@@ -196,7 +199,7 @@
 
         // Amount label on bar
         if (barWidth > 40) {
-          chartHtml += '<text x="' + (110 + barWidth / 2) + '" y="' + (yPos + 13) + '" font-weight="700" text-anchor="middle" fill="#1f6b46" style="font-size: 7px;">';
+          chartHtml += '<text x="' + (110 + barWidth / 2) + '" y="' + (yPos + 13) + '" font-weight="700" text-anchor="middle" fill="' + amountColor + '" style="font-size: 7px;">';
           chartHtml += formatPhp(amount);
           chartHtml += '</text>';
         }
