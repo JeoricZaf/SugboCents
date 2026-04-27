@@ -646,9 +646,7 @@
     grid.innerHTML = html;
   }
 
-  // ── category statistics widgets ──────────────────────────
-
-
+  // ── settings page ────────────────────────────────────────
   function initSettingsPage() {
     if (!window.StorageAPI) {
       return;
