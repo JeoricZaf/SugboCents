@@ -214,6 +214,7 @@
 
         updateBudgetCard();
         renderRecentExpenses();
+        if (window.SpendingChart) { window.SpendingChart.update(); }
 
         // brief visual feedback: pulse the button
         button.classList.add("qa-pulse");
@@ -472,6 +473,7 @@
       descInput.value = "";
       updateBudgetCard();
       renderRecentExpenses();
+      if (window.SpendingChart) { window.SpendingChart.update(); }
 
       // brief visual confirmation on the button
       logBtn.textContent = "\u2713 Logged";
@@ -504,6 +506,7 @@
     // Optimistically hide from list
     updateBudgetCard();
     renderRecentExpenses();
+    if (window.SpendingChart) { window.SpendingChart.update(); }
 
     var toast   = document.getElementById("undoToast");
     var undoBtn = document.getElementById("undoToastBtn");
@@ -533,6 +536,7 @@
     if (toast) { toast.classList.add("hidden"); }
     updateBudgetCard();
     renderRecentExpenses();
+    if (window.SpendingChart) { window.SpendingChart.update(); }
   }
 
   function cancelDelete() {
@@ -544,6 +548,7 @@
     if (toast) { toast.classList.add("hidden"); }
     updateBudgetCard();
     renderRecentExpenses();
+    if (window.SpendingChart) { window.SpendingChart.update(); }
   }
 
   // ── settings page ────────────────────────────────────────

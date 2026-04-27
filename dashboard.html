@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/spending-chart.css" />
 </head>
 <body data-page="dashboard" data-protected="true" class="bg-mist min-h-screen antialiased">
 
@@ -140,6 +141,21 @@
       <ul id="recentExpenseList" class="card-panel divide-y divide-slate-100"></ul>
       <p id="emptyExpenseState" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses yet. Log one above, or use Quick add for recurring costs.</p>
     </section>
+
+    <!-- spending chart component -->
+    <section class="spending-chart-section" id="spendingChartSection">
+      <div class="spending-chart-container">
+        <div class="spending-chart-header">
+          <div>
+            <h2 class="spending-chart-title">Spending by Category</h2>
+            <p class="spending-chart-period" id="chartPeriod">This week</p>
+          </div>
+        </div>
+        <div id="spendingChartContainer" class="spending-chart-content">
+          <!-- Chart renders here -->
+        </div>
+      </div>
+    </section>
   </main>
   </div><!-- /app-main -->
   </div><!-- /app-layout -->
@@ -203,5 +219,6 @@
   <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/spending-chart.js"></script>
 </body>
 </html>
