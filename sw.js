@@ -1,4 +1,4 @@
-const CACHE_NAME = "sugbocents-shell-v31";
+const CACHE_NAME = "sugbocents-shell-v33";
 const SHELL_FILES = [
   "./",
   "index.html",
@@ -12,6 +12,9 @@ const SHELL_FILES = [
   "settings.html",
   "css/style.css",
   "css/landing.css",
+  "css/spending-chart.css",
+  "css/mascot.css",
+  "css/tigom.css",
   "js/firebase-init.js",
   "js/firebase-auth-service.js",
   "js/firestore-service.js",
@@ -19,6 +22,11 @@ const SHELL_FILES = [
   "js/storage.js",
   "js/auth.js",
   "js/dashboard.js",
+  "js/activity.js",
+  "js/spending-chart.js",
+  "js/mascot.js",
+  "js/tigom.js",
+  "js/settings.js",
   "js/landing.js",
   "js/index-redirect.js",
   "manifest.json",

@@ -3,13 +3,14 @@
 > Purpose: Give Copilot a clear, consistent description of what we are building, the app structure, and the rules/constraints to follow when generating code.
 
 ## 0) Key Decisions / Constraints (Read first)
-- **Frontend-first:** This project should be implementable as **frontend-only**.
+- **Frontend-first for Sprint 1–2:** The core app must run by opening HTML files in a browser with no server required.
 - **Tech choice:** Use **Vanilla HTML, CSS, and JavaScript**. Tailwind CSS via CDN is allowed for styling.
-- **NO Frameworks & NO Node.js:** Do NOT use React, Vue, Angular, Node.js, Express, or a backend database. The app must run simply by opening the HTML files in a browser.
+- **No UI frameworks:** Do NOT use React, Vue, or Angular. Node.js/Express is allowed **only** as a thin backend for Sprint 3 AI and email features — the main app shell must NOT depend on a running server.
+- **Backend scope (Sprint 3 only):** A minimal backend is permitted for: sending emails (e.g. via Nodemailer / a small Express endpoint) and proxying AI API calls (to keep API keys server-side). All other features remain frontend-only.
 - **Major features must be separate pages/routes:** Do **not** build a single-page HTML app with sections that are just hidden/shown. Use real, separate HTML files (e.g., `login.html`, `dashboard.html`) for major features.
 - **Data storage (The "storage.js" rule):** Prefer local persistence (`localStorage`). However, UI button clicks must NEVER call `localStorage` directly. All data saving/loading MUST be routed through a dedicated `js/storage.js` file to allow easy migration to a real backend in the future.
 - **Mobile PWA is required:** Implement PWA accurately (manifest + icons + installability).
-- **AI/email safety:** AI and email features must have fallback behavior, but **do not implement AI/email yet** (Sprint 3).
+- **AI/email safety:** AI and email features must have fallback behavior if the backend/API is unavailable. Do not implement AI/email until Sprint 3. The backend for these features should be a separate, optional service — the app must still load and function without it.
 
 ## 1) Important: Current Sprint Focus (Sprint 1 only)
 We are currently working on **Sprint 1**. When generating code, **focus only on Sprint 1 scope** and avoid building Sprint 2–3 features early.
@@ -26,7 +27,7 @@ We are currently working on **Sprint 1**. When generating code, **focus only on 
 - Mascot/Health Bar (Sprint 2)
 - Tigom Goals (Sprint 2)
 - Streaks/Settings/Weekly reset (Sprint 2)
-- AI Recommendations + AI Wrapped Email (Sprint 3)
+- AI Recommendations + AI Wrapped Email (Sprint 3 — may use a thin Node.js/Express backend for email sending and AI API proxying)
 
 ## 2) Sprint 1 Master Task Assignments (Source of truth)
 Use this table as the authoritative Sprint 1 plan:

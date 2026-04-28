@@ -1,0 +1,403 @@
+/* ── Mascot floating widget ──────────────────────────────── */
+
+.mascot-fab {
+  position: fixed;
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+  right: 1.1rem;
+  z-index: 40;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2b8259 0%, #1f6b46 100%);
+  box-shadow: 0 8px 20px rgba(31, 107, 70, 0.38);
+  border: none;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  transition: box-shadow 200ms ease, transform 200ms ease;
+  touch-action: none;
+  user-select: none;
+}
+
+.mascot-fab:active {
+  cursor: grabbing;
+  box-shadow: 0 12px 28px rgba(31, 107, 70, 0.45);
+  transform: scale(1.06);
+}
+
+.mascot-fab.mascot-happy   { background: linear-gradient(135deg, #22c55e 0%, #1f6b46 100%); }
+.mascot-fab.mascot-neutral { background: linear-gradient(135deg, #2b8259 0%, #1f6b46 100%); }
+.mascot-fab.mascot-worried { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+.mascot-fab.mascot-alarmed { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); }
+
+/* pulse ring when mascot wants attention */
+.mascot-fab.mascot-alarmed::after {
+  content: "";
+  position: absolute;
+  inset: -0.35rem;
+  border-radius: 999px;
+  border: 2px solid #ef4444;
+  animation: mascot-pulse 1.2s ease-out infinite;
+  pointer-events: none;
+}
+
+/* Styling for the image inside the floating widget */
+.mascot-fab-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Keeps the image proportions from squishing */
+  pointer-events: none; /* VERY IMPORTANT: Prevents the image from breaking your dragging logic */
+  user-select: none;
+}
+
+/* Styling for the image in the top-left of the chatbox */
+img.mascot-avatar {
+  width: 40px; /* Adjust this to match your header size */
+  height: 40px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes mascot-pulse {
+  0%   { opacity: 0.8; transform: scale(1); }
+  100% { opacity: 0;   transform: scale(1.6); }
+}
+
+/* bounce animation on open */
+.mascot-fab.mascot-bounce {
+  animation: mascot-bounce 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes mascot-bounce {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.18); }
+  60%  { transform: scale(0.93); }
+  80%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* ── Chatbox ─────────────────────────────────────────────── */
+
+.mascot-chatbox {
+  position: fixed;
+  bottom: calc(9.2rem + env(safe-area-inset-bottom));
+  right: 1.1rem;
+  width: min(22rem, calc(100vw - 2rem));
+  background: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+  border: 1px solid rgba(31, 107, 70, 0.12);
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform-origin: bottom right;
+  animation: chatbox-open 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mascot-chatbox.hidden {
+  display: none;
+}
+
+@keyframes chatbox-open {
+  from { opacity: 0; transform: scale(0.82) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.mascot-chatbox-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, #2b8259 0%, #1f6b46 100%);
+  color: #ffffff;
+  cursor: grab; /* Shows the open hand icon */
+}
+  
+  .mascot-chatbox-header:active {
+    cursor: grabbing; /* Shows the closed fist icon when dragging */
+  }
+
+.mascot-chatbox-header .mascot-avatar {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.mascot-chatbox-header .mascot-name {
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.mascot-chatbox-header .mascot-status {
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
+
+.mascot-chatbox-close {
+  
+  margin-left: auto;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  border-radius: 999px;
+  width: 1.8rem;
+  height: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 150ms;
+}
+
+.mascot-chatbox-close:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+.mascot-chatbox-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 14rem;
+  min-height: 6rem;
+}
+
+.mascot-msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+}
+
+.mascot-msg.mascot-msg-bot {
+  align-self: flex-start;
+}
+
+.mascot-msg.mascot-msg-user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.mascot-bubble {
+  max-width: 80%;
+  padding: 0.55rem 0.8rem;
+  border-radius: 1rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.mascot-msg-bot .mascot-bubble {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-bottom-left-radius: 0.25rem;
+}
+
+.mascot-msg-user .mascot-bubble {
+  background: linear-gradient(135deg, #2b8259 0%, #1f6b46 100%);
+  color: #ffffff;
+  border-bottom-right-radius: 0.25rem;
+}
+
+.mascot-chatbox-footer {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.mascot-input {
+  flex: 1;
+  border: 1px solid #dbe2ea;
+  border-radius: 0.8rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
+  background: #f8fafb;
+  color: #0f172a;
+  transition: border-color 180ms;
+}
+
+.mascot-input:focus {
+  outline: none;
+  border-color: #5da77f;
+  box-shadow: 0 0 0 3px rgba(31, 107, 70, 0.14);
+}
+
+.mascot-send-btn {
+  background: linear-gradient(135deg, #2b8259 0%, #1f6b46 100%);
+  color: #fff;
+  border: none;
+  border-radius: 0.8rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 150ms;
+  flex-shrink: 0;
+}
+
+.mascot-send-btn:hover {
+  opacity: 0.88;
+}
+
+/* ── Health bar (mascot mood indicator) ─────────────────── */
+
+.mascot-health-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 1rem;
+  background: #fff;
+  
+}
+
+.mascot-health-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.mascot-health-track {
+  flex: 1;
+  height: 1rem;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.mascot-health-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 600ms ease, background-color 400ms ease;
+  background: #22c55e;
+}
+
+.mascot-health-fill.health-warn    { background: #f59e0b; }
+.mascot-health-fill.health-danger  { background: #ef4444; }
+
+/* dark mode overrides */
+.dark-mode .mascot-chatbox {
+  background: #1e293b;
+  border-color: rgba(255,255,255,0.1);
+}
+
+.dark-mode .mascot-chatbox-footer {
+  border-top-color: rgba(255,255,255,0.08);
+}
+
+.dark-mode .mascot-msg-bot .mascot-bubble {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.dark-mode .mascot-input {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.dark-mode .mascot-health-bar-wrap {
+  background: #1e293b;
+}
+
+.dark-mode .mascot-health-track {
+  background: #334155;
+}
+
+
+
+/* DASHBOARD ANIMATION */
+
+/* Container for the full-body mascot */
+.dashboard-mascot-wrapper {
+  position: relative;
+  display: inline-block;
+  text-align: center;
+  
+  
+}
+
+/* The Mascot Image */
+#dashboardMascotImg {
+  height: 180px; /* Adjust this to make him bigger or smaller */
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+  user-select: none;
+  border: 5px solid rgb(42, 109, 20);
+  border-radius: 20px;
+  overflow:hidden;
+  padding: 5px;
+}
+
+#dashboardMascotImg:hover {
+  transform: scale(1.05); /* Slight zoom when hovering to show he's clickable */
+}
+
+/* The Speech Bubble - Moved to the RIGHT */
+.mascot-speech-bubble {
+  position: absolute;
+  top: 20%;             /* Vertically center relative to mascot */
+  left: 100%;           /* Place it directly to the right of the mascot */
+  transform: translateY(-50%) translateX(-10px); /* Start slightly left for slide-out effect */
+  margin-left: 15px;    /* Space so the bubble doesn't touch the image */
+  
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  
+  /* Use max-content so it hugs the text, but wrap to a new line if it gets too long */
+  width: max-content;
+  max-width: 220px;     
+  
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+
+/* The inner white triangle pointing LEFT towards the mascot */
+.mascot-speech-bubble::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 100%;          /* Stick it to the left edge of the bubble */
+  margin-top: -8px;     /* Vertically center the 8px triangle */
+  border-width: 8px;
+  border-style: solid;
+  border-color: transparent white transparent transparent; /* Pointing Left */
+}
+
+/* The outer grey border for the triangle */
+.mascot-speech-bubble::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 100%;          
+  margin-top: -10px;    
+  border-width: 10px;
+  border-style: solid;
+  border-color: transparent #e0e0e0 transparent transparent; /* Pointing Left */
+  z-index: -1;
+}
+
+/* The class added by JavaScript to show the bubble */
+.mascot-speech-bubble.show-bubble {
+  opacity: 1;
+  visibility: visible;
+  /* Slide gracefully into its final position */
+  transform: translateY(-50%) translateX(0); 
+}

@@ -117,30 +117,6 @@
     }
   }
 
-  function renderStreakCard() {
-    var countEl = document.getElementById("streakCount");
-    var descEl = document.getElementById("streakDescription");
-    if (!countEl) {
-      return;
-    }
-
-    var streakCount = 0;
-    if (window.StorageAPI) {
-      if (typeof window.StorageAPI.getSaveGoalStreak === "function") {
-        streakCount = Number(window.StorageAPI.getSaveGoalStreak() || 0);
-      } else if (typeof window.StorageAPI.getGoalStreak === "function") {
-        streakCount = Number(window.StorageAPI.getGoalStreak() || 0);
-      }
-    }
-
-    countEl.textContent = String(streakCount);
-    if (descEl) {
-      descEl.textContent = streakCount > 0
-        ? "You've hit your save goals " + streakCount + " time" + (streakCount !== 1 ? "s" : "") + "."
-        : "This will track completed save-goal milestones once enabled.";
-    }
-  }
-
   // ── quick-add grid ───────────────────────────────────────
   function renderQuickAddButtons() {
     var grid = document.getElementById("quickAddGrid");
@@ -365,7 +341,7 @@
       return;
     }
 
-    var expenses = window.StorageAPI.getExpenses(20);
+    var expenses = window.StorageAPI.getExpenses(5);
     // Optimistically hide any pending-delete item
     if (pendingDelete) {
       expenses = expenses.filter(function (e) { return e.id !== pendingDelete.id; });
@@ -427,18 +403,55 @@
 
   // ── log one-time expense ─────────────────────────────────
   function initLogExpense() {
+    var pickerEl  = document.getElementById("logCategoryPicker");
     var amtInput  = document.getElementById("logExpenseAmount");
-    var descInput = document.getElementById("logExpenseDesc");
+    var noteInput = document.getElementById("logExpenseNote");
     var logBtn    = document.getElementById("logExpenseBtn");
     var errEl     = document.getElementById("logExpenseError");
 
-    if (!logBtn) {
+    if (!logBtn || !pickerEl) {
       return;
     }
 
+    var selectedCategory = "food";
+
+    function updateNoteLabel() {
+      if (!noteInput) { return; }
+      if (selectedCategory === "others") {
+        noteInput.placeholder = "Description (required)";
+        noteInput.setAttribute("aria-required", "true");
+      } else {
+        noteInput.placeholder = "Note (optional)";
+        noteInput.removeAttribute("aria-required");
+      }
+    }
+
+    function renderCategoryPicker() {
+      if (!window.StorageAPI || !window.StorageAPI.getExpenseCategories) { return; }
+      var cats = window.StorageAPI.getExpenseCategories();
+      pickerEl.innerHTML = "";
+      cats.forEach(function (cat) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "log-cat-chip" + (cat.id === selectedCategory ? " active" : "");
+        btn.setAttribute("aria-pressed", cat.id === selectedCategory ? "true" : "false");
+        btn.setAttribute("data-category", cat.id);
+        btn.textContent = cat.label;
+        btn.addEventListener("click", function () {
+          selectedCategory = cat.id;
+          renderCategoryPicker();
+          updateNoteLabel();
+        });
+        pickerEl.appendChild(btn);
+      });
+    }
+
+    renderCategoryPicker();
+    updateNoteLabel();
+
     logBtn.addEventListener("click", function () {
       var amt  = Number(amtInput.value);
-      var desc = (descInput.value || "").trim();
+      var note = noteInput ? (noteInput.value || "").trim() : "";
 
       errEl.textContent = "";
       errEl.classList.add("hidden");
@@ -450,17 +463,17 @@
         return;
       }
 
-      if (!desc) {
-        errEl.textContent = "Enter a description.";
+      if (selectedCategory === "others" && !note) {
+        errEl.textContent = "A description is required for Others expenses.";
         errEl.classList.remove("hidden");
-        descInput.focus();
+        if (noteInput) { noteInput.focus(); }
         return;
       }
 
       var result = window.StorageAPI.addExpense({
         amount: amt,
-        category: desc,
-        note: "One-time"
+        category: selectedCategory,
+        note: note
       });
 
       if (!result.ok) {
@@ -470,7 +483,7 @@
       }
 
       amtInput.value  = "";
-      descInput.value = "";
+      if (noteInput) { noteInput.value = ""; }
       updateBudgetCard();
       renderRecentExpenses();
       if (window.SpendingChart) { window.SpendingChart.update(); }
@@ -484,8 +497,9 @@
       }, 1200);
     });
 
-    // Allow Enter key in either field to submit
-    [amtInput, descInput].forEach(function (el) {
+    // Allow Enter key in amount/note fields to submit
+    [amtInput, noteInput].forEach(function (el) {
+      if (!el) { return; }
       el.addEventListener("keydown", function (e) {
         if (e.key === "Enter") {
           logBtn.click();
@@ -549,6 +563,120 @@
     updateBudgetCard();
     renderRecentExpenses();
     if (window.SpendingChart) { window.SpendingChart.update(); }
+  }
+
+  // ── streak card ─────────────────────────────────────────
+  function renderStreakCard() {
+    var countEl = document.getElementById("streakCount");
+    var descEl = document.getElementById("streakDescription");
+    if (!countEl) {
+      return;
+    }
+
+    var streakCount = 0;
+    if (window.StorageAPI) {
+      if (typeof window.StorageAPI.getSaveGoalStreak === "function") {
+        streakCount = Number(window.StorageAPI.getSaveGoalStreak() || 0);
+      } else if (typeof window.StorageAPI.getGoalStreak === "function") {
+        streakCount = Number(window.StorageAPI.getGoalStreak() || 0);
+      }
+    }
+
+    countEl.textContent = String(streakCount);
+    if (descEl) {
+      descEl.textContent = streakCount > 0
+        ? "You've hit your save goals " + streakCount + " time" + (streakCount !== 1 ? "s" : "") + "."
+        : "This will track completed save-goal milestones once enabled.";
+    }
+  }
+
+  // ── category stats ───────────────────────────────────────
+  var CATEGORY_STAT_COLORS = {
+    "Jeep":             { bg: "#d8efe2", text: "#14532d", emoji: "\uD83D\uDE0C" },
+    "Food":             { bg: "#ffedd5", text: "#7c2d12", emoji: "\uD83C\uDF5C" },
+    "Load":             { bg: "#dbeafe", text: "#1e3a5f", emoji: "\uD83D\uDCF1" },
+    "Laundry":          { bg: "#fee2e2", text: "#7f1d1d", emoji: "\uD83E\uDDFA" },
+    "School Supplies":  { bg: "#f3e8ff", text: "#4c1d95", emoji: "\uD83D\uDCDA" },
+    "Coffee":           { bg: "#fef9c3", text: "#713f12", emoji: "\u2615" },
+    "Other":            { bg: "#e2e8f0", text: "#1e293b", emoji: "\uD83D\uDCB8" }
+  };
+
+  var STAT_FALLBACK_COLORS = [
+    { bg: "#d8efe2", text: "#14532d" },
+    { bg: "#ffedd5", text: "#7c2d12" },
+    { bg: "#dbeafe", text: "#1e3a5f" },
+    { bg: "#fee2e2", text: "#7f1d1d" },
+    { bg: "#f3e8ff", text: "#4c1d95" }
+  ];
+
+  function renderCategoryStats() {
+    var grid = document.getElementById("categoryStatsGrid");
+    var empty = document.getElementById("categoryStatsEmpty");
+    if (!grid || !empty) { return; }
+
+    if (!window.StorageAPI) {
+      grid.innerHTML = "";
+      empty.classList.remove("hidden");
+      return;
+    }
+
+    var user = window.StorageAPI.getCurrentUser();
+    if (!user || !Array.isArray(user.expenses) || user.expenses.length === 0) {
+      grid.innerHTML = "";
+      empty.classList.remove("hidden");
+      return;
+    }
+
+    var now = new Date();
+    var dayOfWeek = now.getDay();
+    var weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+    weekStart.setHours(0, 0, 0, 0);
+    var weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+
+    var totals = {};
+    user.expenses.forEach(function (exp) {
+      var d = new Date(exp.timestamp);
+      if (d >= weekStart && d < weekEnd) {
+        var cat = exp.category || "Other";
+        totals[cat] = (totals[cat] || 0) + (Number(exp.amount) || 0);
+      }
+    });
+
+    var categories = Object.keys(totals).sort(function (a, b) {
+      return totals[b] - totals[a];
+    });
+
+    if (categories.length === 0) {
+      grid.innerHTML = "";
+      empty.classList.remove("hidden");
+      return;
+    }
+
+    empty.classList.add("hidden");
+
+    var html = "";
+    var totalSpent = categories.reduce(function (s, c) { return s + totals[c]; }, 0);
+
+    categories.forEach(function (cat, idx) {
+      var amount = totals[cat];
+      var pct = totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0;
+      var colorInfo = CATEGORY_STAT_COLORS[cat] || STAT_FALLBACK_COLORS[idx % STAT_FALLBACK_COLORS.length];
+      var emoji = (CATEGORY_STAT_COLORS[cat] && CATEGORY_STAT_COLORS[cat].emoji) ? CATEGORY_STAT_COLORS[cat].emoji : "\uD83D\uDCB8";
+
+      html +=
+        '<div class="card-panel p-3" style="background:' + colorInfo.bg + '; border-radius: 1.1rem;">' +
+          '<div class="flex items-center gap-2 mb-1.5">' +
+            '<span style="font-size:1.2rem;">' + emoji + '</span>' +
+            '<p class="text-xs font-bold" style="color:' + colorInfo.text + '; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">' + escapeHtml(cat) + '</p>' +
+          '</div>' +
+          '<p class="text-base font-extrabold" style="color:' + colorInfo.text + ';">' + formatPhp(amount) + '</p>' +
+          '<p class="text-xs mt-0.5" style="color:' + colorInfo.text + '; opacity:0.7;">' + pct + '% of week</p>' +
+        '</div>';
+    });
+
+    grid.innerHTML = html;
   }
 
   // ── settings page ────────────────────────────────────────
@@ -657,6 +785,7 @@
       updateBudgetCard();
       renderStreakCard();
       renderRecentExpenses();
+      renderCategoryStats();
       initModal();
       initLogExpense();
 
@@ -666,7 +795,9 @@
         renderStreakCard();
         renderRecentExpenses();
         renderQuickAddButtons();
-      }, { once: true });
+        renderCategoryStats();
+        if (window.SpendingChart) { window.SpendingChart.update(); }
+      });
 
       var addNewBtn = document.getElementById("addNewQaBtn");
       if (addNewBtn) {

@@ -485,7 +485,7 @@ body {
 }
 
 .budget-progress-track {
-  height: 0.55rem;
+  height: 0.85rem;
   border-radius: 999px;
   background: rgba(255,255,255,0.18);
   overflow: hidden;
@@ -495,7 +495,7 @@ body {
   height: 100%;
   border-radius: 999px;
   transition: width 500ms ease, background-color 400ms ease;
-  background: #86efac; /* green 0-60% */
+  background: rgba(255,255,255,0.85); /* white — clearly visible on dark green */
 }
 
 .budget-progress-bar.pct-warn {
@@ -766,9 +766,9 @@ body.edit-mode .edit-mode-bar {
   background: rgba(15, 23, 42, 0.45);
   z-index: 50;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding: 0 0 calc(1rem + env(safe-area-inset-bottom));
+  padding: 1rem;
 }
 
 .modal-backdrop.hidden {
@@ -777,10 +777,10 @@ body.edit-mode .edit-mode-bar {
 
 .modal-sheet {
   background: #fff;
-  border-radius: 1.4rem 1.4rem 0.8rem 0.8rem;
+  border-radius: 1.4rem;
   padding: 1.5rem 1.25rem 1.25rem;
   width: min(480px, 100%);
-  box-shadow: 0 -8px 40px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 8px 40px rgba(15, 23, 42, 0.2);
 }
 
 .modal-title {
@@ -935,9 +935,11 @@ body.edit-mode .qa-add-new-btn {
   font-size: 0.88rem;
   font-weight: 600;
   letter-spacing: 0.005em;
-  transition: background 140ms ease, color 140ms ease;
+  transition: background 140ms ease, color 140ms ease,
+              gap 220ms ease, border-left-color 220ms ease;
   border-left: 3px solid transparent;
   margin: 0 0.5rem;
+  position: relative;
 }
 
 .sidebar-nav-link:hover {
@@ -957,14 +959,29 @@ body.edit-mode .qa-add-new-btn {
   height: 1.15rem;
 }
 
+/* sidebar header row — wraps brand + toggle button */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 0.75rem 0.9rem 1.4rem;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 0.6rem;
+  flex-shrink: 0;
+  gap: 0.4rem;
+  transition: padding 220ms ease;
+}
+
 .sidebar-brand {
-  padding: 1.4rem 1.4rem 0.9rem;
   display: flex;
   align-items: center;
   gap: 0.55rem;
   text-decoration: none;
-  border-bottom: 1px solid #f1f5f9;
-  margin-bottom: 0.6rem;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  max-width: 260px;
+  transition: opacity 160ms ease, max-width 220ms ease;
 }
 
 .sidebar-brand-mark {
@@ -997,7 +1014,7 @@ body.edit-mode .qa-add-new-btn {
   flex-direction: column;
   gap: 0.2rem;
   padding: 0 0 0.5rem;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .sidebar-user {
@@ -1008,8 +1025,9 @@ body.edit-mode .qa-add-new-btn {
   gap: 0.65rem;
   text-decoration: none;
   cursor: pointer;
-  transition: background 140ms ease;
+  transition: background 140ms ease, padding-left 220ms ease;
   border-radius: 0;
+  position: relative;
 }
 
 .sidebar-user:hover {
@@ -1049,7 +1067,9 @@ body.edit-mode .qa-add-new-btn {
 .sidebar-user-arrow {
   color: #cbd5e1;
   flex-shrink: 0;
-  margin-left: auto;
+  max-width: 24px;
+  overflow: hidden;
+  transition: opacity 160ms ease, max-width 220ms ease;
 }
 
 /* ── desktop breakpoint ── */
@@ -1064,6 +1084,7 @@ body.edit-mode .qa-add-new-btn {
     grid-template-areas: "sidebar main";
     height: 100vh;
     overflow: hidden;
+    transition: grid-template-columns 220ms ease;
   }
 
   .app-sidebar {
@@ -1078,6 +1099,7 @@ body.edit-mode .qa-add-new-btn {
     overflow: hidden;
     z-index: 30;
     box-shadow: 2px 0 8px rgba(15, 23, 42, 0.04);
+    transition: width 220ms ease, min-width 220ms ease;
   }
 
   .app-main {
@@ -1096,7 +1118,9 @@ body.edit-mode .qa-add-new-btn {
   .app-main > main,
   .app-main > .page-content {
     padding-bottom: 3rem;
-    max-width: none;
+    max-width: 960px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   /* More breathing room on desktop — away from top and sidebar */
@@ -1215,9 +1239,9 @@ body.edit-mode .qa-add-new-btn {
   border-radius: 999px;
   background: #e7f5ed;
   color: var(--brand-800);
-  font-size: 0.78rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  padding: 0.38rem 0.75rem;
+  padding: 0.55rem 1.25rem;
   cursor: pointer;
   transition: background 140ms ease;
 }
@@ -1289,8 +1313,16 @@ body.edit-mode .qa-add-new-btn {
 
 /* ── page greeting header ── */
 .page-greeting {
+  display: flex;
   margin-bottom: 1.75rem;
+  gap: 1rem;
 }
+  .greeting-text {
+    display:flex;
+    flex-direction: column;
+    align-items: flex-start;
+     gap: 0.25rem;
+  }
 
 .page-greeting-sub {
   font-size: 0.8rem;
@@ -1315,3 +1347,268 @@ body.edit-mode .qa-add-new-btn {
   }
 }
 
+/* ── progress label override ── */
+#progressLabel {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: rgba(255,255,255,0.95);
+}
+
+/* ── view all expenses link ── */
+.view-all-link {
+  display: inline-block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brand-800);
+  text-decoration: none;
+}
+
+.view-all-link:hover {
+  color: var(--brand-700);
+}
+
+/* ── activity page ── */
+.activity-date-group {
+  margin-bottom: 1.25rem;
+}
+
+.activity-date-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+  padding: 0 0.25rem 0.45rem;
+}
+
+.category-filter-bar {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+}
+
+.filter-chip {
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 999px;
+  padding: 0.28rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.filter-chip.active {
+  background: #e7f5ed;
+  color: var(--brand-800);
+  border-color: var(--brand-800);
+}
+
+/* ── sidebar toggle button ── */
+.sidebar-toggle-btn {
+  display: none; /* hidden on mobile; sidebar itself is hidden on mobile anyway */
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 0.35rem;
+  border-radius: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  transition: color 140ms ease, background 140ms ease;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  position: relative;
+}
+
+.sidebar-toggle-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.sidebar-toggle-btn svg {
+  /* mirror horizontally in collapsed state to show "expand" direction */
+  transition: transform 220ms ease;
+  flex-shrink: 0;
+}
+
+/* ── animated sidebar text elements ── */
+.nav-link-label,
+.sidebar-brand-name {
+  transition: opacity 160ms ease, max-width 220ms ease;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+}
+
+.sidebar-user-info {
+  max-width: 200px;
+  min-width: 0;
+  overflow: hidden;
+  transition: opacity 160ms ease, max-width 220ms ease;
+}
+
+@media (min-width: 1024px) {
+  .sidebar-toggle-btn {
+    display: flex;
+  }
+
+  /*
+   * Collapsed sidebar state.
+   * Driven by html.sidebar-collapsed (set synchronously in <head> via inline script)
+   * so the correct state is applied before first paint — no FOUC on navigation.
+   */
+  html.sidebar-collapsed .app-layout {
+    grid-template-columns: 64px 1fr;
+  }
+
+  html.sidebar-collapsed .app-sidebar {
+    width: 64px;
+    min-width: 64px;
+  }
+
+  /* Collapse the brand link smoothly — max-width drives the width animation */
+  html.sidebar-collapsed .sidebar-brand {
+    opacity: 0;
+    pointer-events: none;
+    max-width: 0;
+    flex: 0;
+  }
+
+  /* Center the toggle button in the 64px header when collapsed */
+  html.sidebar-collapsed .sidebar-header {
+    justify-content: center;
+    padding: 0.75rem 0;
+  }
+
+  /* Flip the panel icon to indicate "expand" direction */
+  html.sidebar-collapsed .sidebar-toggle-btn svg {
+    transform: scaleX(-1);
+  }
+
+  /* Fade out nav labels and collapse them so the icon centres correctly */
+  html.sidebar-collapsed .nav-link-label {
+    opacity: 0;
+    pointer-events: none;
+    max-width: 0;
+    overflow: hidden;
+    flex: 0;
+  }
+
+  /* Collapse user info and arrow so avatar centres smoothly */
+  html.sidebar-collapsed .sidebar-user-info {
+    opacity: 0;
+    pointer-events: none;
+    max-width: 0;
+  }
+
+  html.sidebar-collapsed .sidebar-user-arrow {
+    opacity: 0;
+    pointer-events: none;
+    max-width: 0;
+  }
+
+  /* Center nav links — keep same padding/margin so icon slot size is unchanged */
+  html.sidebar-collapsed .sidebar-nav-link {
+    justify-content: center;
+    gap: 0;
+    border-left-color: transparent;
+  }
+
+  /* Slide avatar to centre via padding-left — no justify-content/gap involved */
+  html.sidebar-collapsed .sidebar-user {
+    padding-left: 1rem;
+  }
+}
+
+/* ── Sidebar tooltip ──
+ * A single <div> appended to <body> by app.js, positioned with fixed coords
+ * from getBoundingClientRect() — completely outside sidebar overflow:hidden.
+ */
+.sidebar-tooltip {
+  position: fixed;
+  transform: translateY(-50%);
+  background: #1e293b;
+  color: #f8fafc;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 0.3rem 0.65rem;
+  border-radius: 0.45rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  z-index: 500;
+  letter-spacing: 0.02em;
+}
+
+.sidebar-tooltip.is-visible {
+  opacity: 1;
+}
+
+/* === Streak card === */
+.streak-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f7fcf7 100%);
+  border: 1px solid rgba(31, 107, 70, 0.1);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+  padding: 1.25rem 1.3rem;
+}
+
+.streak-card p {
+  margin: 0;
+}
+
+.streak-card .streak-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 8rem) 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.streak-card .streak-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 5rem;
+  padding: 1.25rem 1.3rem;
+  border-radius: 1.5rem;
+  background: radial-gradient(circle at top left, rgba(255, 221, 145, 0.65), rgba(220, 252, 231, 1));
+  color: #14532d;
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  box-shadow: 0 0 0 6px rgba(220, 252, 231, 0.24),
+              0 0 30px rgba(251, 146, 60, 0.22);
+  text-shadow: 0 0 10px rgba(251, 146, 60, 0.55);
+}
+
+.streak-card .streak-badge span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.streak-card .streak-badge::before {
+  content: "";
+}
+
+.streak-card #streakDescription {
+  color: #334155;
+}
+
+.streak-card #streakHint {
+  margin-top: 2rem;
+  color: #64748b;
+}
