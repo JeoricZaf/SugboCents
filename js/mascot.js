@@ -107,7 +107,7 @@
     chatbox.innerHTML =
       '<div class="mascot-chatbox-header">' +
         // --> ADDED: Use an <img> tag for the chatbox avatar
-        '<img class="mascot-avatar" id="mascotAvatarImg" src="' + stateObj.fullbody + '" alt="Sugbo" draggable="false" />' +
+        '<img class="mascot-avatar" id="mascotAvatarImg" src="' + stateObj.img + '" alt="Sugbo" draggable="false" />' +
         '<div>' +
           '<div class="mascot-name">Sugbo</div>' +
           '<div class="mascot-status" id="mascotStatusText">' + stateObj.label + '</div>' +
