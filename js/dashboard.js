@@ -403,18 +403,55 @@
 
   // ── log one-time expense ─────────────────────────────────
   function initLogExpense() {
+    var pickerEl  = document.getElementById("logCategoryPicker");
     var amtInput  = document.getElementById("logExpenseAmount");
-    var descInput = document.getElementById("logExpenseDesc");
+    var noteInput = document.getElementById("logExpenseNote");
     var logBtn    = document.getElementById("logExpenseBtn");
     var errEl     = document.getElementById("logExpenseError");
 
-    if (!logBtn) {
+    if (!logBtn || !pickerEl) {
       return;
     }
 
+    var selectedCategory = "food";
+
+    function updateNoteLabel() {
+      if (!noteInput) { return; }
+      if (selectedCategory === "others") {
+        noteInput.placeholder = "Description (required)";
+        noteInput.setAttribute("aria-required", "true");
+      } else {
+        noteInput.placeholder = "Note (optional)";
+        noteInput.removeAttribute("aria-required");
+      }
+    }
+
+    function renderCategoryPicker() {
+      if (!window.StorageAPI || !window.StorageAPI.getExpenseCategories) { return; }
+      var cats = window.StorageAPI.getExpenseCategories();
+      pickerEl.innerHTML = "";
+      cats.forEach(function (cat) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "log-cat-chip" + (cat.id === selectedCategory ? " active" : "");
+        btn.setAttribute("aria-pressed", cat.id === selectedCategory ? "true" : "false");
+        btn.setAttribute("data-category", cat.id);
+        btn.textContent = cat.label;
+        btn.addEventListener("click", function () {
+          selectedCategory = cat.id;
+          renderCategoryPicker();
+          updateNoteLabel();
+        });
+        pickerEl.appendChild(btn);
+      });
+    }
+
+    renderCategoryPicker();
+    updateNoteLabel();
+
     logBtn.addEventListener("click", function () {
       var amt  = Number(amtInput.value);
-      var desc = (descInput.value || "").trim();
+      var note = noteInput ? (noteInput.value || "").trim() : "";
 
       errEl.textContent = "";
       errEl.classList.add("hidden");
@@ -426,17 +463,17 @@
         return;
       }
 
-      if (!desc) {
-        errEl.textContent = "Enter a description.";
+      if (selectedCategory === "others" && !note) {
+        errEl.textContent = "A description is required for Others expenses.";
         errEl.classList.remove("hidden");
-        descInput.focus();
+        if (noteInput) { noteInput.focus(); }
         return;
       }
 
       var result = window.StorageAPI.addExpense({
         amount: amt,
-        category: desc,
-        note: "One-time"
+        category: selectedCategory,
+        note: note
       });
 
       if (!result.ok) {
@@ -446,7 +483,7 @@
       }
 
       amtInput.value  = "";
-      descInput.value = "";
+      if (noteInput) { noteInput.value = ""; }
       updateBudgetCard();
       renderRecentExpenses();
       if (window.SpendingChart) { window.SpendingChart.update(); }
@@ -460,8 +497,9 @@
       }, 1200);
     });
 
-    // Allow Enter key in either field to submit
-    [amtInput, descInput].forEach(function (el) {
+    // Allow Enter key in amount/note fields to submit
+    [amtInput, noteInput].forEach(function (el) {
+      if (!el) { return; }
       el.addEventListener("keydown", function (e) {
         if (e.key === "Enter") {
           logBtn.click();
