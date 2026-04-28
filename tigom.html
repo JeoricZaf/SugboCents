@@ -4,12 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#1f6b46" />
-  <title>SugboCents - Tigom</title>
+  <title>SugboCents - Goals</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/tigom.css" />
   <script>if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");</script>
@@ -38,19 +39,19 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         <span class="nav-link-label">Activity</span>
       </a>
-      <a href="stats.html" data-nav="stats" class="sidebar-nav-link" data-tooltip="Stats">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        <span class="nav-link-label">Stats</span>
+      <a href="stats.html" data-nav="stats" class="sidebar-nav-link" data-tooltip="Profile">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="nav-link-label">Profile</span>
       </a>
-      <a href="tigom.html" data-nav="tigom" class="sidebar-nav-link" data-tooltip="Tigom">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2z"/><path d="M2 9v1a2 2 0 0 0 2 2h1"/><circle cx="16" cy="11" r="0.5" fill="currentColor"/></svg>
-        <span class="nav-link-label">Tigom</span>
+      <a href="tigom.html" data-nav="tigom" class="sidebar-nav-link" data-tooltip="Goals">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        <span class="nav-link-label">Goals</span>
       </a>
     </nav>
     <a href="settings.html" class="sidebar-user" aria-label="Account settings">
       <div id="sidebarAvatar" class="sidebar-user-avatar">U</div>
       <div class="min-w-0 sidebar-user-info">
-        <div id="sidebarName" class="sidebar-user-name">Loadingâ€¦</div>
+        <div id="sidebarName" class="sidebar-user-name">Loading…</div>
         <div class="sidebar-user-sub">Account settings</div>
       </div>
       <svg class="sidebar-user-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
@@ -60,11 +61,21 @@
   <div class="app-main">
   <main class="pb-32 pt-6 px-4 max-w-lg mx-auto">
     <header class="mb-6">
-      <p class="eyebrow">Goals &amp; streaks</p>
-      <h1 class="mt-1 text-2xl font-extrabold text-ink">Tigom</h1>
+      <p class="eyebrow">Savings</p>
+      <h1 class="mt-1 text-2xl font-extrabold text-ink">Goals</h1>
+      <div class="xp-mini-bar mt-3" aria-label="Your progress">
+        <span class="xp-mini-level" id="xpMiniLevel">
+          <i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i>
+          Lv. 1
+        </span>
+        <div class="xp-mini-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="XP progress" id="xpMiniTrack">
+          <div class="xp-mini-fill" id="xpMiniFill" style="width:0%"></div>
+        </div>
+        <a href="stats.html" class="xp-mini-streak" id="xpMiniStreak" aria-label="View profile">
+          <i class="bi bi-fire" aria-hidden="true"></i> 0
+        </a>
+      </div>
     </header>
-
-    <!-- Summary stats strip -->
     <div class="grid grid-cols-3 gap-3 mb-6">
       <div class="card-panel p-3 text-center">
         <p class="text-2xl font-extrabold text-ink" id="statTotalGoals">0</p>
@@ -140,13 +151,13 @@
       <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <span class="nav-text">Activity</span>
     </a>
-    <a href="stats.html" data-nav="stats" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      <span class="nav-text">Stats</span>
-    </a>
     <a href="tigom.html" data-nav="tigom" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-      <span class="nav-text">Tigom</span>
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+      <span class="nav-text">Goals</span>
+    </a>
+    <a href="stats.html" data-nav="stats" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-text">Profile</span>
     </a>
     <a href="settings.html" data-nav="settings" class="nav-link">
       <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -176,6 +187,7 @@
   <script src="js/firestore-service.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/dark-mode.js"></script>
   <script src="js/tigom.js"></script>
 </body>
 </html>

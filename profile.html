@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1f6b46" />
+  <title>SugboCents - Profile</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css" />
+  <script>if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");</script>
+</head>
+<body data-page="profile" data-protected="true" class="bg-mist min-h-screen antialiased">
+  <div class="app-layout">
+    <aside class="app-sidebar" aria-label="Sidebar navigation">
+      <div class="sidebar-header">
+        <a href="dashboard.html" class="sidebar-brand" tabindex="-1" aria-hidden="true">
+          <span class="sidebar-brand-mark" aria-hidden="true">SC</span>
+          <span class="sidebar-brand-name">SugboCents</span>
+        </a>
+      </div>
+      <nav class="sidebar-nav-section" aria-label="Main navigation">
+        <a href="dashboard.html" class="sidebar-nav-link"><span class="nav-link-label">Dashboard</span></a>
+        <a href="activity.html" class="sidebar-nav-link"><span class="nav-link-label">Activity</span></a>
+        <a href="profile.html" class="sidebar-nav-link is-active"><span class="nav-link-label">Profile</span></a>
+        <a href="badges.html" class="sidebar-nav-link"><span class="nav-link-label">Badges</span></a>
+        <a href="settings.html" class="sidebar-nav-link"><span class="nav-link-label">Settings</span></a>
+      </nav>
+    </aside>
+    <div class="app-main">
+      <main class="pb-28 pt-6 px-4 max-w-lg mx-auto">
+        <header class="mb-5">
+          <p class="eyebrow">Progress</p>
+          <h1 class="mt-1 text-2xl font-extrabold text-ink">Profile</h1>
+        </header>
+
+        <section class="xp-widget">
+          <div class="xp-widget-inner">
+            <div class="xp-widget-top">
+              <span id="profileLevel" class="level-badge">Lv. 1 - Rookie Saver</span>
+              <span id="profileStreak" class="streak-chip streak-chip--cold">🔥 No streak yet</span>
+            </div>
+            <div class="xp-bar-track"><div id="profileXpBar" class="xp-bar-fill" style="width:0%"></div></div>
+            <div class="xp-widget-bottom"><span id="profileXpValue" class="xp-value-label">0 XP</span></div>
+          </div>
+        </section>
+
+        <section class="card-panel p-4 mt-5">
+          <h2 class="text-base font-bold text-ink mb-2">Badges</h2>
+          <p class="text-sm text-slate-600 mb-3">View and claim your unlocked achievements.</p>
+          <a href="badges.html" class="btn-primary w-full text-center">Go to badges</a>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <a href="dashboard.html" class="nav-link"><span class="nav-text">Dashboard</span></a>
+    <a href="activity.html" class="nav-link"><span class="nav-text">Activity</span></a>
+    <a href="profile.html" class="nav-link active"><span class="nav-text">Profile</span></a>
+    <a href="settings.html" class="nav-link"><span class="nav-text">Settings</span></a>
+  </nav>
+
+  <script src="js/firebase-init.js"></script>
+  <script src="js/firebase-auth-service.js"></script>
+  <script src="js/firestore-service.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/dark-mode.js"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>

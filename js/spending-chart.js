@@ -1,13 +1,16 @@
 (function () {
   // ── Color palette for chart bars ─────────────────────
   var CATEGORY_COLORS = {
-    "Jeep": "#d8efe2",
-    "Food": "#ffedd5",
-    "Load": "#dbeafe",
-    "Laundry": "#fee2e2",
-    "School Supplies": "#f3e8ff",
-    "Coffee": "#fef9c3",
-    "Other": "#e2e8f0"
+    "transport":     "#d8efe2",
+    "food":          "#ffedd5",
+    "groceries":     "#d1fae5",
+    "education":     "#f3e8ff",
+    "shopping":      "#fce7f3",
+    "health":        "#fee2e2",
+    "entertainment": "#fef3c7",
+    "utilities":     "#dbeafe",
+    "personal_care": "#ede9fe",
+    "others":        "#e2e8f0"
   };
 
   var DEFAULT_COLORS = [

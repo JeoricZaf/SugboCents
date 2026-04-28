@@ -274,9 +274,85 @@
     if (savedEl) { savedEl.textContent = formatPhp(totalSaved); }
 
     // Streak
-    var streak = window.StorageAPI ? window.StorageAPI.getStreakData() : { count: 0 };
+    var streak = window.StorageAPI ? window.StorageAPI.getCurrentStreak() : 0;
     var streakEl = document.getElementById("tigomStreakCount");
-    if (streakEl) { streakEl.textContent = streak.count; }
+    if (streakEl) { streakEl.textContent = streak; }
+  }
+
+  // ── XP Widget ─────────────────────────────────────────────
+  function renderXpWidget() {
+    if (!window.StorageAPI || !window.StorageAPI.getXpInfo) { return; }
+    var info   = window.StorageAPI.getXpInfo();
+    var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
+    var levelEl  = document.getElementById("xpLevel");
+    var barEl    = document.getElementById("xpBar");
+    var trackEl  = document.getElementById("xpBarTrack");
+    var valueEl  = document.getElementById("xpValue");
+    var chipEl   = document.getElementById("xpStreakChip");
+    if (levelEl) {
+      levelEl.innerHTML = '<i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i> Lv. ' + info.level + ' — ' + info.levelName;
+    }
+    if (barEl)    { barEl.style.width = info.progressPct + "%"; }
+    if (trackEl)  { trackEl.setAttribute("aria-valuenow", info.progressPct); }
+    if (valueEl)  { valueEl.textContent = info.xp + " XP"; }
+    if (chipEl) {
+      chipEl.className = "streak-chip" + (streak === 0 ? " streak-chip--cold" : streak >= 7 ? " streak-chip--hot streak-chip--week" : streak >= 3 ? " streak-chip--hot" : " streak-chip--warm");
+      chipEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + (streak === 0 ? 'No streak yet' : streak + '-day streak');
+    }
+  }
+
+  // ── Badge Grid ────────────────────────────────────────────
+  function renderBadgeGrid() {
+    var gridEl     = document.getElementById("badgeGrid");
+    var progressEl = document.getElementById("badgeProgress");
+    if (!gridEl || !window.StorageAPI) { return; }
+
+    var allBadges  = window.StorageAPI.getAchievements ? window.StorageAPI.getAchievements() : [];
+    var claimedCount = allBadges.filter(function (b) { return b.claimed; }).length;
+
+    if (progressEl) {
+      progressEl.textContent = claimedCount + " / " + allBadges.length + " badges";
+    }
+
+    var html = "";
+    allBadges.forEach(function (badge) {
+      if (badge.claimed) {
+        html += '<div class="badge-card badge-card--claimed">'
+          + '<div class="badge-icon-wrap badge-icon-wrap--claimed"><i class="bi ' + escapeHtml(badge.icon) + '" aria-hidden="true"></i></div>'
+          + '<p class="badge-name">' + escapeHtml(badge.name) + '</p>'
+          + '<p class="badge-desc">' + escapeHtml(badge.description) + '</p>'
+          + '<p class="badge-status badge-status--claimed"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Claimed</p>'
+          + '</div>';
+      } else if (badge.unlockable) {
+        html += '<div class="badge-card badge-card--unlockable">'
+          + '<div class="badge-icon-wrap badge-icon-wrap--unlockable"><i class="bi ' + escapeHtml(badge.icon) + '" aria-hidden="true"></i></div>'
+          + '<p class="badge-name">' + escapeHtml(badge.name) + '</p>'
+          + '<p class="badge-desc">' + escapeHtml(badge.description) + '</p>'
+          + '<button type="button" class="badge-claim-btn" data-badge-id="' + escapeHtml(badge.id) + '">Claim +15 XP</button>'
+          + '</div>';
+      } else {
+        var pct = badge.target > 0 ? Math.min(100, Math.round((badge.progress / badge.target) * 100)) : 0;
+        html += '<div class="badge-card badge-card--locked">'
+          + '<div class="badge-icon-wrap badge-icon-wrap--locked"><i class="bi bi-lock-fill" aria-hidden="true"></i></div>'
+          + '<p class="badge-name">' + escapeHtml(badge.name) + '</p>'
+          + '<p class="badge-desc">' + escapeHtml(badge.description) + '</p>'
+          + '<p class="badge-status badge-status--locked">' + badge.progress + ' / ' + badge.target + '</p>'
+          + '</div>';
+      }
+    });
+
+    gridEl.innerHTML = html;
+
+    gridEl.querySelectorAll(".badge-claim-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-badge-id");
+        if (!id || !window.StorageAPI.claimAchievement) { return; }
+        window.StorageAPI.claimAchievement(id);
+        renderBadgeGrid();
+        renderXpWidget();
+        updateSummaryStats();
+      });
+    });
   }
 
   // ── Init ─────────────────────────────────────────────────
@@ -286,10 +362,12 @@
     initGoalListEvents();
     renderGoals();
     updateSummaryStats();
+    renderXpMiniBar();
 
     window.addEventListener("sugbocents:synced", function () {
       renderGoals();
       updateSummaryStats();
+      renderXpMiniBar();
     });
   });
 })();

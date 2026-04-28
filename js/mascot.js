@@ -1,10 +1,10 @@
 (function () {
   // ── Mascot state definitions ─────────────────────────────
   var STATES = {
-    happy:   { img: "/assets/images/mascot/mascot-happy.png",   fullbody: "/assets/images/mascot/fullbody-happy.png",  label: "Doing great!",  cls: "mascot-happy" },
-    neutral: { img: "/assets/images/mascot/mascot-neutral.png", fullbody: "/assets/images/mascot/fullbody-neutral.png", label: "On track",      cls: "mascot-neutral" },
-    worried: { img: "/assets/images/mascot/mascot-sad.png",     fullbody: "/assets/images/mascot/fullbody-sad.png",  label: "Heads up!",     cls: "mascot-worried" },
-    alarmed: { img: "/assets/images/mascot/mascot-shocked.png", fullbody: "/assets/images/mascot/fullbody-shocked.png", label: "Budget alert!", cls: "mascot-alarmed" }
+    happy:   { img: "assets/images/mascot/mascot-happy.png",   label: "Doing great!",  cls: "mascot-happy" },
+    neutral: { img: "assets/images/mascot/mascot-neutral.png",  label: "On track",      cls: "mascot-neutral" },
+    worried: { img: "assets/images/mascot/mastcot-sad.png",     label: "Heads up!",     cls: "mascot-worried" },
+    alarmed: { img: "assets/images/mascot/mascot-shocked.png",  label: "Budget alert!", cls: "mascot-alarmed" }
   };
 
   // ── Rule-based chatbot responses ─────────────────────────
@@ -500,14 +500,12 @@ document.addEventListener("DOMContentLoaded", function() {
   if (!mascotImg || !speechBubble) return; // Exit if not on the dashboard
 
   // 📝 Update these paths with your actual GIF files!
-  var fullBodyGifs =[
-    "/assets/images/mascot/fullbody-wave.gif",
-    "/assets/images/mascot/fullbody-sleepy.gif",
-    "/assets/images/mascot/fullbody-shocked.gif",
-    "/assets/images/mascot/fullbody-confused.gif",
-    "/assets/images/mascot/fullbody-dance.gif",
-    // "/assets/images/mascot/full-jump.gif",
-    // "/assets/images/mascot/full-cheer.gif"
+  var fullBodyGifs = [
+    "assets/images/mascot/fullbody-wave.gif",
+    "assets/images/mascot/fullbody-sleepy.gif",
+    "assets/images/mascot/fullbody-shocked.gif",
+    "assets/images/mascot/fullbody-confused.gif",
+    "assets/images/mascot/fullbody-dance.gif"
   ];
   
   // 💬 Random encouraging messages
