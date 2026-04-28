@@ -2,12 +2,51 @@
   var APP_KEY = "sugbocents.v1";
 
   var DEFAULT_QUICK_ADD_ITEMS = [
-    { id: "qa_jeep",   category: "Jeep",            emoji: "🚌", amount: 18,  color: "#d8efe2" },
-    { id: "qa_food",   category: "Food",             emoji: "🍜", amount: 120, color: "#ffedd5" },
-    { id: "qa_load",   category: "Load",             emoji: "📱", amount: 50,  color: "#dbeafe" },
-    { id: "qa_school", category: "School Supplies",  emoji: "📚", amount: 80,  color: "#f3e8ff" },
-    { id: "qa_laundry",category: "Laundry",          emoji: "🧺", amount: 60,  color: "#fee2e2" }
+    { id: "qa_jeep",   category: "transport",    label: "Jeep",           emoji: "🚌", amount: 18,  color: "#d8efe2" },
+    { id: "qa_food",   category: "food",         label: "Food",           emoji: "🍽️", amount: 120, color: "#ffedd5" },
+    { id: "qa_load",   category: "utilities",    label: "Load",           emoji: "⚡", amount: 50,  color: "#dbeafe" },
+    { id: "qa_school", category: "education",    label: "School Supplies",emoji: "📚", amount: 80,  color: "#f3e8ff" },
+    { id: "qa_laundry",category: "personal_care",label: "Laundry",        emoji: "🧺", amount: 60,  color: "#fee2e2" }
   ];
+
+  var EXPENSE_CATEGORIES = [
+    { id: "transport",    label: "Transport",       emoji: "🚌", color: "#d8efe2" },
+    { id: "food",         label: "Food & Drinks",   emoji: "🍽️", color: "#ffedd5" },
+    { id: "groceries",    label: "Groceries",       emoji: "🛒", color: "#d1fae5" },
+    { id: "education",    label: "Education",       emoji: "📚", color: "#f3e8ff" },
+    { id: "shopping",     label: "Shopping",        emoji: "🛍️", color: "#fce7f3" },
+    { id: "health",       label: "Health",          emoji: "💊", color: "#fee2e2" },
+    { id: "entertainment",label: "Entertainment",   emoji: "🎬", color: "#fef3c7" },
+    { id: "utilities",    label: "Utilities & Bills",emoji: "⚡", color: "#dbeafe" },
+    { id: "personal_care",label: "Personal Care",   emoji: "🧴", color: "#ede9fe" },
+    { id: "others",       label: "Others",          emoji: "📋", color: "#e2e8f0" }
+  ];
+
+  var LEGACY_CATEGORY_MAP = {
+    "jeep": "transport", "jeepney": "transport",
+    "food": "food", "lunch": "food", "dinner": "food", "breakfast": "food",
+    "merienda": "food", "snack": "food", "coffee": "food", "drinks": "food",
+    "groceries": "groceries", "grocery": "groceries",
+    "load": "utilities", "laundry": "personal_care",
+    "school supplies": "education", "school": "education", "tuition": "education",
+    "shopping": "shopping", "clothes": "shopping",
+    "health": "health", "medicine": "health", "medical": "health",
+    "entertainment": "entertainment", "movie": "entertainment",
+    "utilities": "utilities", "bills": "utilities",
+    "personal care": "personal_care"
+  };
+
+  function normalizeLegacyCategory(raw) {
+    if (!raw) { return "others"; }
+    var lower = String(raw).toLowerCase().trim();
+    // Already a valid id
+    for (var i = 0; i < EXPENSE_CATEGORIES.length; i++) {
+      if (EXPENSE_CATEGORIES[i].id === lower) { return lower; }
+    }
+    // Map from known legacy labels
+    if (LEGACY_CATEGORY_MAP[lower]) { return LEGACY_CATEGORY_MAP[lower]; }
+    return "others";
+  }
 
   function loadStore() {
     try {
@@ -408,6 +447,14 @@
       return { ok: false, error: "Expense amount must be greater than zero." };
     }
 
+    var rawCategory = String((data && data.category) || "");
+    var categoryId = normalizeLegacyCategory(rawCategory);
+
+    var note = data && data.note ? String(data.note).trim() : "";
+    if (categoryId === "others" && !note) {
+      return { ok: false, error: "A description is required for Others expenses." };
+    }
+
     var store = loadStore();
     if (!store.session) {
       return { ok: false, error: "No active session." };
@@ -421,9 +468,9 @@
     var entry = {
       id: "exp_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
       amount: amount,
-      category: String((data && data.category) || "Other"),
+      category: categoryId,
       timestamp: nowIso(),
-      note: data && data.note ? String(data.note) : ""
+      note: note
     };
 
     if (!Array.isArray(user.expenses)) {
@@ -447,7 +494,14 @@
       return [];
     }
 
-    var sorted = expenses.slice().sort(function (a, b) {
+    // Normalize legacy categories in-memory (never writes to storage)
+    var normalized = expenses.map(function (e) {
+      var catId = normalizeLegacyCategory(e.category);
+      if (catId === e.category) { return e; }
+      return Object.assign({}, e, { category: catId });
+    });
+
+    var sorted = normalized.slice().sort(function (a, b) {
       return new Date(b.timestamp) - new Date(a.timestamp);
     });
 
@@ -456,6 +510,10 @@
     }
 
     return sorted;
+  }
+
+  function getExpenseCategories() {
+    return EXPENSE_CATEGORIES.slice();
   }
 
   function getBudgetSummary() {
@@ -596,6 +654,202 @@
     return { ok: true };
   }
 
+  // ── Sprint 2: Profile ────────────────────────────────────
+
+  function updateUserProfile(data) {
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { ok: false, error: "User not found." };
+    }
+    if (data && data.firstName !== undefined) {
+      user.firstName = sanitizeName(data.firstName);
+    }
+    if (data && data.lastName !== undefined) {
+      user.lastName = sanitizeName(data.lastName);
+    }
+    if (data && data.username !== undefined) {
+      user.username = sanitizeName(data.username);
+    }
+    saveStore(store);
+    if (window.FirestoreService) {
+      window.FirestoreService.setUserDoc(store.session.userId, {
+        firstName: user.firstName,
+        lastName: user.lastName
+      });
+    }
+    return { ok: true };
+  }
+
+  // ── Sprint 2: Preferences ────────────────────────────────
+
+  function getPreferences() {
+    var store = loadStore();
+    if (!store.session) {
+      return {};
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return {};
+    }
+    return user.preferences ? Object.assign({}, user.preferences) : {};
+  }
+
+  function savePreferences(prefs) {
+    if (typeof prefs !== "object" || prefs === null) {
+      return { ok: false, error: "Preferences must be an object." };
+    }
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { ok: false, error: "User not found." };
+    }
+    if (!user.preferences) {
+      user.preferences = {};
+    }
+    var keys = Object.keys(prefs);
+    for (var i = 0; i < keys.length; i++) {
+      user.preferences[keys[i]] = prefs[keys[i]];
+    }
+    saveStore(store);
+    return { ok: true };
+  }
+
+  // ── Sprint 2: Goals ──────────────────────────────────────
+
+  function getGoals() {
+    var store = loadStore();
+    if (!store.session) {
+      return [];
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user || !Array.isArray(user.goals)) {
+      return [];
+    }
+    return user.goals.slice();
+  }
+
+  function addGoal(data) {
+    if (!data || !data.name) {
+      return { ok: false, error: "Goal name is required." };
+    }
+    var targetAmount = sanitizeAmount(data.targetAmount);
+    if (targetAmount <= 0) {
+      return { ok: false, error: "Target amount must be greater than zero." };
+    }
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { ok: false, error: "User not found." };
+    }
+    var goal = {
+      id: "goal_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+      name: sanitizeName(data.name),
+      targetAmount: targetAmount,
+      savedAmount: 0,
+      deadline: data.deadline ? String(data.deadline) : "",
+      createdAt: nowIso(),
+      completed: false
+    };
+    if (!Array.isArray(user.goals)) {
+      user.goals = [];
+    }
+    user.goals.unshift(goal);
+    saveStore(store);
+    return { ok: true, goal: goal };
+  }
+
+  function updateGoalProgress(goalId, savedAmount) {
+    var amount = sanitizeAmount(savedAmount);
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user || !Array.isArray(user.goals)) {
+      return { ok: false, error: "User not found." };
+    }
+    var goal = null;
+    for (var i = 0; i < user.goals.length; i++) {
+      if (user.goals[i].id === goalId) {
+        goal = user.goals[i];
+        break;
+      }
+    }
+    if (!goal) {
+      return { ok: false, error: "Goal not found." };
+    }
+    goal.savedAmount = Math.max(0, amount);
+    goal.completed = goal.savedAmount >= goal.targetAmount;
+    saveStore(store);
+    return { ok: true, goal: goal };
+  }
+
+  function deleteGoal(goalId) {
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user || !Array.isArray(user.goals)) {
+      return { ok: false, error: "User not found." };
+    }
+    var idx = -1;
+    for (var i = 0; i < user.goals.length; i++) {
+      if (user.goals[i].id === goalId) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx === -1) {
+      return { ok: false, error: "Goal not found." };
+    }
+    user.goals.splice(idx, 1);
+    saveStore(store);
+    return { ok: true };
+  }
+
+  // ── Sprint 2: Streak ─────────────────────────────────────
+
+  function getStreakData() {
+    var store = loadStore();
+    if (!store.session) {
+      return { count: 0, lastMilestone: null };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { count: 0, lastMilestone: null };
+    }
+    return {
+      count: user.streakCount || 0,
+      lastMilestone: user.lastMilestone || null
+    };
+  }
+
+  function incrementStreak() {
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { ok: false, error: "User not found." };
+    }
+    user.streakCount = (user.streakCount || 0) + 1;
+    user.lastMilestone = nowIso();
+    saveStore(store);
+    return { ok: true, count: user.streakCount };
+  }
+
   window.StorageAPI = {
     resolveAuthState: resolveAuthState,
     getSession: getSession,
@@ -611,7 +865,17 @@
     resetCurrentUserData: resetCurrentUserData,
     removeExpense: removeExpense,
     getQuickAddItems: getQuickAddItems,
-    saveQuickAddItems: saveQuickAddItems
+    saveQuickAddItems: saveQuickAddItems,
+    updateUserProfile: updateUserProfile,
+    getPreferences: getPreferences,
+    savePreferences: savePreferences,
+    getGoals: getGoals,
+    addGoal: addGoal,
+    updateGoalProgress: updateGoalProgress,
+    deleteGoal: deleteGoal,
+    getStreakData: getStreakData,
+    incrementStreak: incrementStreak,
+    getExpenseCategories: getExpenseCategories
   };
 })();
 

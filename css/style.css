@@ -1490,3 +1490,60 @@ body.edit-mode .qa-add-new-btn {
   opacity: 1;
 }
 
+/* === Streak card === */
+.streak-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f7fcf7 100%);
+  border: 1px solid rgba(31, 107, 70, 0.1);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+  padding: 1.25rem 1.3rem;
+}
+
+.streak-card p {
+  margin: 0;
+}
+
+.streak-card .streak-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 8rem) 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.streak-card .streak-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 5rem;
+  padding: 1.25rem 1.3rem;
+  border-radius: 1.5rem;
+  background: radial-gradient(circle at top left, rgba(255, 221, 145, 0.65), rgba(220, 252, 231, 1));
+  color: #14532d;
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  box-shadow: 0 0 0 6px rgba(220, 252, 231, 0.24),
+              0 0 30px rgba(251, 146, 60, 0.22);
+  text-shadow: 0 0 10px rgba(251, 146, 60, 0.55);
+}
+
+.streak-card .streak-badge span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.streak-card .streak-badge::before {
+  content: "";
+}
+
+.streak-card #streakDescription {
+  color: #334155;
+}
+
+.streak-card #streakHint {
+  margin-top: 2rem;
+  color: #64748b;
+}

@@ -12,6 +12,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/spending-chart.css" />
+  <link rel="stylesheet" href="css/mascot.css" />
   <script>if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");</script>
 </head>
 <body data-page="dashboard" data-protected="true" class="bg-mist min-h-screen antialiased">
@@ -62,8 +63,18 @@
 
     <!-- greeting header -->
     <header class="page-greeting">
-      <p id="greetingDate" class="page-greeting-sub"></p>
-      <h1 id="greetingTitle" class="page-greeting-title">Welcome back</h1>
+      <div class="greeting-text">
+        <p id="greetingDate" class="page-greeting-sub"></p>
+        <h1 id="greetingTitle" class="page-greeting-title">Welcome back</h1>
+      </div>
+
+      <!-- Dashboard Full-Body Mascot -->
+      <div class="dashboard-mascot-wrapper">
+        <!-- The Speech Bubble -->
+        <div id="mascotSpeechBubble" class="mascot-speech-bubble"></div>
+        <!-- The Mascot Image -->
+        <img id="dashboardMascotImg" src="assets/images/mascot/fullbody-wave.gif" alt="Sugbo the Mascot" draggable="false" />
+      </div>
     </header>
 
     <!-- budget card -->
@@ -85,6 +96,18 @@
           <p id="budgetWeekLabel" class="text-xs text-emerald-100/50"></p>
         </div>
       </div>
+    </section>
+
+    <!-- save goals streak -->
+    <section class="streak-card card-panel mt-6" aria-label="Save goals streak">
+      <div class="streak-row">
+        <div class="streak-badge">🔥 <span id="streakCount">0</span></div>
+        <div>
+          <p class="text-lg text-ink font-bold">Save goals streak</p>
+          <p id="streakDescription" class="text-xs text-slate-500 mt-1">This will track completed save-goal milestones once enabled.</p>
+        </div>
+      </div>
+      <p id="streakHint" class="mt-3 text-xs text-slate-500">Track how many times you've successfully reached a save goal in a row.</p>
     </section>
 
     <!-- quick add -->
@@ -112,14 +135,17 @@
         </div>
       </div>
       <div class="card-panel p-4 log-form">
-        <div class="flex gap-2">
+        <!-- Category picker (rendered by dashboard.js) -->
+        <div id="logCategoryPicker" class="log-category-picker" role="group" aria-label="Select category"></div>
+        <!-- Amount + note row -->
+        <div class="flex gap-2 mt-3">
           <div class="relative flex-1">
             <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold pointer-events-none">₱</span>
             <input id="logExpenseAmount" type="number" min="1" step="1"
               class="input pl-7 w-full" placeholder="Amount" aria-label="Expense amount" />
           </div>
-          <input id="logExpenseDesc" type="text" maxlength="40"
-            class="input flex-[2]" placeholder="What was it for?" aria-label="Expense description" />
+          <input id="logExpenseNote" type="text" maxlength="60"
+            class="input flex-[2]" placeholder="Note (optional)" aria-label="Expense note" />
           <button id="logExpenseBtn" type="button" class="btn-primary shrink-0 px-4 log-expense-btn" aria-label="Log expense">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Log
@@ -217,5 +243,6 @@
   <script src="js/app.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/spending-chart.js"></script>
+  <script src="js/mascot.js"></script>
 </body>
 </html>
