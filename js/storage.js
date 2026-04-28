@@ -460,9 +460,24 @@
 
   function getBudgetSummary() {
     var weeklyBudget = getWeeklyBudget();
-    var expenses = getExpenses();
-    var totalSpentThisWeek = expenses.reduce(function (sum, expense) {
-      return sum + sanitizeAmount(expense.amount);
+    var allExpenses = getExpenses();
+
+    // Filter to current week only (Monday-start, matching spending-chart.js logic)
+    var now = new Date();
+    var dayOfWeek = now.getDay();
+    var weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+    weekStart.setHours(0, 0, 0, 0);
+    var weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+    weekEnd.setHours(0, 0, 0, 0);
+
+    var totalSpentThisWeek = allExpenses.reduce(function (sum, expense) {
+      var d = new Date(expense.timestamp);
+      if (d >= weekStart && d < weekEnd) {
+        return sum + sanitizeAmount(expense.amount);
+      }
+      return sum;
     }, 0);
 
     totalSpentThisWeek = sanitizeAmount(totalSpentThisWeek);

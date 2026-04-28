@@ -190,6 +190,7 @@
 
         updateBudgetCard();
         renderRecentExpenses();
+        if (window.SpendingChart) { window.SpendingChart.update(); }
 
         // brief visual feedback: pulse the button
         button.classList.add("qa-pulse");
@@ -340,7 +341,7 @@
       return;
     }
 
-    var expenses = window.StorageAPI.getExpenses(20);
+    var expenses = window.StorageAPI.getExpenses(5);
     // Optimistically hide any pending-delete item
     if (pendingDelete) {
       expenses = expenses.filter(function (e) { return e.id !== pendingDelete.id; });
@@ -448,6 +449,7 @@
       descInput.value = "";
       updateBudgetCard();
       renderRecentExpenses();
+      if (window.SpendingChart) { window.SpendingChart.update(); }
 
       // brief visual confirmation on the button
       logBtn.textContent = "\u2713 Logged";
@@ -480,6 +482,7 @@
     // Optimistically hide from list
     updateBudgetCard();
     renderRecentExpenses();
+    if (window.SpendingChart) { window.SpendingChart.update(); }
 
     var toast   = document.getElementById("undoToast");
     var undoBtn = document.getElementById("undoToastBtn");
@@ -509,6 +512,7 @@
     if (toast) { toast.classList.add("hidden"); }
     updateBudgetCard();
     renderRecentExpenses();
+    if (window.SpendingChart) { window.SpendingChart.update(); }
   }
 
   function cancelDelete() {
@@ -520,6 +524,7 @@
     if (toast) { toast.classList.add("hidden"); }
     updateBudgetCard();
     renderRecentExpenses();
+    if (window.SpendingChart) { window.SpendingChart.update(); }
   }
 
   // ── settings page ────────────────────────────────────────
@@ -635,7 +640,8 @@
         updateBudgetCard();
         renderRecentExpenses();
         renderQuickAddButtons();
-      }, { once: true });
+        if (window.SpendingChart) { window.SpendingChart.update(); }
+      });
 
       var addNewBtn = document.getElementById("addNewQaBtn");
       if (addNewBtn) {
