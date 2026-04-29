@@ -1204,6 +1204,24 @@
     return { ok: true, count: user.streakCount };
   }
 
+  // ── AI Chatbot ───────────────────────────────────────────
+
+  function getChatHistory() {
+    var prefs = getPreferences();
+    return Array.isArray(prefs.chatHistory) ? prefs.chatHistory.slice() : [];
+  }
+
+  function saveChatMessage(role, text) {
+    var history = getChatHistory();
+    history.push({ role: String(role), text: String(text), timestamp: nowIso() });
+    if (history.length > 50) { history = history.slice(-50); }
+    return savePreferences({ chatHistory: history });
+  }
+
+  function clearChatHistory() {
+    return savePreferences({ chatHistory: [] });
+  }
+
   function seedDemoData() {
     var store = loadStore();
     if (!store.session || !store.session.userId) {
@@ -1339,6 +1357,9 @@
     checkNewAchievements: checkNewAchievements,
     markAchievementsNotified: markAchievementsNotified,
     claimAchievement: claimAchievement,
+    getChatHistory: getChatHistory,
+    saveChatMessage: saveChatMessage,
+    clearChatHistory: clearChatHistory,
     seedDemoData: seedDemoData
   };
 })();

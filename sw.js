@@ -1,4 +1,4 @@
-const CACHE_NAME = "sugbocents-shell-v46";
+const CACHE_NAME = "sugbocents-shell-v52";
 const SHELL_FILES = [
   "./",
   "index.html",
@@ -12,6 +12,7 @@ const SHELL_FILES = [
   "badges.html",
   "tigom.html",
   "settings.html",
+  "chat.html",
   "css/style.css",
   "css/landing.css",
   "css/dark-mode.css",
@@ -37,6 +38,8 @@ const SHELL_FILES = [
   "js/settings.js",
   "js/landing.js",
   "js/index-redirect.js",
+  "js/chat-ai.js",
+  "js/chat.js",
   "manifest.json",
   "assets/images/reviews/Savion_Review.png",
   "assets/images/reviews/Julian_Review.jpg",
