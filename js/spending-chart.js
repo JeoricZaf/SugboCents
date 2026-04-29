@@ -85,7 +85,7 @@
     return aggregated;
   }
 
-  // ── render bar chart ────────────────────────────────────
+  // ── render pie chart ────────────────────────────────────
   function renderChart() {
     var container = document.getElementById("spendingChartContainer");
     if (!container) {
@@ -107,126 +107,86 @@
     if (categories.length === 0) {
       container.innerHTML =
         '<div class="spending-chart-empty">' +
-        '<div class="spending-chart-empty-icon">\uD83D\uDCCA</div>' +
+        '<div class="spending-chart-empty-icon"><span class="material-icons">pie_chart</span></div>' +
         '<div class="spending-chart-empty-text">No expenses this week</div>' +
         '</div>';
       return;
     }
 
-    var maxAmount = Math.max.apply(Math, categories.map(function (cat) {
-      return data[cat];
-    }));
-    maxAmount = Math.max(maxAmount, 1);
+    var total = categories.reduce(function (sum, cat) {
+      return sum + data[cat];
+    }, 0);
 
-    var isMobile = window.innerWidth < 1024;
-    var chartHtml = '<div class="spending-chart-canvas-wrapper" data-layout="' +
-      (isMobile ? 'vertical' : 'horizontal') + '">';
+    // Calculate pie slices
+    var slices = [];
+    var currentAngle = 0;
 
-    if (isMobile) {
-      // Vertical layout (bottom-to-top) for mobile
-      var verticalAmountFontSize = "6px";
-
-      var svgWidth = categories.length * 45 + 20;
-      chartHtml += '<svg class="spending-chart-svg" viewBox="0 0 ' + svgWidth + ' 270" preserveAspectRatio="xMinYMid meet">';
-
-      var xPos = 15;
-      categories.forEach(function (cat, idx) {
-        var amount = data[cat];
-        var heightPercent = (amount / maxAmount) * 100;
-        var barHeight = Math.max(10, (heightPercent / 100) * 180);
-        var barY = 230 - barHeight;
-
-        var color = CATEGORY_COLORS[cat] || DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
-
-        // Bar
-        chartHtml += '<rect x="' + (xPos + 2) + '" y="' + barY + '" width="32" height="' + barHeight + '" fill="' + color + '" rx="3" ry="3" />';
-
-        // Category label below bar with dynamic sizing and wrapping
-        var categoryFontSize = "8px";
-        var categoryText = escapeHtml(cat);
-        var textLength = categoryText.length;
-
-        if (textLength > 16) {
-          categoryFontSize = "5px";
-        } else if (textLength > 12) {
-          categoryFontSize = "6px";
-        }
-
-        var words = categoryText.split(" ");
-        var line1 = "";
-        var line2 = "";
-
-        if (words.length > 1) {
-          line1 = words[0];
-          line2 = words.slice(1).join(" ");
-        } else {
-          line1 = categoryText;
-        }
-
-        chartHtml += '<text x="' + (xPos + 18) + '" y="250" font-weight="600" text-anchor="middle" fill="#0f172a" style="font-size: ' + categoryFontSize + ';">';
-        chartHtml += line1;
-        if (line2) {
-          chartHtml += '<tspan x="' + (xPos + 18) + '" dy="10">' + line2 + '</tspan>';
-        }
-        chartHtml += '</text>';
-
-        // Amount label on bar
-        if (barHeight > 25) {
-          chartHtml += '<text x="' + (xPos + 18) + '" y="' + (barY + barHeight / 2 + 3) + '" font-weight="700" text-anchor="middle" fill="#1f6b46" style="font-size: ' + verticalAmountFontSize + ';">';
-          chartHtml += formatPhp(amount);
-          chartHtml += '</text>';
-        }
-
-        xPos += 45;
-      });
-    } else {
-      // Horizontal layout (left-to-right) for desktop
-      var svgHeight = categories.length * 35 + 15;
-      chartHtml += '<svg class="spending-chart-svg" viewBox="0 0 500 ' + svgHeight + '" preserveAspectRatio="xMinYMid meet">';
-
-      var yPos = 10;
-      categories.forEach(function (cat, idx) {
-        var amount = data[cat];
-        var widthPercent = (amount / maxAmount) * 100;
-        var barWidth = Math.max(15, (widthPercent / 100) * 380);
-
-        var color = CATEGORY_COLORS[cat] || DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
-
-        // Category label (left)
-        chartHtml += '<text x="5" y="' + (yPos + 13) + '" font-weight="600" fill="#0f172a" style="font-size: 8px;">';
-        chartHtml += escapeHtml(cat.substring(0, 20));
-        chartHtml += '</text>';
-
-        // Bar
-        chartHtml += '<rect x="110" y="' + (yPos + 2) + '" width="' + barWidth + '" height="18" fill="' + color + '" rx="3" ry="3" />';
-
-        // Amount label on bar
-        if (barWidth > 40) {
-          chartHtml += '<text x="' + (110 + barWidth / 2) + '" y="' + (yPos + 13) + '" font-weight="700" text-anchor="middle" fill="#1f6b46" style="font-size: 7px;">';
-          chartHtml += formatPhp(amount);
-          chartHtml += '</text>';
-        }
-
-        yPos += 35;
-      });
-    }
-
-    chartHtml += '</svg></div>';
-
-    var legendHtml = '<div class="spending-chart-legend">';
     categories.forEach(function (cat, idx) {
       var amount = data[cat];
+      var percentage = (amount / total) * 100;
+      var sliceAngle = (amount / total) * 360;
       var color = CATEGORY_COLORS[cat] || DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
-      legendHtml += '<div class="legend-item" style="background:' + color + '40; border-radius: 6px; padding: 6px 10px;">' +
-        '<div class="legend-label-group">' +
-        '<span class="legend-category" style="font-weight: 600;">' + escapeHtml(cat) + '</span>' +
-        '<span class="legend-amount" style="margin-left: 6px;">' + formatPhp(amount) + '</span>' +
+
+      slices.push({
+        category: cat,
+        amount: amount,
+        percentage: percentage,
+        startAngle: currentAngle,
+        endAngle: currentAngle + sliceAngle,
+        color: color
+      });
+
+      currentAngle += sliceAngle;
+    });
+
+    // Render pie chart
+    var svgWidth = 400;
+    var svgHeight = 360;
+    var centerX = svgWidth / 2;
+    var centerY = 120;
+    var radius = 110;
+
+    var chartHtml = '<div class="spending-pie-wrapper">';
+    chartHtml += '<svg class="spending-pie-svg" viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '" preserveAspectRatio="xMidYMid meet">';
+
+    // Draw pie slices
+    slices.forEach(function (slice) {
+      var startRad = (slice.startAngle - 90) * Math.PI / 180;
+      var endRad = (slice.endAngle - 90) * Math.PI / 180;
+
+      var x1 = centerX + radius * Math.cos(startRad);
+      var y1 = centerY + radius * Math.sin(startRad);
+      var x2 = centerX + radius * Math.cos(endRad);
+      var y2 = centerY + radius * Math.sin(endRad);
+
+      var largeArc = slice.endAngle - slice.startAngle > 180 ? 1 : 0;
+
+      var pathData = 'M ' + centerX + ' ' + centerY +
+        ' L ' + x1 + ' ' + y1 +
+        ' A ' + radius + ' ' + radius + ' 0 ' + largeArc + ' 1 ' + x2 + ' ' + y2 +
+        ' Z';
+
+      chartHtml += '<path d="' + pathData + '" fill="' + slice.color + '" stroke="#ffffff" stroke-width="2" class="pie-slice" />';
+    });
+
+    chartHtml += '</svg>';
+
+    // Legend
+    chartHtml += '<div class="pie-legend">';
+    slices.forEach(function (slice) {
+      chartHtml += '<div class="legend-item">' +
+        '<div class="legend-color" style="background: ' + slice.color + '"></div>' +
+        '<div class="legend-info">' +
+        '<div class="legend-category">' + escapeHtml(slice.category) + '</div>' +
+        '<div class="legend-amount">' + formatPhp(slice.amount) + ' (' + Math.round(slice.percentage) + '%)</div>' +
         '</div>' +
         '</div>';
     });
-    legendHtml += '</div>';
+    chartHtml += '</div>';
 
-    container.innerHTML = chartHtml + legendHtml;
+    chartHtml += '</div>';
+
+    container.innerHTML = chartHtml;
   }
 
   // ── public API ───────────────────────────────────────────
