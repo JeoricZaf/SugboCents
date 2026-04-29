@@ -13,7 +13,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/spending-chart.css" />
+  <link rel="stylesheet" href="css/stats.css" />
   <link rel="stylesheet" href="css/mascot.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
   <script>if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");</script>
 </head>
 <body data-page="dashboard" data-protected="true" class="bg-mist min-h-screen antialiased">
@@ -99,6 +101,22 @@
       </div>
     </section>
 
+    <!-- quick summary stats row -->
+    <section class="mt-6 grid grid-cols-3 gap-2" aria-label="Week summary">
+      <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
+        <p class="text-xs text-slate-500 font-medium">Spent</p>
+        <p id="dashQuickSpent" class="text-sm font-bold text-ink">&#8369;0</p>
+      </div>
+      <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
+        <p class="text-xs text-slate-500 font-medium">Avg Daily</p>
+        <p id="dashQuickAvg" class="text-sm font-bold text-ink">&#8369;0</p>
+      </div>
+      <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
+        <p class="text-xs text-slate-500 font-medium">Remaining</p>
+        <p id="dashQuickRemaining" class="text-sm font-bold text-emerald-600">&#8369;0</p>
+      </div>
+    </section>
+
     <section class="xp-widget mt-5" aria-label="Progress">
       <div class="xp-widget-inner">
         <div class="xp-widget-top">
@@ -176,49 +194,40 @@
       <p id="emptyExpenseState" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses yet. Log one above, or use Quick add for recurring costs.</p>
     </section>
 
-    <!-- spending stats -->
-    <section class="mt-8" id="spendingStatsSection">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-bold text-ink">Spending Stats</h2>
-      </div>
-      <div class="period-filter-bar mb-4" role="group" aria-label="Filter by period">
-        <button type="button" class="filter-chip" data-dash-period="today">Today</button>
-        <button type="button" class="filter-chip active" data-dash-period="week">This Week</button>
-        <button type="button" class="filter-chip" data-dash-period="month">This Month</button>
-        <button type="button" class="filter-chip" data-dash-period="all">All Time</button>
-      </div>
-      <div class="stat-summary-row mb-4">
-        <div class="stat-card">
-          <span class="stat-card-label">Total Spent</span>
-          <span id="statsTotal" class="stat-card-value">₱0.00</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-card-label">Expenses</span>
-          <span id="statsCount" class="stat-card-value">0</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-card-label">Top Category</span>
-          <span id="statsTopCat" class="stat-card-value">—</span>
-        </div>
-      </div>
-      <div id="categoryBreakdown" class="card-panel divide-y divide-slate-100">
-        <p class="p-4 text-sm text-slate-400">No data for this period.</p>
-      </div>
+    <!-- Summary Metrics -->
+    <section class="mt-8">
+      <div id="summaryMetricsContainer"></div>
     </section>
 
-    <!-- spending chart component -->
-    <section class="spending-chart-section" id="spendingChartSection">
-      <div class="spending-chart-container">
-        <div class="spending-chart-header">
-          <div>
-            <h2 class="spending-chart-title">Spending by Category</h2>
-            <p class="spending-chart-period" id="chartPeriod">This week</p>
-          </div>
+    <!-- Stats Grid -->
+    <section class="mt-8">
+      <div class="stats-grid">
+
+        <!-- 1. Progress Donut Chart -->
+        <div class="chart-card progress-section">
+          <p class="section-header"><span class="material-icons section-icon">pie_chart</span> Budget Progress</p>
+          <div id="progressDonutContainer"></div>
         </div>
-        <div id="spendingChartContainer" class="spending-chart-content">
-          <!-- Chart renders here -->
+
+        <!-- 2. Category Breakdown -->
+        <div class="chart-card">
+          <p class="section-header"><span class="material-icons section-icon">label</span> Category Breakdown</p>
+          <div id="categoryBreakdownContainer"></div>
         </div>
-      </div>
+
+        <!-- 3. Daily Spending Trend -->
+        <div class="chart-card">
+          <p class="section-header"><span class="material-icons section-icon">trending_up</span> Daily Trend</p>
+          <div id="dailyTrendContainer"></div>
+        </div>
+
+        <!-- 4. Week-over-Week Comparison -->
+        <div class="chart-card">
+          <p class="section-header"><span class="material-icons section-icon">calendar_month</span> Week Comparison</p>
+          <div id="weekComparisonContainer"></div>
+        </div>
+
+      </div><!-- /stats-grid -->
     </section>
   </main>
   </div><!-- /app-main -->
@@ -309,7 +318,7 @@
   <script src="js/gamification.js"></script>
   <script src="js/dark-mode.js"></script>
   <script src="js/dashboard.js"></script>
-  <script src="js/spending-chart.js"></script>
+  <script src="js/dashboard-stats.js"></script>
   <script src="js/chat-ai.js"></script>
   <script src="js/mascot.js"></script>
 </body>

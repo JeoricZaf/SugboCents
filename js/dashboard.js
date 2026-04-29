@@ -117,6 +117,46 @@
     }
   }
 
+  // ── update quick summary stats ───────────────────────────
+  function updateQuickSummaryStats() {
+    if (!window.StorageAPI) { return; }
+
+    var summary = window.StorageAPI.getBudgetSummary();
+    var spent = summary.totalSpentThisWeek || 0;
+    var remaining = summary.remaining || 0;
+    var avgDaily = 0;
+
+    var user = window.StorageAPI.getCurrentUser();
+    if (user && Array.isArray(user.expenses)) {
+      var now = new Date();
+      var day = now.getDay();
+      var weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - ((day + 6) % 7));
+      weekStart.setHours(0, 0, 0, 0);
+      var weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 7);
+      weekEnd.setHours(0, 0, 0, 0);
+      var weekExpenses = user.expenses.filter(function (exp) {
+        var d = new Date(exp.timestamp);
+        return d >= weekStart && d < weekEnd;
+      });
+      avgDaily = weekExpenses.length > 0 ? spent / 7 : 0;
+    }
+
+    var spentEl     = document.getElementById("dashQuickSpent");
+    var avgEl       = document.getElementById("dashQuickAvg");
+    var remainingEl = document.getElementById("dashQuickRemaining");
+
+    if (spentEl)     { spentEl.textContent = formatPhp(spent); }
+    if (avgEl)       { avgEl.textContent = formatPhp(avgDaily); }
+    if (remainingEl) {
+      remainingEl.textContent = formatPhp(Math.max(0, remaining));
+      remainingEl.className = remaining >= 0
+        ? "text-sm font-bold text-emerald-600"
+        : "text-sm font-bold text-red-600";
+    }
+  }
+
   // ── quick-add grid ───────────────────────────────────────
   function renderQuickAddButtons() {
     var grid = document.getElementById("quickAddGrid");
@@ -208,6 +248,7 @@
           window.GamificationUI.maybeNotifyNewAchievements(result.newlyUnlockableAchievements || []);
         }
         updateBudgetCard();
+        updateQuickSummaryStats();
         renderXpWidget();
         renderRecentExpenses();
         renderDashboardStats();
@@ -639,6 +680,7 @@
       if (noteInput) { noteInput.value = ""; }
       if (dateInput) { dateInput.value = ""; }
       updateBudgetCard();
+      updateQuickSummaryStats();
       renderXpWidget();
       renderRecentExpenses();
       renderDashboardStats();
@@ -675,6 +717,7 @@
 
     // Optimistically hide from list
     updateBudgetCard();
+    updateQuickSummaryStats();
     renderRecentExpenses();
     if (window.SpendingChart) { window.SpendingChart.update(); }
 
@@ -705,6 +748,7 @@
     var toast = document.getElementById("undoToast");
     if (toast) { toast.classList.add("hidden"); }
     updateBudgetCard();
+    updateQuickSummaryStats();
     renderRecentExpenses();
     if (window.SpendingChart) { window.SpendingChart.update(); }
   }
@@ -717,6 +761,7 @@
     var toast = document.getElementById("undoToast");
     if (toast) { toast.classList.add("hidden"); }
     updateBudgetCard();
+    updateQuickSummaryStats();
     renderRecentExpenses();
     if (window.SpendingChart) { window.SpendingChart.update(); }
   }
@@ -1056,6 +1101,7 @@
       renderGreeting();
       renderQuickAddButtons();
       updateBudgetCard();
+      updateQuickSummaryStats();
       renderXpWidget();
       renderRecentExpenses();
       renderCategoryStats();
@@ -1077,6 +1123,7 @@
       window.addEventListener("sugbocents:synced", function () {
         renderGreeting();
         updateBudgetCard();
+        updateQuickSummaryStats();
         renderXpWidget();
         renderRecentExpenses();
         renderQuickAddButtons();
