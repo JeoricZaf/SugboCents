@@ -33,6 +33,83 @@
   text-transform: uppercase;
 }
 
+/* Pie Chart Styles */
+.spending-pie-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+@media (min-width: 768px) {
+  .spending-pie-wrapper {
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 2rem;
+  }
+}
+
+.spending-pie-svg {
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+}
+
+.pie-slice {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.pie-slice:hover {
+  opacity: 0.85;
+}
+
+.pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 280px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.legend-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.legend-category {
+  font-weight: 600;
+  color: var(--ink-900);
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.legend-amount {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Old bar chart styles (kept for compatibility if needed) */
 .spending-chart-canvas-wrapper {
   position: relative;
   width: 100%;
@@ -96,6 +173,39 @@
   color: var(--brand-800);
   text-align: center;
   margin-left: 0.5rem;
+}
+
+.spending-chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.spending-chart-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.spending-chart-empty-icon .material-icons {
+  font-size: 3rem;
+  color: #cbd5e1;
+}
+
+.spending-chart-empty-text {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.spending-chart-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .spending-chart-legend {

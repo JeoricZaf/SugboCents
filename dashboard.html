@@ -9,9 +9,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/spending-chart.css" />
+  <link rel="stylesheet" href="css/stats.css" />
   <link rel="stylesheet" href="css/mascot.css" />
   <script>if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");</script>
 </head>
@@ -59,7 +61,7 @@
   </aside>
 
   <div class="app-main">
-  <main class="pb-32 pt-6 px-4 max-w-lg mx-auto">
+  <main class="pb-32 pt-6 px-4">
 
     <!-- greeting header -->
     <header class="page-greeting">
@@ -95,6 +97,22 @@
           <p id="progressLabel" class="text-xs text-emerald-100/70">0% spent</p>
           <p id="budgetWeekLabel" class="text-xs text-emerald-100/50"></p>
         </div>
+      </div>
+    </section>
+
+    <!-- quick summary stats row -->
+    <section class="mt-6 grid grid-cols-3 gap-2" aria-label="Week summary">
+      <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
+        <p class="text-xs text-slate-500 font-medium">Spent</p>
+        <p id="dashQuickSpent" class="text-sm font-bold text-ink">₱0</p>
+      </div>
+      <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
+        <p class="text-xs text-slate-500 font-medium">Avg Daily</p>
+        <p id="dashQuickAvg" class="text-sm font-bold text-ink">₱0</p>
+      </div>
+      <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
+        <p class="text-xs text-slate-500 font-medium">Remaining</p>
+        <p id="dashQuickRemaining" class="text-sm font-bold text-emerald-600">₱0</p>
       </div>
     </section>
 
@@ -165,20 +183,44 @@
       <p id="emptyExpenseState" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses yet. Log one above, or use Quick add for recurring costs.</p>
     </section>
 
-    <!-- spending chart component -->
-    <section class="spending-chart-section" id="spendingChartSection">
-      <div class="spending-chart-container">
-        <div class="spending-chart-header">
-          <div>
-            <h2 class="spending-chart-title">Spending by Category</h2>
-            <p class="spending-chart-period" id="chartPeriod">This week</p>
-          </div>
-        </div>
-        <div id="spendingChartContainer" class="spending-chart-content">
-          <!-- Chart renders here -->
-        </div>
-      </div>
+    <!-- STATS SECTION -->
+    <!-- Summary Metrics -->
+    <section class="mt-8">
+      <div id="summaryMetricsContainer"></div>
     </section>
+
+    <!-- Stats Grid -->
+    <section class="mt-8">
+      <div class="stats-grid">
+
+        <!-- 1. Progress Donut Chart -->
+        <div class="chart-card progress-section">
+          <p class="section-header"><span class="material-icons section-icon">pie_chart</span> Budget Progress</p>
+          <div id="progressDonutContainer"></div>
+        </div>
+
+        <!-- 2. Category Breakdown -->
+        <div class="chart-card">
+          <p class="section-header"><span class="material-icons section-icon">label</span> Category Breakdown</p>
+          <div id="categoryBreakdownContainer"></div>
+        </div>
+
+        <!-- 3. Daily Spending Trend -->
+        <div class="chart-card">
+          <p class="section-header"><span class="material-icons section-icon">trending_up</span> Daily Trend</p>
+          <div id="dailyTrendContainer"></div>
+        </div>
+
+        <!-- 4. Week-over-Week Comparison -->
+        <div class="chart-card">
+          <p class="section-header"><span class="material-icons section-icon">calendar_month</span> Week Comparison</p>
+          <div id="weekComparisonContainer"></div>
+        </div>
+
+      </div><!-- /stats-grid -->
+    </section>
+
+
   </main>
   </div><!-- /app-main -->
   </div><!-- /app-layout -->
@@ -242,7 +284,7 @@
   <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
   <script src="js/dashboard.js"></script>
-  <script src="js/spending-chart.js"></script>
+  <script src="js/stats.js"></script>
   <script src="js/mascot.js"></script>
 </body>
 </html>
