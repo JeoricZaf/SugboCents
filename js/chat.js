@@ -171,6 +171,8 @@
         var reply;
         if (result.ok && result.reply) {
           reply = result.reply;
+        } else if (result.rateLimited) {
+          reply = "⏳ " + result.error;
         } else {
           var state = getMascotState();
           reply = window.ChatAI.getFallbackReply(trimmed, state);

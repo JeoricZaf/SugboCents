@@ -3,6 +3,44 @@
   // The API key lives in Secret Manager, never in the browser.
   var CLOUD_FN_URL = "https://us-central1-sugbocents.cloudfunctions.net/chat";
 
+  // ── Client-side rate limiter (localStorage) ──────────────
+  var RL_KEY        = "sc_ai_rl";
+  var RL_MAX        = 20;              // max AI messages per window
+  var RL_WINDOW_MS  = 60 * 60 * 1000; // 1 hour
+
+  function getRateLimitData() {
+    try {
+      return JSON.parse(localStorage.getItem(RL_KEY)) || { timestamps: [] };
+    } catch (_) {
+      return { timestamps: [] };
+    }
+  }
+
+  function checkRateLimit() {
+    var now  = Date.now();
+    var data = getRateLimitData();
+    data.timestamps = data.timestamps.filter(function (t) {
+      return now - t < RL_WINDOW_MS;
+    });
+    if (data.timestamps.length >= RL_MAX) {
+      var oldest    = data.timestamps[0];
+      var resetMins = Math.ceil((RL_WINDOW_MS - (now - oldest)) / 60000);
+      return { allowed: false, resetMins: resetMins };
+    }
+    data.timestamps.push(now);
+    try { localStorage.setItem(RL_KEY, JSON.stringify(data)); } catch (_) {}
+    return { allowed: true };
+  }
+
+  function getRateLimitStatus() {
+    var now  = Date.now();
+    var data = getRateLimitData();
+    var active = data.timestamps.filter(function (t) {
+      return now - t < RL_WINDOW_MS;
+    });
+    return { used: active.length, max: RL_MAX };
+  }
+
   function isAvailable() {
     // Key lives server-side -- always available as long as network exists.
     return true;
@@ -50,6 +88,16 @@
   }
 
   async function send(userMessage, history) {
+    // Client-side rate limit check before calling the Cloud Function
+    var rl = checkRateLimit();
+    if (!rl.allowed) {
+      return {
+        ok: false,
+        rateLimited: true,
+        error: "You've reached the limit of " + RL_MAX + " AI messages per hour. Try again in " + rl.resetMins + " min."
+      };
+    }
+
     try {
       var response = await fetch(CLOUD_FN_URL, {
         method: "POST",
@@ -114,6 +162,7 @@
     isAvailable: isAvailable,
     buildSystemPrompt: buildSystemPrompt,
     send: send,
-    getFallbackReply: getFallbackReply
+    getFallbackReply: getFallbackReply,
+    getRateLimitStatus: getRateLimitStatus
   };
 })();

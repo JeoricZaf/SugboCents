@@ -10,6 +10,35 @@ const ALLOWED_ORIGINS = [
   "https://sugbocents.firebaseapp.com"
 ];
 
+// ── Server-side rate limiter (in-memory, per IP) ──────────
+// Resets on cold start — acts as a burst guard, not a hard quota.
+var ipRequestLog = {};
+var RATE_LIMIT_MAX    = 30;   // max requests
+var RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in ms
+
+function isRateLimited(ip) {
+  var now = Date.now();
+  if (!ipRequestLog[ip]) { ipRequestLog[ip] = []; }
+  // Evict timestamps outside the window
+  ipRequestLog[ip] = ipRequestLog[ip].filter(function (t) {
+    return now - t < RATE_LIMIT_WINDOW;
+  });
+  if (ipRequestLog[ip].length >= RATE_LIMIT_MAX) { return true; }
+  ipRequestLog[ip].push(now);
+  return false;
+}
+
+// Periodically clean up stale IP entries to prevent memory leak
+setInterval(function () {
+  var now = Date.now();
+  Object.keys(ipRequestLog).forEach(function (ip) {
+    ipRequestLog[ip] = (ipRequestLog[ip] || []).filter(function (t) {
+      return now - t < RATE_LIMIT_WINDOW;
+    });
+    if (ipRequestLog[ip].length === 0) { delete ipRequestLog[ip]; }
+  });
+}, 15 * 60 * 1000); // run every 15 minutes
+
 exports.chat = onRequest(
   { secrets: [GROQ_API_KEY], region: "us-central1", invoker: "public" },
   async (req, res) => {
@@ -23,6 +52,13 @@ exports.chat = onRequest(
 
     if (req.method === "OPTIONS") { res.status(204).send(""); return; }
     if (req.method !== "POST") { res.status(405).json({ error: "Method Not Allowed" }); return; }
+
+    // Server-side rate limit check
+    var clientIp = (req.headers["x-forwarded-for"] || req.ip || "unknown").split(",")[0].trim();
+    if (isRateLimited(clientIp)) {
+      res.status(429).json({ error: "Too many requests. Please wait a while before sending more messages." });
+      return;
+    }
 
     var message = req.body.message;
     var history = Array.isArray(req.body.history) ? req.body.history : [];
