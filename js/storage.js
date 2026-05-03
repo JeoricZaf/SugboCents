@@ -1,5 +1,8 @@
 ﻿(function () {
   var APP_KEY = "sugbocents.v1";
+  var AUTH_DISABLED = true; // Set to true to bypass auth and use a built-in demo session.
+  var DEMO_USER_ID = "demo_user";
+  var DEMO_USER_EMAIL = "demo@sugbocents.local";
 
   var DEFAULT_QUICK_ADD_ITEMS = [
     { id: "qa_jeep",   category: "transport",    label: "Jeep",           emoji: "🚌", amount: 18,  color: "#d8efe2" },
@@ -86,17 +89,83 @@
   function loadStore() {
     try {
       var raw = localStorage.getItem(APP_KEY);
-      if (!raw) {
-        return { users: [], session: null };
-      }
-
-      var parsed = JSON.parse(raw);
-      return {
+      var parsed = raw ? JSON.parse(raw) : { users: [], session: null };
+      var store = {
         users: Array.isArray(parsed.users) ? parsed.users : [],
         session: parsed.session || null
       };
+
+      if (AUTH_DISABLED) {
+        var demoUser = store.users.find(function (user) {
+          return user.id === DEMO_USER_ID || sanitizeEmail(user.email) === DEMO_USER_EMAIL;
+        });
+
+        if (!demoUser) {
+          demoUser = {
+            id: DEMO_USER_ID,
+            firstName: "Demo",
+            lastName: "User",
+            username: "Demo User",
+            email: DEMO_USER_EMAIL,
+            password: "",
+            weeklyBudget: 0,
+            expenses: [],
+            quickAddItems: [],
+            xp: 0,
+            level: 1,
+            unlockedAchievements: [],
+            notifiedAchievements: [],
+            dailyXpLog: { dateKey: getLocalDateKey(), xpFromLogging: 0 },
+            goals: [],
+            preferences: {},
+            createdAt: nowIso()
+          };
+          store.users.push(demoUser);
+        }
+
+        if (!store.session || !getUserById(store, store.session.userId)) {
+          store.session = {
+            userId: demoUser.id,
+            createdAt: nowIso(),
+            provider: "local"
+          };
+        }
+
+        localStorage.setItem(APP_KEY, JSON.stringify(store));
+      }
+
+      return store;
     } catch (error) {
-      return { users: [], session: null };
+      var fallback = { users: [], session: null };
+
+      if (AUTH_DISABLED) {
+        fallback.users.push({
+          id: DEMO_USER_ID,
+          firstName: "Demo",
+          lastName: "User",
+          username: "Demo User",
+          email: DEMO_USER_EMAIL,
+          password: "",
+          weeklyBudget: 0,
+          expenses: [],
+          quickAddItems: [],
+          xp: 0,
+          level: 1,
+          unlockedAchievements: [],
+          notifiedAchievements: [],
+          dailyXpLog: { dateKey: getLocalDateKey(), xpFromLogging: 0 },
+          goals: [],
+          preferences: {},
+          createdAt: nowIso()
+        });
+        fallback.session = {
+          userId: DEMO_USER_ID,
+          createdAt: nowIso(),
+          provider: "local"
+        };
+      }
+
+      return fallback;
     }
   }
 
@@ -422,45 +491,35 @@
   }
 
   function resolveAuthState() {
+    // Return immediately so sidebar loads from localStorage instantly.
+    // Firebase sync happens in the background and updates localStorage when new data arrives.
+    initFirebaseSync();
+    return Promise.resolve();
+  }
+
+  function initFirebaseSync() {
     if (!window.FirebaseInit || !window.FirebaseInit.ready) {
-      return Promise.resolve();
+      return;
     }
 
-    return window.FirebaseInit.ready.then(function () {
+    window.FirebaseInit.ready.then(function () {
       if (!isFirebaseAuthEnabled() || !window.FirebaseAuthService.onAuthStateChanged) {
         return;
       }
 
-      return new Promise(function (resolve) {
-        var resolved = false;
-        var unsubscribe = window.FirebaseAuthService.onAuthStateChanged(function (user) {
-          if (user) {
-            ensureLocalUserFromSession(user);
-          } else {
-            clearSession();
-          }
+      // Set up permanent listener (never unsubscribe) so Firebase updates flow in continuously.
+      window.FirebaseAuthService.onAuthStateChanged(function (user) {
+        if (user) {
+          ensureLocalUserFromSession(user);
+        } else {
+          clearSession();
+        }
 
-          var currentSession = loadStore();
-          var currentUserId = currentSession.session ? currentSession.session.userId : null;
-          var syncPromise = (user && currentUserId && window.FirestoreService)
-            ? syncFromFirestore(currentUserId)
-            : Promise.resolve();
-          syncPromise.then(function () {
-            if (!resolved) {
-              resolved = true;
-              unsubscribe();
-              resolve();
-            }
-          });
-        });
-
-        setTimeout(function () {
-          if (!resolved) {
-            resolved = true;
-            unsubscribe();
-            resolve();
-          }
-        }, 1200);
+        var currentSession = loadStore();
+        var currentUserId = currentSession.session ? currentSession.session.userId : null;
+        if (user && currentUserId && window.FirestoreService) {
+          syncFromFirestore(currentUserId);
+        }
       });
     }).catch(function () {
       // Ignore init errors and keep local fallback behavior.
