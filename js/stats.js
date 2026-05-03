@@ -96,7 +96,6 @@
 
       group.forEach(function (badge) {
         if (badge.claimed) {
-          // ── Claimed ──────────────────────────────────────────────
           html += '<div class="badge-card badge-card--claimed">'
             + '<div class="badge-icon-wrap badge-icon-wrap--claimed">'
             +   '<i class="bi ' + escapeHtml(badge.icon) + '" aria-hidden="true"></i>'
@@ -107,9 +106,7 @@
             +   '<i class="bi bi-check-circle-fill" aria-hidden="true"></i> Claimed'
             + '</p>'
             + '</div>';
-
         } else if (badge.unlockable) {
-          // ── Ready to claim ────────────────────────────────────────
           html += '<div class="badge-card badge-card--unlockable">'
             + '<div class="badge-icon-wrap badge-icon-wrap--unlockable">'
             +   '<i class="bi ' + escapeHtml(badge.icon) + '" aria-hidden="true"></i>'
@@ -123,9 +120,7 @@
             +   'Claim +15 XP'
             + '</button>'
             + '</div>';
-
         } else {
-          // ── Locked ─── show progress bar for countable types ──────
           var pct   = badgeProgressPct(badge);
           var label = badgeProgressLabel(badge);
           var hasBar = pct > 0;
@@ -135,13 +130,11 @@
             + '</div>'
             + '<p class="badge-name badge-name--locked">' + escapeHtml(badge.name) + '</p>'
             + '<p class="badge-desc">' + escapeHtml(badge.description) + '</p>';
-
           if (hasBar) {
             html += '<div class="badge-progress-track" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" aria-label="' + escapeHtml(badge.name) + ' progress">'
               + '<div class="badge-progress-fill" style="width:' + pct + '%"></div>'
               + '</div>';
           }
-
           html += '<p class="badge-status badge-status--locked">' + escapeHtml(label) + '</p>'
             + '</div>';
         }
@@ -176,19 +169,14 @@
     });
   });
 })();
-
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    }
-    if (period === "week") {
-      var day  = now.getDay();
       var diff = (day + 6) % 7;
       return new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
-    }
+    
     if (period === "month") {
       return new Date(now.getFullYear(), now.getMonth(), 1);
     }
     return null; // "all"
-  }
+  
 
   function filterByPeriod(expenses) {
     var start = getPeriodStart(activePeriod);
@@ -351,8 +339,10 @@
       renderBadgeGrid();
     });
   });
-})();\u2014 ' + info.levelName;
-    }
+
+
+// \u2014 ' + info.levelName;
+    
     if (barEl)   { barEl.style.width = info.progressPct + "%"; }
     if (trackEl) { trackEl.setAttribute("aria-valuenow", info.progressPct); }
     if (valueEl) { valueEl.textContent = info.xp + " XP"; }
@@ -364,7 +354,7 @@
       chipEl.className = "streak-chip" + (streak === 0 ? " streak-chip--cold" : streak >= 7 ? " streak-chip--hot streak-chip--week" : streak >= 3 ? " streak-chip--hot" : " streak-chip--warm");
       chipEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + (streak === 0 ? "No streak yet" : streak + "-day streak");
     }
-  }
+  
 
   // ── Badge grid (categorized, Duolingo-style) ──────────────
   var BADGE_CATEGORY_ORDER = ["Logging", "Streak", "Budget", "Misc", "Goals", "XP"];
@@ -445,7 +435,7 @@
       streakEl.className = cls;
       streakEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + (streak === 0 ? "0" : streak);
     }
-  }
+  
 
   // ── init ──────────────────────────────────────────────────
   document.addEventListener("DOMContentLoaded", function () {
@@ -458,4 +448,5 @@
       renderXpMiniBar();
     });
   });
-})();
+
+  }
