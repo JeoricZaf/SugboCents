@@ -28,6 +28,8 @@
         streakEl.textContent = "🔥 " + streak + "-day streak";
       }
     }
+
+    document.body.classList.add("profile-ready");
   }
 
   document.addEventListener("DOMContentLoaded", function () {

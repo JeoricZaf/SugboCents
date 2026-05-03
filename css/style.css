@@ -21,6 +21,40 @@ body {
   color: var(--ink-900);
 }
 
+body[data-page="dashboard"] {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 10ms ease-out, transform 10ms ease-out;
+}
+
+body[data-page="dashboard"].is-ready {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+body[data-page="dashboard"]:not(.is-ready) {
+  background: #ffffff;
+}
+
+body:not(.sidebar-ready) .sidebar-user-name,
+body:not(.sidebar-ready) .sidebar-user-avatar {
+  opacity: 0;
+}
+
+body.sidebar-ready .sidebar-user-name,
+body.sidebar-ready .sidebar-user-avatar {
+  opacity: 1;
+}
+
+body[data-page="profile"]:not(.profile-ready) .xp-widget {
+  opacity: 0;
+}
+
+body[data-page="profile"].profile-ready .xp-widget {
+  opacity: 1;
+  transition: opacity 200ms ease-out;
+}
+
 .bg-mist {
   background: radial-gradient(circle at top right, #e2f4e8 0%, #f3f7f4 40%, #f7faf9 100%);
 }

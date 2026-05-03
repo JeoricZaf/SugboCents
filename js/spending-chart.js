@@ -1,4 +1,9 @@
 (function () {
+  var initialPeriodEl = document.getElementById("chartPeriod");
+  if (initialPeriodEl) {
+    initialPeriodEl.style.visibility = "hidden";
+  }
+
   // ── Color palette for chart bars ─────────────────────
   var CATEGORY_COLORS = {
     "transport":     "#d8efe2",
@@ -100,6 +105,7 @@
     if (periodEl) {
       var weekRange = getWeekStartAndEnd();
       periodEl.textContent = formatWeekRange(weekRange.start, weekRange.end);
+      periodEl.style.visibility = "visible";
     }
 
     var data = aggregateExpensesByCategory();

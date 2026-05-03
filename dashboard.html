@@ -310,6 +310,111 @@
     <button type="button" id="undoToastBtn" class="undo-btn">Undo</button>
   </div>
 
+  <!-- Pre-populate dashboard from localStorage to eliminate flash -->
+  <script>
+    (function() {
+      try {
+        var raw = localStorage.getItem("sugbocents.v1");
+        if (!raw) return;
+        var store = JSON.parse(raw);
+        if (!store.session || !store.users) return;
+        
+        var user = null;
+        for (var i = 0; i < store.users.length; i++) {
+          if (store.users[i].id === store.session.userId) {
+            user = store.users[i];
+            break;
+          }
+        }
+        if (!user) return;
+        
+        var greetingTitle = document.getElementById("greetingTitle");
+        if (greetingTitle && user.firstName) {
+          greetingTitle.textContent = "Welcome back, " + user.firstName + "!";
+        }
+        
+        var sidebarName = document.getElementById("sidebarName");
+        if (sidebarName && user.firstName) {
+          sidebarName.textContent = user.firstName + (user.lastName ? " " + user.lastName : "");
+        }
+        var sidebarAvatar = document.getElementById("sidebarAvatar");
+        if (sidebarAvatar) {
+          var initials = (user.firstName || "").charAt(0).toUpperCase() + (user.lastName || "").charAt(0).toUpperCase() || "U";
+          sidebarAvatar.textContent = initials;
+        }
+        
+        var weeklyBudget = user.weeklyBudget || 0;
+        var expenses = user.expenses || [];
+        var now = new Date();
+        var weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+        weekStart.setHours(0, 0, 0, 0);
+        var weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 7);
+        
+        var totalSpent = 0;
+        var avgDaily = 0;
+        if (Array.isArray(expenses)) {
+          var weekExpenses = [];
+          for (var j = 0; j < expenses.length; j++) {
+            var exp = expenses[j];
+            var expDate = new Date(exp.timestamp);
+            if (expDate >= weekStart && expDate < weekEnd) {
+              totalSpent += exp.amount || 0;
+              weekExpenses.push(exp);
+            }
+          }
+          avgDaily = weekExpenses.length > 0 ? totalSpent / 7 : 0;
+        }
+        
+        var remaining = weeklyBudget - totalSpent;
+        var pct = weeklyBudget > 0 ? Math.round((totalSpent / weeklyBudget) * 100) : 0;
+        
+        var formatPhp = function(amt) {
+          return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(amt || 0);
+        };
+        
+        var remainingEl = document.getElementById("remainingAmount");
+        if (remainingEl) remainingEl.textContent = formatPhp(remaining);
+        
+        var summaryEl = document.getElementById("budgetSummary");
+        if (summaryEl) {
+          summaryEl.textContent = weeklyBudget > 0 
+            ? formatPhp(totalSpent) + " of " + formatPhp(weeklyBudget) + " spent"
+            : "Set your weekly budget in Settings.";
+        }
+        
+        var progressEl = document.getElementById("budgetProgress");
+        if (progressEl) progressEl.style.width = Math.min(100, pct) + "%";
+        
+        var labelEl = document.getElementById("progressLabel");
+        if (labelEl) labelEl.textContent = pct + "% spent";
+        
+        var spentEl = document.getElementById("dashQuickSpent");
+        if (spentEl) spentEl.textContent = formatPhp(totalSpent);
+        
+        var avgEl = document.getElementById("dashQuickAvg");
+        if (avgEl) avgEl.textContent = formatPhp(avgDaily);
+        
+        var remainingStatEl = document.getElementById("dashQuickRemaining");
+        if (remainingStatEl) {
+          remainingStatEl.textContent = formatPhp(Math.max(0, remaining));
+          remainingStatEl.className = remaining >= 0 
+            ? "text-sm font-bold text-emerald-600"
+            : "text-sm font-bold text-red-600";
+        }
+      } catch (e) {
+        // Ignore prefill errors; full JS will repopulate.
+      } finally {
+        // Delay adding the class slightly so the browser registers 
+        // the initial opacity: 0 state and triggers the CSS transition.
+        setTimeout(function() {
+          document.body.classList.add("is-ready");
+        }, .001);
+      }
+    })();
+  </script>
+
   <script src="js/firebase-init.js"></script>
   <script src="js/firebase-auth-service.js"></script>
   <script src="js/firestore-service.js"></script>

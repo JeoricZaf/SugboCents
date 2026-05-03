@@ -51,6 +51,9 @@
         }
         sidebarAvatar.textContent = initials;
       }
+      document.body.classList.add("sidebar-ready");
+    } else {
+      document.body.classList.remove("sidebar-ready");
     }
   }
 
