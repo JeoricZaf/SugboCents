@@ -1,11 +1,12 @@
 # SugboCents — Copilot Project Instructions
 
 ## Stack & Constraints
-- **Vanilla HTML, CSS, JavaScript** — no frameworks, no Node.js, no build tools
+- **Vanilla HTML, CSS, JavaScript** — no UI frameworks (React/Vue/Angular), no build tools
 - **Tailwind CSS via CDN** for utility classes; custom overrides in `css/style.css`
 - **Firebase Auth** for authentication (with local `storage.js` fallback)
 - **PWA**: `manifest.json` + `sw.js` (cache-first shell strategy)
-- Must run by opening HTML files in a browser — no server required
+- The app shell must run by opening HTML files in a browser — no server required for Sprint 1–2
+- **Sprint 3 exception:** A minimal Node.js/Express backend is allowed **only** for email sending and AI API proxying. All other features must remain frontend-only.
 
 ## Architecture
 - **Separate HTML pages** per route — NOT a single-page app with hidden sections
@@ -26,9 +27,10 @@
 - Cache name format: `sugbocents-shell-vN` — bump the version number on every file change
 - Shell files array in `sw.js` must stay in sync with actual file paths
 
-## Current Sprint: Sprint 1
-Focus areas: Login/Register, Budget Setup, Quick-Add Expenses, Mobile Nav, PWA baseline.
-Do NOT build Sprint 2-3 features (charts, mascot, goals, streaks, AI, email).
+## Current Sprint: Sprint 1 / Sprint 2
+Sprint 1 focus areas: Login/Register, Budget Setup, Quick-Add Expenses, Mobile Nav, PWA baseline.
+Sprint 2 focus areas: Spending Chart, Tigom mascot (state-driven, no AI), Goals, Streaks.
+Do NOT build Sprint 3 features yet (AI Recommendations, AI Wrapped Email, backend server).
 
 ## Protected Routes
 Pages with `data-protected="true"` redirect to `login.html` if no session exists.

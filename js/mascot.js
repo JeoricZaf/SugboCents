@@ -1,10 +1,10 @@
 (function () {
   // ── Mascot state definitions ─────────────────────────────
   var STATES = {
-    happy:   { img: "/assets/images/mascot/mascot-happy.png",   fullbody: "/assets/images/mascot/fullbody-happy.png",  label: "Doing great!",  cls: "mascot-happy" },
-    neutral: { img: "/assets/images/mascot/mascot-neutral.png", fullbody: "/assets/images/mascot/fullbody-neutral.png", label: "On track",      cls: "mascot-neutral" },
-    worried: { img: "/assets/images/mascot/mascot-sad.png",     fullbody: "/assets/images/mascot/fullbody-sad.png",  label: "Heads up!",     cls: "mascot-worried" },
-    alarmed: { img: "/assets/images/mascot/mascot-shocked.png", fullbody: "/assets/images/mascot/fullbody-shocked.png", label: "Budget alert!", cls: "mascot-alarmed" }
+    happy:   { img: "assets/images/mascot/mascot-happy.png",   label: "Doing great!",  cls: "mascot-happy" },
+    neutral: { img: "assets/images/mascot/mascot-neutral.png",  label: "On track",      cls: "mascot-neutral" },
+    worried: { img: "assets/images/mascot/mascot-sad.png",      label: "Heads up!",     cls: "mascot-worried" },
+    alarmed: { img: "assets/images/mascot/mascot-shocked.png",  label: "Budget alert!", cls: "mascot-alarmed" }
   };
 
   // ── Rule-based chatbot responses ─────────────────────────
@@ -84,8 +84,8 @@
     var fab = document.createElement("button");
     fab.id = "mascotFab";
     fab.className = "mascot-fab " + stateObj.cls;
-    fab.setAttribute("aria-label", "Open Sugbo assistant");
-    fab.setAttribute("title", "Chat with Sugbo");
+    fab.setAttribute("aria-label", "Open Tigom assistant");
+    fab.setAttribute("title", "Chat with Tigom");
     
     // --> ADDED: Insert the image instead of textContent
     fab.innerHTML = '<img src="' + stateObj.img + '" class="mascot-fab-img" alt="Sugbo" draggable="false" />';
@@ -107,9 +107,9 @@
     chatbox.innerHTML =
       '<div class="mascot-chatbox-header">' +
         // --> ADDED: Use an <img> tag for the chatbox avatar
-        '<img class="mascot-avatar" id="mascotAvatarImg" src="' + stateObj.fullbody + '" alt="Sugbo" draggable="false" />' +
+        '<img class="mascot-avatar" id="mascotAvatarImg" src="' + stateObj.img + '" alt="Sugbo" draggable="false" />' +
         '<div>' +
-          '<div class="mascot-name">Sugbo</div>' +
+          '<div class="mascot-name">Tigom</div>' +
           '<div class="mascot-status" id="mascotStatusText">' + stateObj.label + '</div>' +
         '</div>' +
 
@@ -125,10 +125,13 @@
       '</div>' +
       '<div class="mascot-chatbox-body" id="mascotBody"></div>' +
       '<div class="mascot-chatbox-footer">' +
-        '<input class="mascot-input" id="mascotInput" type="text" placeholder="Ask Sugbo…" maxlength="200" autocomplete="off" />' +
+        '<input class="mascot-input" id="mascotInput" type="text" placeholder="Ask Tigom…" maxlength="200" autocomplete="off" />' +
         '<button class="mascot-send-btn" id="mascotSendBtn" aria-label="Send">' +
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
         '</button>' +
+      '</div>' +
+      '<div class="mascot-chatbox-fullchat">' +
+        '<a href="chat.html" class="mascot-fullchat-link">Open full conversation →</a>' +
       '</div>';
 
     document.body.appendChild(chatbox);
@@ -154,14 +157,66 @@
     body.scrollTop = body.scrollHeight;
   }
 
+  function addTypingIndicator() {
+    var body = document.getElementById("mascotBody");
+    if (!body) { return null; }
+    var id = "mascot-typing-" + Date.now();
+    var msg = document.createElement("div");
+    msg.id = id;
+    msg.className = "mascot-msg mascot-msg-bot";
+    var bubble = document.createElement("div");
+    bubble.className = "mascot-bubble mascot-typing";
+    bubble.innerHTML = "<span></span><span></span><span></span>";
+    msg.appendChild(bubble);
+    body.appendChild(msg);
+    body.scrollTop = body.scrollHeight;
+    return id;
+  }
+
+  function removeTypingIndicator(id) {
+    if (!id) { return; }
+    var el = document.getElementById(id);
+    if (el && el.parentNode) { el.parentNode.removeChild(el); }
+  }
+
   function sendUserMessage(text) {
     if (!text.trim()) { return; }
     addMessage(text, "user");
     var state = getMascotState();
-    var reply = getKeywordReply(text) || getRandomReply(state);
-    setTimeout(function () {
-      addMessage(reply, "bot");
-    }, 500);
+
+    if (window.ChatAI && window.ChatAI.isAvailable()) {
+      var typingId = addTypingIndicator();
+      // Build short history from visible messages for context
+      var history = [];
+      var body = document.getElementById("mascotBody");
+      if (body) {
+        var msgs = body.querySelectorAll(".mascot-msg");
+        var start = Math.max(0, msgs.length - 7); // last few messages
+        for (var i = start; i < msgs.length - 1; i++) {
+          var role = msgs[i].classList.contains("mascot-msg-user") ? "user" : "bot";
+          var bubbleEl = msgs[i].querySelector(".mascot-bubble");
+          if (bubbleEl && !bubbleEl.classList.contains("mascot-typing")) {
+            history.push({ role: role, text: bubbleEl.textContent });
+          }
+        }
+      }
+      window.ChatAI.send(text, history).then(function (result) {
+        removeTypingIndicator(typingId);
+        if (result.ok && result.reply) {
+          addMessage(result.reply, "bot");
+        } else {
+          addMessage(window.ChatAI.getFallbackReply(text, state), "bot");
+        }
+      }).catch(function () {
+        removeTypingIndicator(typingId);
+        addMessage(window.ChatAI.getFallbackReply(text, state), "bot");
+      });
+    } else {
+      var reply = getKeywordReply(text) || getRandomReply(state);
+      setTimeout(function () {
+        addMessage(reply, "bot");
+      }, 500);
+    }
   }
 
   function openChat() {
@@ -176,7 +231,18 @@
     var body = document.getElementById("mascotBody");
     if (body && body.children.length === 0) {
       var state = getMascotState();
-      addMessage(getRandomReply(state), "bot");
+      if (window.ChatAI && window.ChatAI.isAvailable()) {
+        var typingId = addTypingIndicator();
+        window.ChatAI.send("Hi! Give me a quick, friendly greeting and one tip about my budget this week.", []).then(function (result) {
+          removeTypingIndicator(typingId);
+          addMessage(result.ok ? result.reply : getRandomReply(getMascotState()), "bot");
+        }).catch(function () {
+          removeTypingIndicator(typingId);
+          addMessage(getRandomReply(getMascotState()), "bot");
+        });
+      } else {
+        addMessage(getRandomReply(state), "bot");
+      }
     }
 
     var input = document.getElementById("mascotInput");
@@ -500,20 +566,18 @@ document.addEventListener("DOMContentLoaded", function() {
   if (!mascotImg || !speechBubble) return; // Exit if not on the dashboard
 
   // 📝 Update these paths with your actual GIF files!
-  var fullBodyGifs =[
-    "/assets/images/mascot/fullbody-wave.gif",
-    "/assets/images/mascot/fullbody-sleepy.gif",
-    "/assets/images/mascot/fullbody-shocked.gif",
-    "/assets/images/mascot/fullbody-confused.gif",
-    "/assets/images/mascot/fullbody-dance.gif",
-    // "/assets/images/mascot/full-jump.gif",
-    // "/assets/images/mascot/full-cheer.gif"
+  var fullBodyGifs = [
+    "assets/images/mascot/fullbody-wave.gif",
+    "assets/images/mascot/fullbody-sleepy.gif",
+    "assets/images/mascot/fullbody-shocked.gif",
+    "assets/images/mascot/fullbody-confused.gif",
+    "assets/images/mascot/fullbody-dance.gif"
   ];
   
   // 💬 Random encouraging messages
   var encouragingMessages =[
     "You've got this! 💪",
-    "Every peso counts! Keep it up. 🪙",
+    "Every peso counts! Keep it up. ❤️",
     "I'm so proud of your progress! 🌟",
     "Let's crush those savings goals today! 🎯",
     "Looking good! Keep making smart choices. 🧠",

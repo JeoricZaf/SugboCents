@@ -10,10 +10,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/spending-chart.css" />
+  <link rel="stylesheet" href="css/stats.css" />
   <link rel="stylesheet" href="css/mascot.css" />
-  <link rel="stylesheet" href="css/dark-mode.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <script>if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");</script>
 </head>
 <body data-page="dashboard" data-protected="true" class="bg-mist min-h-screen antialiased">
 
@@ -21,34 +24,36 @@
 
   <!-- sidebar nav (desktop only) -->
   <aside class="app-sidebar" aria-label="Sidebar navigation">
-    <div style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; padding-bottom: 0;">
+    <div class="sidebar-header">
       <a href="dashboard.html" class="sidebar-brand" tabindex="-1" aria-hidden="true">
         <span class="sidebar-brand-mark" aria-hidden="true">SC</span>
         <span class="sidebar-brand-name">SugboCents</span>
       </a>
-      <button id="darkModeToggle" class="dark-mode-toggle" aria-label="Toggle dark mode"></button>
+      <button id="sidebarToggle" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="1.5" y="1.5" width="15" height="15" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 1.5v15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
     </div>
     <nav class="sidebar-nav-section" aria-label="Main navigation">
-      <a href="dashboard.html" data-nav="dashboard" class="sidebar-nav-link">
+      <a href="dashboard.html" data-nav="dashboard" class="sidebar-nav-link" data-tooltip="Dashboard">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        Dashboard
+        <span class="nav-link-label">Dashboard</span>
       </a>
-      <a href="activity.html" data-nav="activity" class="sidebar-nav-link">
+      <a href="activity.html" data-nav="activity" class="sidebar-nav-link" data-tooltip="Activity">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Activity
+        <span class="nav-link-label">Activity</span>
       </a>
-      <a href="stats.html" data-nav="stats" class="sidebar-nav-link">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        Stats
+      <a href="stats.html" data-nav="stats" class="sidebar-nav-link" data-tooltip="Profile">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="nav-link-label">Profile</span>
       </a>
-      <a href="tigom.html" data-nav="tigom" class="sidebar-nav-link">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2z"/><path d="M2 9v1a2 2 0 0 0 2 2h1"/><circle cx="16" cy="11" r="0.5" fill="currentColor"/></svg>
-        Tigom
+      <a href="tigom.html" data-nav="tigom" class="sidebar-nav-link" data-tooltip="Goals">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        <span class="nav-link-label">Goals</span>
       </a>
     </nav>
     <a href="settings.html" class="sidebar-user" aria-label="Account settings">
       <div id="sidebarAvatar" class="sidebar-user-avatar">U</div>
-      <div class="min-w-0">
+      <div class="min-w-0 sidebar-user-info">
         <div id="sidebarName" class="sidebar-user-name">Loading…</div>
         <div class="sidebar-user-sub">Account settings</div>
       </div>
@@ -64,16 +69,15 @@
       <div class="greeting-text">
         <p id="greetingDate" class="page-greeting-sub"></p>
         <h1 id="greetingTitle" class="page-greeting-title">Welcome back</h1>
-        </div>
-        
+      </div>
+
       <!-- Dashboard Full-Body Mascot -->
-    <div class="dashboard-mascot-wrapper">
-      <!-- The Speech Bubble -->
-      <div id="mascotSpeechBubble" class="mascot-speech-bubble"></div>
-      
-      <!-- The Mascot Image -->
-      <img id="dashboardMascotImg" src="/assets/images/mascot/full-wave.gif" alt="Sugbo the Mascot" draggable="false" />
-    </div>
+      <div class="dashboard-mascot-wrapper">
+        <!-- The Speech Bubble -->
+        <div id="mascotSpeechBubble" class="mascot-speech-bubble"></div>
+        <!-- The Mascot Image -->
+        <img id="dashboardMascotImg" src="assets/images/mascot/fullbody-wave.gif" alt="Sugbo the Mascot" draggable="false" />
+      </div>
     </header>
 
     <!-- budget card -->
@@ -97,16 +101,42 @@
       </div>
     </section>
 
-    <!-- save goals streak -->
-    <section class="streak-card card-panel mt-6" aria-label="Save goals streak">
-      <div class="streak-row">
-        <div  class="streak-badge">🔥 <span id="streakCount">0</span></div>
-        <div>
-          <p class="text-lg text-ink font-bold">Save goals streak</p>
-          <p id="streakDescription" class="text-xs text-slate-500 mt-1">This will track completed save-goal milestones once enabled.</p>
+    <!-- quick summary stats row -->
+    <section class="mt-6 grid grid-cols-3 gap-2" aria-label="Week summary">
+      <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
+        <p class="text-xs text-slate-500 font-medium">Spent</p>
+        <p id="dashQuickSpent" class="text-sm font-bold text-ink">&#8369;0</p>
+      </div>
+      <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
+        <p class="text-xs text-slate-500 font-medium">Avg Daily</p>
+        <p id="dashQuickAvg" class="text-sm font-bold text-ink">&#8369;0</p>
+      </div>
+      <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
+        <p class="text-xs text-slate-500 font-medium">Remaining</p>
+        <p id="dashQuickRemaining" class="text-sm font-bold text-emerald-600">&#8369;0</p>
+      </div>
+    </section>
+
+    <section class="xp-widget mt-5" aria-label="Progress">
+      <div class="xp-widget-inner">
+        <div class="xp-widget-top">
+          <span id="xpLevel" class="level-badge">
+            <i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i>
+            Lv. 1 — Rookie Saver
+          </span>
+          <span id="xpStreakChip" class="streak-chip streak-chip--cold">
+            <i class="bi bi-fire" aria-hidden="true"></i>
+            No streak yet
+          </span>
+        </div>
+        <div class="xp-bar-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="XP progress">
+          <div id="xpBar" class="xp-bar-fill" style="width:0%"></div>
+        </div>
+        <div class="xp-widget-bottom">
+          <span id="xpValue" class="xp-value-label">0 XP</span>
+          <a href="tigom.html" class="view-all-link">View details <i class="bi bi-arrow-right-short" aria-hidden="true"></i></a>
         </div>
       </div>
-      <p id="streakHint" class="mt-3 text-xs text-slate-500">Track how many times you've successfully reached a save goal in a row.</p>
     </section>
 
     <!-- quick add -->
@@ -134,53 +164,70 @@
         </div>
       </div>
       <div class="card-panel p-4 log-form">
+        <!-- Amount + note row FIRST -->
         <div class="flex gap-2">
           <div class="relative flex-1">
             <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold pointer-events-none">₱</span>
             <input id="logExpenseAmount" type="number" min="1" step="1"
               class="input pl-7 w-full" placeholder="Amount" aria-label="Expense amount" />
           </div>
-          <input id="logExpenseDesc" type="text" maxlength="40"
-            class="input flex-[2]" placeholder="What was it for?" aria-label="Expense description" />
+          <input id="logExpenseNote" type="text" maxlength="60"
+            class="input flex-[2]" placeholder="Note (optional)" aria-label="Expense note" />
           <button id="logExpenseBtn" type="button" class="btn-primary shrink-0 px-4 log-expense-btn" aria-label="Log expense">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Log
           </button>
         </div>
+        <!-- Category picker BELOW amount row -->
+        <div id="logCategoryPicker" class="log-category-picker mt-3" role="group" aria-label="Select category"></div>
         <p id="logExpenseError" class="field-error mt-2 hidden"></p>
       </div>
     </section>
 
     <!-- recent expenses -->
     <section class="mt-8">
-      <h2 class="text-lg font-bold text-ink mb-3">Recent expenses</h2>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-bold text-ink">Recent expenses</h2>
+        <a href="activity.html" class="view-all-link">View all →</a>
+      </div>
       <ul id="recentExpenseList" class="card-panel divide-y divide-slate-100"></ul>
       <p id="emptyExpenseState" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses yet. Log one above, or use Quick add for recurring costs.</p>
     </section>
 
-    <!-- category statistics widgets -->
-    <section class="mt-7" id="categoryStatsSection">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-bold text-ink">This week's stats</h2>
-        <a href="stats.html" class="text-xs font-bold text-emerald-700">View all →</a>
-      </div>
-      <div id="categoryStatsGrid" class="grid grid-cols-2 gap-3"></div>
-      <p id="categoryStatsEmpty" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses recorded yet this week.</p>
+    <!-- Summary Metrics -->
+    <section class="mt-8">
+      <div id="summaryMetricsContainer"></div>
     </section>
 
-    <!-- spending chart component -->
-    <section class="spending-chart-section" id="spendingChartSection">
-      <div class="spending-chart-container">
-        <div class="spending-chart-header">
-          <div>
-            <h2 class="spending-chart-title">Spending by Category</h2>
-            <p class="spending-chart-period" id="chartPeriod">This week</p>
-          </div>
+    <!-- Stats Grid -->
+    <section class="mt-8">
+      <div class="stats-grid">
+
+        <!-- 1. Progress Donut Chart -->
+        <div class="chart-card progress-section">
+          <p class="section-header"><span class="material-icons section-icon">pie_chart</span> Budget Progress</p>
+          <div id="progressDonutContainer"></div>
         </div>
-        <div id="spendingChartContainer" class="spending-chart-content">
-          <!-- Chart renders here -->
+
+        <!-- 2. Category Breakdown -->
+        <div class="chart-card">
+          <p class="section-header"><span class="material-icons section-icon">label</span> Category Breakdown</p>
+          <div id="categoryBreakdownContainer"></div>
         </div>
-      </div>
+
+        <!-- 3. Daily Spending Trend -->
+        <div class="chart-card">
+          <p class="section-header"><span class="material-icons section-icon">trending_up</span> Daily Trend</p>
+          <div id="dailyTrendContainer"></div>
+        </div>
+
+        <!-- 4. Week-over-Week Comparison -->
+        <div class="chart-card">
+          <p class="section-header"><span class="material-icons section-icon">calendar_month</span> Week Comparison</p>
+          <div id="weekComparisonContainer"></div>
+        </div>
+
+      </div><!-- /stats-grid -->
     </section>
   </main>
   </div><!-- /app-main -->
@@ -196,23 +243,32 @@
       <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <span class="nav-text">Activity</span>
     </a>
-    <a href="stats.html" data-nav="stats" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      <span class="nav-text">Stats</span>
-    </a>
     <a href="tigom.html" data-nav="tigom" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-      <span class="nav-text">Tigom</span>
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+      <span class="nav-text">Goals</span>
     </a>
-    <button id="darkModeToggleMobile" class="nav-link dark-mode-toggle-mobile" aria-label="Toggle dark mode">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-      <span class="nav-text">Dark</span>
-    </button>
+    <a href="stats.html" data-nav="stats" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-text">Profile</span>
+    </a>
     <a href="settings.html" data-nav="settings" class="nav-link">
       <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       <span class="nav-text">Settings</span>
     </a>
   </nav>
+
+  <!-- budget-gate modal -->
+  <div id="budgetGateModal" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="budgetGateTitle">
+    <div class="modal-sheet" style="text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:0.5rem" aria-hidden="true">💰</div>
+      <p class="modal-title" id="budgetGateTitle">Set a budget first</p>
+      <p class="text-sm text-slate-500 mt-1 mb-4">You need a weekly budget before you can log expenses.</p>
+      <div class="modal-actions">
+        <button type="button" id="budgetGateCancel" class="btn-outline">Maybe later</button>
+        <a href="settings.html" class="btn-primary">Go to Settings</a>
+      </div>
+    </div>
+  </div>
 
   <!-- quick-add edit/create modal -->
   <div id="qaModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="qaModalTitle">
@@ -223,6 +279,12 @@
         <label class="label" for="qaModalCategory">Name</label>
         <input class="input" type="text" id="qaModalCategory" maxlength="24" placeholder="e.g. Snack, Gym, Bus" />
         <p class="field-error" id="qaModalCategoryError"></p>
+      </div>
+      <div class="modal-field">
+        <label class="label" for="qaModalCategoryId">Category (for stats)</label>
+        <select class="input" id="qaModalCategoryId">
+          <option value="">— pick one —</option>
+        </select>
       </div>
       <div class="modal-field">
         <label class="label" for="qaModalAmount">Default amount (₱)</label>
@@ -237,6 +299,11 @@
     </div>
   </div>
 
+  <div id="dashboardAccountMenu" class="dashboard-account-menu hidden" role="menu" aria-label="Account menu">
+    <a href="settings.html" class="dashboard-account-menu-item" role="menuitem">Profile &amp; Settings</a>
+    <a href="settings.html" class="dashboard-account-menu-item" role="menuitem">Settings</a>
+  </div>
+
   <!-- Undo toast -->
   <div id="undoToast" class="undo-toast hidden" role="status" aria-live="polite">
     <span id="undoToastMsg">Expense removed</span>
@@ -248,9 +315,11 @@
   <script src="js/firestore-service.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
-  <script src="js/dashboard.js"></script>
-  <script src="js/spending-chart.js"></script>
-  <script src="js/mascot.js"></script>
+  <script src="js/gamification.js"></script>
   <script src="js/dark-mode.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/dashboard-stats.js"></script>
+  <script src="js/chat-ai.js"></script>
+  <script src="js/mascot.js"></script>
 </body>
 </html>

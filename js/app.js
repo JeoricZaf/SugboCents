@@ -89,9 +89,76 @@
     });
   }
 
+  function initSidebarToggle() {
+    var toggleBtn = document.getElementById("sidebarToggle");
+    if (!toggleBtn) {
+      return;
+    }
+
+    // State is already applied by the inline <script> in <head> (no DOMContentLoaded needed).
+    // Just wire the click handler to toggle the class on <html>.
+    toggleBtn.addEventListener("click", function () {
+      var isCollapsed = document.documentElement.classList.toggle("sidebar-collapsed");
+      localStorage.setItem("sidebarCollapsed", isCollapsed ? "true" : "false");
+    });
+  }
+
+  function initSidebarTooltip() {
+    // Only relevant on desktop where the sidebar exists.
+    if (window.innerWidth < 1024) { return; }
+
+    // Single tooltip div appended to <body> — escapes sidebar overflow:hidden entirely.
+    var tip = document.createElement("div");
+    tip.className = "sidebar-tooltip";
+    document.body.appendChild(tip);
+
+    function showTip(text, rect) {
+      tip.textContent = text;
+      tip.style.top = (rect.top + rect.height / 2) + "px";
+      tip.style.left = (rect.right + 10) + "px";
+      tip.classList.add("is-visible");
+    }
+
+    function hideTip() {
+      tip.classList.remove("is-visible");
+    }
+
+    // Nav links — only show tooltip when sidebar is collapsed.
+    var navLinks = document.querySelectorAll(".sidebar-nav-link[data-tooltip]");
+    navLinks.forEach(function (link) {
+      link.addEventListener("mouseenter", function () {
+        if (!document.documentElement.classList.contains("sidebar-collapsed")) { return; }
+        showTip(link.dataset.tooltip, link.getBoundingClientRect());
+      });
+      link.addEventListener("mouseleave", hideTip);
+    });
+
+    // User row tooltip — only when collapsed.
+    var userRow = document.querySelector(".sidebar-user");
+    if (userRow) {
+      userRow.addEventListener("mouseenter", function () {
+        if (!document.documentElement.classList.contains("sidebar-collapsed")) { return; }
+        showTip("Account settings", userRow.getBoundingClientRect());
+      });
+      userRow.addEventListener("mouseleave", hideTip);
+    }
+
+    // Toggle button — always show (collapsed or expanded).
+    var toggleBtn = document.getElementById("sidebarToggle");
+    if (toggleBtn) {
+      toggleBtn.addEventListener("mouseenter", function () {
+        var isCollapsed = document.documentElement.classList.contains("sidebar-collapsed");
+        showTip(isCollapsed ? "Open sidebar" : "Close sidebar", toggleBtn.getBoundingClientRect());
+      });
+      toggleBtn.addEventListener("mouseleave", hideTip);
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", async function () {
     await protectRoutes();
     activateBottomNav();
+    initSidebarToggle();
+    initSidebarTooltip();
     registerServiceWorker();
   });
 })();
