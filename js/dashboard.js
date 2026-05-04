@@ -1036,6 +1036,30 @@
     }
   }
 
+  function renderSaveGoalsStreak() {
+    if (!window.StorageAPI) { return; }
+    var streakCountEl = document.getElementById("streakCount");
+    var streakDescEl = document.getElementById("streakDescription");
+    if (!streakCountEl || !streakDescEl) { return; }
+    
+    var goals = window.StorageAPI.getGoals ? window.StorageAPI.getGoals() : [];
+    var streak = window.StorageAPI.getSaveGoalsStreak ? window.StorageAPI.getSaveGoalsStreak(goals) : 0;
+    
+    streakCountEl.textContent = String(streak);
+    
+    if (streak === 0) {
+      streakDescEl.textContent = "Start contributing to a goal to build your streak.";
+    } else if (streak === 1) {
+      streakDescEl.textContent = "Great start! Keep contributing tomorrow.";
+    } else if (streak < 7) {
+      streakDescEl.textContent = streak + " consecutive days of goal contributions.";
+    } else if (streak < 30) {
+      streakDescEl.textContent = streak + "-day streak! You're a saving champion.";
+    } else {
+      streakDescEl.textContent = streak + "-day streak! Exceptional dedication to your goals.";
+    }
+  }
+
   // ── recent expenses ──────────────────────────────────────
   function renderRecentExpenses() {
     if (!window.StorageAPI) {
@@ -1663,6 +1687,7 @@
       updateBudgetCard();
       updateQuickSummaryStats();
       renderXpWidget();
+      renderSaveGoalsStreak();
       renderRecentExpenses();
       renderCategoryStats();
       wireDashboardStats();
@@ -1686,6 +1711,7 @@
         updateBudgetCard();
         updateQuickSummaryStats();
         renderXpWidget();
+        renderSaveGoalsStreak();
         renderRecentExpenses();
         renderQuickAddButtons();
         renderCategoryStats();

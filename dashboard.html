@@ -160,10 +160,13 @@
     <!-- save goals streak -->
     <section class="streak-card card-panel mt-6" aria-label="Save goals streak">
       <div class="streak-row">
-        <div class="streak-badge">🔥 <span id="streakCount">0</span></div>
+        <div class="streak-badge">
+          <i class="bi bi-fire" aria-hidden="true"></i>
+          <span id="streakCount">0</span>
+        </div>
         <div>
           <p class="text-lg text-ink font-bold">Save goals streak</p>
-          <p id="streakDescription" class="text-xs text-slate-500 mt-1">This will track completed save-goal milestones once enabled.</p>
+          <p id="streakDescription" class="text-xs text-slate-500 mt-1">Consecutive days with a goal contribution. Keep it going!</p>
         </div>
       </div>
     </section>
@@ -456,6 +459,6 @@
   <script src="js/dashboard.js"></script>
   <script src="js/dashboard-stats.js"></script>
   <script src="js/chat-ai.js"></script>
-  <script src="js/mascot.js"></script>
+    <script src="js/mascot.js"></script>
 </body>
 </html>

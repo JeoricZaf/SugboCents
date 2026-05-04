@@ -282,6 +282,35 @@
     }, 0);
   }
 
+  function getSaveGoalsStreak(goals) {
+    if (!Array.isArray(goals) || goals.length === 0) { return 0; }
+    
+    var set = {};
+    goals.forEach(function (goal) {
+      if (goal.updatedAt) {
+        set[getLocalDateKey(goal.updatedAt)] = true;
+      } else if (goal.lastContributionDate) {
+        set[getLocalDateKey(goal.lastContributionDate)] = true;
+      }
+    });
+    
+    var today = new Date();
+    var todayKey = getLocalDateKey(today);
+    var yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    var yesterdayKey = getLocalDateKey(yesterday);
+    
+    if (!set[todayKey] && !set[yesterdayKey]) { return 0; }
+    
+    var cursor = set[todayKey] ? new Date(today) : new Date(yesterday);
+    var count = 0;
+    while (set[getLocalDateKey(cursor)]) {
+      count += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return count;
+  }
+
   function buildAchievementState(user) {
     ensureGamificationFields(user);
     var expenses = Array.isArray(user.expenses) ? user.expenses : [];
@@ -1265,6 +1294,7 @@
       savedAmount: 0,
       deadline: data.deadline ? String(data.deadline) : "",
       createdAt: nowIso(),
+      updatedAt: nowIso(),
       completed: false
     };
     if (!Array.isArray(user.goals)) {
@@ -1297,6 +1327,7 @@
     }
     goal.savedAmount = Math.max(0, amount);
     goal.completed = goal.savedAmount >= goal.targetAmount;
+    goal.updatedAt = nowIso();
     saveStore(store);
     return { ok: true, goal: goal };
   }
@@ -1506,6 +1537,7 @@
     addXp: addXp,
     getXpInfo: getXpInfo,
     getCurrentStreak: getCurrentStreak,
+    getSaveGoalsStreak: getSaveGoalsStreak,
     getAchievements: getAchievements,
     checkNewAchievements: checkNewAchievements,
     markAchievementsNotified: markAchievementsNotified,
