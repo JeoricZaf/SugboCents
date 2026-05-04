@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Sora:wght@400;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="css/style.css" />
@@ -50,11 +50,15 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
         <span class="nav-link-label">Goals</span>
       </a>
+      <a href="chat.html" data-nav="chat" class="sidebar-nav-link" data-tooltip="Sugbo AI">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="nav-link-label">Sugbo AI</span>
+      </a>
     </nav>
     <a href="settings.html" class="sidebar-user" aria-label="Account settings">
       <div id="sidebarAvatar" class="sidebar-user-avatar">U</div>
       <div class="min-w-0 sidebar-user-info">
-        <div id="sidebarName" class="sidebar-user-name">Loading…</div>
+        <div id="sidebarName" class="sidebar-user-name">Loading�</div>
         <div class="sidebar-user-sub">Account settings</div>
       </div>
       <svg class="sidebar-user-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
@@ -64,171 +68,107 @@
   <div class="app-main">
   <main class="pb-32 pt-6 px-4 max-w-lg mx-auto">
 
-    <!-- greeting header -->
+    <!-- identity / XP hero -->
     <header class="page-greeting">
-      <div class="greeting-text">
-        <p id="greetingDate" class="page-greeting-sub"></p>
-        <h1 id="greetingTitle" class="page-greeting-title">Welcome back</h1>
+      <div class="greeting-row">
+        <div class="greeting-text">
+          <div class="level-name-row">
+            <h1 id="xpLevelName" class="xp-level-name">Rookie Saver</h1>
+            <span id="xpLevelBadge" class="level-badge">Lv. 1</span>
+          </div>
+        </div>
+        <button id="greetingStreakBadge" class="streak-badge streak-badge--cold" aria-label="Daily streak: 0 days" type="button">
+          <span class="material-icons streak-badge-icon" aria-hidden="true">local_fire_department</span>
+          <span id="streakBadgeCount" class="streak-badge-count">0</span>
+        </button>
       </div>
-
-      <!-- Dashboard Full-Body Mascot -->
-      <div class="dashboard-mascot-wrapper">
-        <!-- The Speech Bubble -->
-        <div id="mascotSpeechBubble" class="mascot-speech-bubble"></div>
-        <!-- The Mascot Image -->
-        <img id="dashboardMascotImg" src="assets/images/mascot/fullbody-wave.gif" alt="Sugbo the Mascot" draggable="false" />
+      <div class="xp-bar-hero">
+        <div class="xp-bar-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="XP progress">
+          <div id="xpBar" class="xp-bar-fill" style="width:0%"></div>
+        </div>
+        <div class="xp-bar-hero-labels">
+          <span id="xpValue" class="xp-value-label">0 XP</span>
+          <span id="xpNextLabel" class="xp-next-label">Log your first expense to earn XP</span>
+        </div>
       </div>
     </header>
 
     <!-- budget card -->
-    <section class="budget-card">
+    <section class="budget-card" id="budgetCard">
       <div class="flex items-start justify-between gap-4">
         <div>
           <p class="text-sm font-medium text-emerald-200" style="letter-spacing:0.02em">Remaining this week</p>
           <p id="remainingAmount" class="budget-amount">₱0.00</p>
           <p id="budgetSummary" class="mt-2 text-sm text-emerald-100/80">Set your weekly budget in Settings.</p>
+          <p id="budgetHealthLine" class="budget-health-line"></p>
         </div>
-        <a href="settings.html" class="edit-chip shrink-0" aria-label="Edit budget">Edit</a>
+        <a href="settings.html" class="budget-gear-btn shrink-0" aria-label="Edit budget">
+          <span class="material-icons" aria-hidden="true">settings</span>
+        </a>
       </div>
       <div class="mt-5">
         <div class="budget-progress-track">
           <div id="budgetProgress" class="budget-progress-bar" style="width:0%"></div>
         </div>
         <div class="flex items-center justify-between mt-2">
-          <p id="progressLabel" class="text-xs text-emerald-100/70">0% spent</p>
+          <p id="progressLabel" class="text-xs text-emerald-100/70">0% used</p>
           <p id="budgetWeekLabel" class="text-xs text-emerald-100/50"></p>
         </div>
       </div>
     </section>
 
-    <!-- quick summary stats row -->
-    <section class="mt-6 grid grid-cols-3 gap-2" aria-label="Week summary">
-      <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
-        <p class="text-xs text-slate-500 font-medium">Spent</p>
-        <p id="dashQuickSpent" class="text-sm font-bold text-ink">&#8369;0</p>
-      </div>
-      <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
-        <p class="text-xs text-slate-500 font-medium">Avg Daily</p>
-        <p id="dashQuickAvg" class="text-sm font-bold text-ink">&#8369;0</p>
-      </div>
-      <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
-        <p class="text-xs text-slate-500 font-medium">Remaining</p>
-        <p id="dashQuickRemaining" class="text-sm font-bold text-emerald-600">&#8369;0</p>
-      </div>
-    </section>
 
-    <section class="xp-widget mt-5" aria-label="Progress">
-      <div class="xp-widget-inner">
-        <div class="xp-widget-top">
-          <span id="xpLevel" class="level-badge">
-            <i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i>
-            Lv. 1 — Rookie Saver
-          </span>
-          <span id="xpStreakChip" class="streak-chip streak-chip--cold">
-            <i class="bi bi-fire" aria-hidden="true"></i>
-            No streak yet
-          </span>
-        </div>
-        <div class="xp-bar-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="XP progress">
-          <div id="xpBar" class="xp-bar-fill" style="width:0%"></div>
-        </div>
-        <div class="xp-widget-bottom">
-          <span id="xpValue" class="xp-value-label">0 XP</span>
-          <a href="tigom.html" class="view-all-link">View details <i class="bi bi-arrow-right-short" aria-hidden="true"></i></a>
-        </div>
-      </div>
-    </section>
-
-    <!-- quick add -->
-    <section class="mt-7">
-      <div class="flex items-center justify-between mb-3">
-        <div>
-          <h2 class="text-lg font-bold text-ink">Quick add</h2>
-          <p class="text-xs text-slate-500 mt-0.5">Shortcuts for recurring expenses</p>
-        </div>
-        <button id="addNewQaBtn" type="button" class="qa-inline-add-btn" aria-label="Add new shortcut">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add
-        </button>
-      </div>
-
-      <div id="quickAddGrid" class="mt-3 grid grid-cols-2 gap-3"></div>
-    </section>
-
-    <!-- one-time expense -->
-    <section class="mt-7">
-      <div class="flex items-center justify-between mb-3">
-        <div>
-          <h2 class="text-lg font-bold text-ink">Log expense</h2>
-          <p class="text-xs text-slate-500 mt-0.5">For one-off or unexpected costs</p>
-        </div>
-      </div>
-      <div class="card-panel p-4 log-form">
-        <!-- Amount + note row FIRST -->
-        <div class="flex gap-2">
-          <div class="relative flex-1">
-            <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold pointer-events-none">₱</span>
-            <input id="logExpenseAmount" type="number" min="1" step="1"
-              class="input pl-7 w-full" placeholder="Amount" aria-label="Expense amount" />
+    <!-- action zone: mission + shortcuts + one-time log -->
+    <section class="action-zone mt-5">
+      <!-- mission banner -->
+      <div id="todayMissionCard" class="today-mission-card today-mission-card--none" aria-label="Today's mission">
+        <div class="today-mission-inner">
+          <span id="todayMissionIcon" class="today-mission-icon" aria-hidden="true">📋</span>
+          <div class="today-mission-text">
+            <p class="today-mission-title">Today's Mission</p>
+            <p id="todayMissionMsg" class="today-mission-desc">Log your first expense today to start building your streak.</p>
           </div>
-          <input id="logExpenseNote" type="text" maxlength="60"
-            class="input flex-[2]" placeholder="Note (optional)" aria-label="Expense note" />
-          <button id="logExpenseBtn" type="button" class="btn-primary shrink-0 px-4 log-expense-btn" aria-label="Log expense">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Log
-          </button>
         </div>
-        <!-- Category picker BELOW amount row -->
-        <div id="logCategoryPicker" class="log-category-picker mt-3" role="group" aria-label="Select category"></div>
-        <p id="logExpenseError" class="field-error mt-2 hidden"></p>
+        <button id="todayMissionBtn" type="button" class="btn-primary w-full mt-3">Log Now</button>
       </div>
+      <!-- quick add shortcuts -->
+      <p class="action-zone-label mt-4">Your shortcuts</p>
+      <div id="quickAddGrid" class="mt-2 grid grid-cols-2 gap-3"></div>
+      <!-- one-time expense log -->
+      <button id="logOneTimeBtn" type="button" class="log-one-time-btn mt-3">
+        <span class="material-icons" aria-hidden="true">add_circle_outline</span>
+        Log a one-time expense
+      </button>
     </section>
+
+    <!-- hidden weekAtGlance stub (JS early-returns on null) -->
+    <div id="weekAtGlance" class="hidden" aria-hidden="true"></div>
 
     <!-- recent expenses -->
     <section class="mt-8">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-lg font-bold text-ink">Recent expenses</h2>
-        <a href="activity.html" class="view-all-link">View all →</a>
+        <a href="activity.html" class="view-all-link">View all ?</a>
       </div>
       <ul id="recentExpenseList" class="card-panel divide-y divide-slate-100"></ul>
-      <p id="emptyExpenseState" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses yet. Log one above, or use Quick add for recurring costs.</p>
+      <p id="emptyExpenseState" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses yet — use Quick add above to log one.</p>
     </section>
 
-    <!-- Summary Metrics -->
-    <section class="mt-8">
-      <div id="summaryMetricsContainer"></div>
+    <!-- Spending breakdown this week -->
+    <section class="mt-7" aria-label="Spending breakdown this week">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="section-mini-header">Where's your money going?</h2>
+        <a href="spending-chart.html" class="view-all-link">See chart</a>
+      </div>
+      <div id="spendingBreakdown" class="card-panel px-4 py-2"></div>
     </section>
 
-    <!-- Stats Grid -->
-    <section class="mt-8">
-      <div class="stats-grid">
-
-        <!-- 1. Progress Donut Chart -->
-        <div class="chart-card progress-section">
-          <p class="section-header"><span class="material-icons section-icon">pie_chart</span> Budget Progress</p>
-          <div id="progressDonutContainer"></div>
-        </div>
-
-        <!-- 2. Category Breakdown -->
-        <div class="chart-card">
-          <p class="section-header"><span class="material-icons section-icon">label</span> Category Breakdown</p>
-          <div id="categoryBreakdownContainer"></div>
-        </div>
-
-        <!-- 3. Daily Spending Trend -->
-        <div class="chart-card">
-          <p class="section-header"><span class="material-icons section-icon">trending_up</span> Daily Trend</p>
-          <div id="dailyTrendContainer"></div>
-        </div>
-
-        <!-- 4. Week-over-Week Comparison -->
-        <div class="chart-card">
-          <p class="section-header"><span class="material-icons section-icon">calendar_month</span> Week Comparison</p>
-          <div id="weekComparisonContainer"></div>
-        </div>
-
-      </div><!-- /stats-grid -->
-    </section>
+    <!-- view full stats link card -->
+    <a href="spending-chart.html" class="view-stats-link-card" aria-label="View full spending statistics">
+      <span class="view-stats-link-card-icon" aria-hidden="true">📊</span>
+      <span class="view-stats-link-card-text">View full stats</span>
+      <i class="bi bi-arrow-right-short view-stats-link-card-arrow" aria-hidden="true"></i>
+    </a>
   </main>
   </div><!-- /app-main -->
   </div><!-- /app-layout -->
@@ -247,9 +187,9 @@
       <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
       <span class="nav-text">Goals</span>
     </a>
-    <a href="stats.html" data-nav="stats" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <span class="nav-text">Profile</span>
+    <a href="chat.html" data-nav="chat" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="nav-text">Sugbo AI</span>
     </a>
     <a href="settings.html" data-nav="settings" class="nav-link">
       <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -260,7 +200,7 @@
   <!-- budget-gate modal -->
   <div id="budgetGateModal" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="budgetGateTitle">
     <div class="modal-sheet" style="text-align:center">
-      <div style="font-size:2.5rem;margin-bottom:0.5rem" aria-hidden="true">💰</div>
+      <div style="font-size:2.5rem;margin-bottom:0.5rem" aria-hidden="true">??</div>
       <p class="modal-title" id="budgetGateTitle">Set a budget first</p>
       <p class="text-sm text-slate-500 mt-1 mb-4">You need a weekly budget before you can log expenses.</p>
       <div class="modal-actions">
@@ -283,11 +223,11 @@
       <div class="modal-field">
         <label class="label" for="qaModalCategoryId">Category (for stats)</label>
         <select class="input" id="qaModalCategoryId">
-          <option value="">— pick one —</option>
+          <option value="">� pick one �</option>
         </select>
       </div>
       <div class="modal-field">
-        <label class="label" for="qaModalAmount">Default amount (₱)</label>
+        <label class="label" for="qaModalAmount">Default amount (?)</label>
         <input class="input" type="number" id="qaModalAmount" min="1" step="1" placeholder="0" />
         <p class="field-error" id="qaModalAmountError"></p>
       </div>
@@ -299,6 +239,33 @@
     </div>
   </div>
 
+
+  <!-- log a one-time expense modal -->
+  <div id="customLogModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="customLogTitle">
+    <div class="modal-sheet">
+      <p class="modal-title" id="customLogTitle">Log a one-time expense</p>
+      <div class="modal-field">
+        <label class="label" for="customLogAmount">Amount (&#8369;)</label>
+        <input class="input" type="number" id="customLogAmount" min="1" step="1" placeholder="0" />
+        <p class="field-error" id="customLogAmountError"></p>
+      </div>
+      <div class="modal-field">
+        <label class="label" for="customLogCategory">Category</label>
+        <select class="input" id="customLogCategory">
+          <option value="">&#8212; pick one &#8212;</option>
+        </select>
+        <p class="field-error" id="customLogCategoryError"></p>
+      </div>
+      <div class="modal-field">
+        <label class="label" for="customLogNote">Note <span class="text-slate-400 font-normal">(optional)</span></label>
+        <input class="input" type="text" id="customLogNote" maxlength="80" placeholder="e.g. Textbook, Birthday gift" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="customLogCancel" class="btn-outline">Cancel</button>
+        <button type="button" id="customLogSave" class="btn-primary">Log Expense</button>
+      </div>
+    </div>
+  </div>
   <div id="dashboardAccountMenu" class="dashboard-account-menu hidden" role="menu" aria-label="Account menu">
     <a href="settings.html" class="dashboard-account-menu-item" role="menuitem">Profile &amp; Settings</a>
     <a href="settings.html" class="dashboard-account-menu-item" role="menuitem">Settings</a>
@@ -318,8 +285,6 @@
   <script src="js/gamification.js"></script>
   <script src="js/dark-mode.js"></script>
   <script src="js/dashboard.js"></script>
-  <script src="js/dashboard-stats.js"></script>
-  <script src="js/chat-ai.js"></script>
   <script src="js/mascot.js"></script>
 </body>
 </html>

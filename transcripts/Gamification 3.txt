@@ -1,0 +1,140 @@
+Core idea of the video
+
+Gamification is adding game mechanics into non-game products to:
+
+Make things more enjoyable
+Increase user retention and usage
+
+Examples:
+
+Progress bars (like profile completion)
+Streaks (like language learning apps)
+
+👉 Key point:
+People naturally enjoy games, so apps use game elements to keep users engaged.
+
+The 7 key gamification techniques
+1. Point system
+Users earn points for completing actions or tasks
+Shows progress and motivates users
+
+Important insight:
+Points alone are not enough → they need meaning or rewards
+
+👉 Use it to:
+
+Track progress
+Encourage task completion
+2. Badges & achievements
+Rewards for reaching milestones or collecting points
+Gives users a sense of accomplishment
+
+Why it works:
+
+Even small rewards feel satisfying
+Notifications (like “You earned a badge”) boost motivation
+
+👉 Use it to:
+
+Recognize progress
+Keep users engaged long-term
+3. Challenges
+Tasks or goals that push users to improve or try something new
+
+Why it works:
+
+Humans enjoy testing themselves
+Makes boring tasks feel exciting
+Encourages exploration of your product
+
+👉 Use it to:
+
+Guide users to new features
+Increase engagement and learning
+4. Leaderboards
+Ranks users based on performance
+
+Why it works:
+
+Adds competition
+Motivates users to improve
+
+Important limitation:
+
+Only works well for certain apps (learning, competitive, skill-based)
+
+👉 Use it when:
+
+Your product has a natural competitive aspect
+5. Constraints & limitations (timers, countdowns)
+Time limits or restrictions
+
+Why it works:
+
+Creates urgency and tension
+Pushes users to take action faster
+
+👉 Use it to:
+
+Increase productivity
+Prevent procrastination
+6. Progress bars
+Visual indicator of completion
+
+Why it works:
+
+People want to “finish what they started”
+Makes progress visible and motivating
+
+👉 Use it for:
+
+Onboarding
+Tutorials
+Profile completion
+Multi-step tasks
+7. Make onboarding feel like a journey
+Gradually introduce features step-by-step
+Unlock things as users progress
+
+Why it works:
+
+Feels like an adventure
+Reduces overwhelm
+Makes learning smoother
+
+👉 Use it to:
+
+Improve first-time user experience
+Keep users engaged early on
+Most important lessons (don’t miss these)
+1. Gamification = motivation design
+
+It’s not just “fun features”
+It’s about pushing users to:
+
+Start
+Continue
+Come back
+2. Combine systems, don’t rely on one
+
+Best apps don’t just use one:
+
+Points + badges + progress + challenges = stronger engagement
+3. Give meaning to actions
+Points must lead to rewards
+Progress must feel real
+Achievements must feel earned
+4. Match the technique to your product
+Leaderboards → good for competition
+Timers → good for productivity
+Progress bars → good for onboarding
+
+Not every feature fits every app.
+
+5. Make boring things feel enjoyable
+
+This is the main goal:
+
+Turn routine tasks into something satisfying
+
+[Music] foreign gamification has become one of the most powerful ux Trends in recent memory you know why because if there is something both you and I have in common in that we prefer to enjoy the things we do as humans we all enjoy playing games to some extent whether it would be video games social games or board games so today I would like to show you seven gamification techniques that will make your product infinitely more enjoyable and more importantly increase user retention okay so to stick to the video of We what what have been what event is gamification and why would you consider it for your product to put things in simple terms gamification means bringing game mechanics into non-game context an example of that would be progress bar that pushes you to finish your profile on LinkedIn or the daily streaks on Duolingo anything that encourages engagement with your product and is inspired by what people do in the video game industry counts at the gamification technique the reason why so many companies try to gamify their product as much as possible is to maximize retention and usage of their product now that we've got that out of the way let's talk about fq gamification techniques that you can add to your product alright so the first gamification technique I would like to cover is point system countless games have a point system at the way of showing progress or representing both finished and unfinished objectives this system serves as a motivational tool encouraging users to complete their tasks this approach is also commonly used in gamified digital products where points gauge a user achievements the most common product type that you this technique are language learning applications productivity tools time management solution tasks organizers and various educational apps but points by themselves don't mean much if the user doesn't get anything out of them so what do we do about it well that's exactly what we'll cover now so what should users get out of the collecting points that comes with our next Point Badges and achievements having a batch or Achievement System is a great way to reward your users for collecting a specific amount of points or achieving a specific Milestone it's something that seems insignificant at first but it really does a lot to keep your users engaged a user getting a notification that they got a new badge or achievement give them massive satisfaction so it's definitely worth to consider adding this to your product alright and up next we've got challenges you see at our core humans are always changing and learning by facing challenges we actually enjoy challenges or at least we should challenges let us test ourselves and see what we can do they push us out of our usual routine and help us to do better plus they make things that might seem boring into exciting things to do this is a simple concept that you can apply to your product a challenge system will not only increase retention but also allow your users to explore the product and learn about its aspects that they wouldn't have discovered otherwise and up next while we're on topic of challenges let's talk about leaderboards nothing is as good as it will come in a challenge and learning that you're the best out of many people right adding a competition factor to your product is a force to be reckoned with to say the least however keep in mind that this won't work unless you have a pretty specific product type like a language learning app for example Duolingo is an app that pretty much everybody has heard of and they do the leaderboard system extremely well if anything any product that has an emphasis on the learning or has a competitive aspect to it could use a leaderboard system with that said if you do have the opportunity to add the leaderboard system then definitely consider it next up we'll get something extremely powerful and that is constraints and limitations at the first glance it's something that you wouldn't ever want to add right things like countdowns create tension for users you might say and that's exactly what makes it fun things like countdowns are often used in games to motivate players to complete a certain level or task within a limited time yes it does create them psychological tension but it also make them to take action and complete tasks faster a lot of users has limited time to work so adding a timer as an option will greatly benefit them and make them more efficient and productive than they would be otherwise alright and next technique is something that both extremely simple and extremely effective and that is progress bar as I mentioned before LinkedIn does that do very well with its profile completion progress bar but there are countless other examples to speak of let's say you added a brand new feature to your product and your user has to be guided to learn how to use it you can can add a progress bar to your tutorial section to entice your users to go through always and that's just one example another obvious example would be with your onboarding process but more of that in our last point and to finish off the last thing we're gonna cover today is making your own boring process feel like a journey this simply means guiding users through the app step by step having new features unlocked gradually as the user becomes more and more familiar with the product this feeling of progress is extremely satisfying and motivational it feels a bit like an adventure but more importantly it makes the experience of the user smoother and more enjoyable if there is any place that you should put a progress bar this is one of them alright thank you so much for watching I hope this video was useful to you don't forget to hit the like button and subscribe and see you in the next one [Music] foreign gamification

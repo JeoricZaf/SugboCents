@@ -98,6 +98,8 @@
     var progressEl    = document.getElementById("budgetProgress");
     var labelEl       = document.getElementById("progressLabel");
     var weekLabelEl   = document.getElementById("budgetWeekLabel");
+    var healthLineEl  = document.getElementById("budgetHealthLine");
+    var budgetCardEl  = document.getElementById("budgetCard");
 
     if (!remainingEl) {
       return;
@@ -113,9 +115,36 @@
 
     var pct = summary.percentageSpent;
     progressEl.style.width = pct + "%";
-    labelEl.textContent = pct + "% spent";
 
-    // colour-adaptive bar
+    // Days left in week (Mon–Sun)
+    var now2 = new Date();
+    var dow2 = now2.getDay();
+    var weekStart2 = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate() - ((dow2 + 6) % 7));
+    var weekEnd2   = new Date(weekStart2.getFullYear(), weekStart2.getMonth(), weekStart2.getDate() + 7);
+    var daysLeftNum = Math.ceil((weekEnd2 - now2) / (1000 * 60 * 60 * 24));
+    daysLeftNum = Math.max(1, Math.min(7, daysLeftNum));
+
+    labelEl.textContent = pct + "% used \u00b7 " + daysLeftNum + " day" + (daysLeftNum === 1 ? "" : "s") + " left";
+
+    // Health line — computed from avg daily spend vs remaining budget / remaining days
+    if (healthLineEl && summary.weeklyBudget > 0) {
+      var avgDailyTarget = summary.weeklyBudget / 7;
+      var spentDays = 7 - daysLeftNum + 1;
+      var avgDailyActual = spentDays > 0 ? summary.totalSpentThisWeek / spentDays : 0;
+      if (pct >= 100) {
+        healthLineEl.textContent = "Over budget this week";
+      } else if (avgDailyActual > avgDailyTarget * 1.1) {
+        healthLineEl.textContent = "Watch out \u2014 spending above daily pace";
+      } else if (avgDailyActual > avgDailyTarget * 0.9) {
+        healthLineEl.textContent = "On track \u2014 right on pace";
+      } else {
+        healthLineEl.textContent = "Ahead of pace \u2014 " + formatPhp(Math.round(avgDailyTarget - avgDailyActual)) + " under avg/day";
+      }
+    } else if (healthLineEl) {
+      healthLineEl.textContent = "";
+    }
+
+    // colour-adaptive bar fill
     progressEl.classList.remove("pct-warn", "pct-danger");
     if (pct >= 80) {
       progressEl.classList.add("pct-danger");
@@ -123,17 +152,23 @@
       progressEl.classList.add("pct-warn");
     }
 
+    // State-based card background
+    if (budgetCardEl) {
+      budgetCardEl.classList.remove("budget-card--caution", "budget-card--warning", "budget-card--danger");
+      if (pct >= 90) {
+        budgetCardEl.classList.add("budget-card--danger");
+      } else if (pct >= 65) {
+        budgetCardEl.classList.add("budget-card--warning");
+      } else if (pct >= 50) {
+        budgetCardEl.classList.add("budget-card--caution");
+      }
+    }
+
     // week range label
     if (weekLabelEl) {
-      var now = new Date();
-      var day = now.getDay();
-      var startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - ((day + 6) % 7));
-      var endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
       var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      weekLabelEl.textContent = months[startOfWeek.getMonth()] + " " + startOfWeek.getDate() + " \u2013 " +
-        months[endOfWeek.getMonth()] + " " + endOfWeek.getDate();
+      weekLabelEl.textContent = months[weekStart2.getMonth()] + " " + weekStart2.getDate() +
+        " \u2013 " + months[new Date(weekEnd2.getTime() - 1).getMonth()] + " " + new Date(weekEnd2.getTime() - 1).getDate();
     }
   }
 
@@ -277,10 +312,11 @@
           window.GamificationUI.maybeNotifyNewAchievements(result.newlyUnlockableAchievements || []);
         }
         updateBudgetCard();
-        updateQuickSummaryStats();
         renderXpWidget();
+        renderTodayMission();
         renderRecentExpenses();
-        renderDashboardStats();
+
+        renderSpendingBreakdown();
         if (window.SpendingChart) { window.SpendingChart.update(); }
 
         // brief visual feedback: pulse the button
@@ -303,6 +339,20 @@
       wrap.appendChild(optBtn);
       grid.appendChild(wrap);
     });
+
+    // "Add shortcut" cell — always last in the grid
+    var addWrap = document.createElement("div");
+    addWrap.className = "quick-add-wrap";
+    var addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "quick-add quick-add--add-new";
+    addBtn.setAttribute("aria-label", "Add new shortcut");
+    addBtn.innerHTML =
+      '<span class="material-icons" style="font-size:1.4rem;color:var(--brand-700)">add</span>' +
+      '<span class="block text-xs font-semibold mt-0.5" style="color:var(--brand-700)">Add</span>';
+    addBtn.addEventListener("click", function () { openQaModal(null); });
+    addWrap.appendChild(addBtn);
+    grid.appendChild(addWrap);
   }
 
   function deleteQuickAddItem(itemId) {
@@ -494,37 +544,398 @@
     });
   }
 
-  function renderXpWidget() {
-    if (!window.StorageAPI) { return; }
-    var xpLevelEl = document.getElementById("xpLevel");
-    var xpStreakEl = document.getElementById("xpStreakChip");
-    var xpBarEl = document.getElementById("xpBar");
-    var xpValueEl = document.getElementById("xpValue");
-    var barTrack = document.querySelector(".xp-bar-track");
-    if (!xpLevelEl || !xpStreakEl || !xpBarEl || !xpValueEl) { return; }
-    var xpInfo = window.StorageAPI.getXpInfo ? window.StorageAPI.getXpInfo() : { xp: 0, level: 1, levelName: "Rookie Saver", progressPct: 0 };
-    var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
-    xpLevelEl.textContent = "Lv. " + xpInfo.level + " - " + xpInfo.levelName;
-    xpValueEl.textContent = xpInfo.xp + " XP";
-    xpBarEl.style.width = xpInfo.progressPct + "%";
-    if (barTrack) { barTrack.setAttribute("aria-valuenow", String(xpInfo.progressPct)); }
-    xpStreakEl.classList.remove("streak-chip--cold", "streak-chip--warm", "streak-chip--hot", "streak-chip--week");
-    if (streak <= 0) {
-      xpStreakEl.classList.add("streak-chip--cold");
-      xpStreakEl.textContent = "🔥 No streak yet";
-    } else if (streak < 3) {
-      xpStreakEl.classList.add("streak-chip--warm");
-      xpStreakEl.textContent = "🔥 " + streak + "-day streak";
-    } else if (streak < 7) {
-      xpStreakEl.classList.add("streak-chip--hot");
-      xpStreakEl.textContent = "🔥 " + streak + "-day streak";
-    } else {
-      xpStreakEl.classList.add("streak-chip--week");
-      xpStreakEl.textContent = "🔥 " + streak + "-day streak";
+  // ── custom log modal ─────────────────────────────────────
+  function initCustomLogModal() {
+    var modal       = document.getElementById("customLogModal");
+    var amountEl    = document.getElementById("customLogAmount");
+    var categoryEl  = document.getElementById("customLogCategory");
+    var noteEl      = document.getElementById("customLogNote");
+    var amountErrEl = document.getElementById("customLogAmountError");
+    var catErrEl    = document.getElementById("customLogCategoryError");
+    var cancelBtn   = document.getElementById("customLogCancel");
+    var saveBtn     = document.getElementById("customLogSave");
+    var triggerBtn  = document.getElementById("logOneTimeBtn");
+
+    if (!modal || !triggerBtn) { return; }
+
+    // Populate categories
+    if (categoryEl && window.StorageAPI && window.StorageAPI.getExpenseCategories) {
+      var cats = window.StorageAPI.getExpenseCategories();
+      cats.forEach(function (c) {
+        var opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.emoji + " " + c.label;
+        categoryEl.appendChild(opt);
+      });
+    }
+
+    triggerBtn.addEventListener("click", function () {
+      // Budget gate
+      if (!window.StorageAPI.getWeeklyBudget || window.StorageAPI.getWeeklyBudget() <= 0) {
+        var gate = document.getElementById("budgetGateModal");
+        if (gate) { gate.classList.remove("hidden"); }
+        return;
+      }
+      amountEl.value = "";
+      categoryEl.value = "";
+      noteEl.value = "";
+      if (amountErrEl) { amountErrEl.textContent = ""; }
+      if (catErrEl)    { catErrEl.textContent = ""; }
+      modal.classList.remove("hidden");
+      amountEl.focus();
+    });
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", function () { modal.classList.add("hidden"); });
+    }
+
+    if (saveBtn) {
+      saveBtn.addEventListener("click", function () {
+        var amt   = Number(amountEl.value);
+        var catId = categoryEl.value;
+        var note  = (noteEl.value || "").trim().slice(0, 80);
+        var valid = true;
+
+        if (!Number.isFinite(amt) || amt <= 0) {
+          if (amountErrEl) { amountErrEl.textContent = "Enter a valid amount greater than 0."; }
+          valid = false;
+        } else {
+          if (amountErrEl) { amountErrEl.textContent = ""; }
+        }
+
+        if (!catId) {
+          if (catErrEl) { catErrEl.textContent = "Please select a category."; }
+          valid = false;
+        } else {
+          if (catErrEl) { catErrEl.textContent = ""; }
+        }
+
+        if (!valid) { return; }
+
+        var allCats = window.StorageAPI.getExpenseCategories ? window.StorageAPI.getExpenseCategories() : [];
+        var catMeta = null;
+        for (var ci = 0; ci < allCats.length; ci++) {
+          if (allCats[ci].id === catId) { catMeta = allCats[ci]; break; }
+        }
+        catMeta = catMeta || { label: catId, id: catId };
+
+        var rl = checkExpenseRateLimit();
+        if (!rl.allowed) { return; }
+
+        var result = window.StorageAPI.addExpense({
+          amount: amt,
+          category: catMeta.label,
+          categoryId: catMeta.id,
+          note: note || catMeta.label,
+          raw: true
+        });
+
+        if (!result.ok) { return; }
+
+        modal.classList.add("hidden");
+
+        if (window.GamificationUI && result.xpAwarded > 0) {
+          window.GamificationUI.showXpPopup(result.xpAwarded, triggerBtn);
+          window.GamificationUI.maybeNotifyNewAchievements(result.newlyUnlockableAchievements || []);
+        }
+
+        updateBudgetCard();
+        renderXpWidget();
+        renderTodayMission();
+        renderRecentExpenses();
+        renderSpendingBreakdown();
+        if (window.SpendingChart) { window.SpendingChart.update(); }
+        window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+      });
     }
   }
 
-  // ── recent expenses ──────────────────────────────────────
+  // ── week at a glance KPIs ──────────────────────────────
+  function renderWeekAtGlance() {
+    var grid = document.getElementById("weekAtGlance");
+    if (!grid || !window.StorageAPI) { return; }
+
+    var now       = new Date();
+    var today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var tomorrow  = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    var dow       = now.getDay(); // 0=Sun
+    var weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((dow + 6) % 7));
+    var weekEnd   = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
+
+    var allExpenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var summary     = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
+    var cats        = window.StorageAPI.getExpenseCategories ? window.StorageAPI.getExpenseCategories() : [];
+    var catMap = {};
+    cats.forEach(function (c) { catMap[c.id] = c; });
+
+    var todaySpend = 0;
+    var weekCount  = 0;
+    var catTotals  = {};
+    allExpenses.forEach(function (e) {
+      var d = new Date(e.timestamp);
+      if (d >= today && d < tomorrow) {
+        todaySpend += Number(e.amount || 0);
+      }
+      if (d >= weekStart && d < weekEnd) {
+        weekCount++;
+        var key = e.categoryId || e.category || "others";
+        catTotals[key] = (catTotals[key] || 0) + Number(e.amount || 0);
+      }
+    });
+
+    var weeklyBudget    = summary.weeklyBudget || 0;
+    var dailyBudget     = weeklyBudget > 0 ? weeklyBudget / 7 : 0;
+    var overDailyBudget = dailyBudget > 0 && todaySpend > dailyBudget;
+
+    // Top category this week
+    var topCatKey = null, topCatAmt = 0;
+    Object.keys(catTotals).forEach(function (k) {
+      if (catTotals[k] > topCatAmt) { topCatAmt = catTotals[k]; topCatKey = k; }
+    });
+    var topCatMeta = topCatKey ? (catMap[topCatKey] || { label: topCatKey, emoji: "\u{1F4B8}" }) : null;
+
+    // Days left in week (Mon–Sun)
+    var daysLeft = Math.ceil((weekEnd - now) / (1000 * 60 * 60 * 24));
+    daysLeft = Math.max(1, Math.min(7, daysLeft));
+
+    var CARDS = [
+      {
+        id: "kpiSpentToday",
+        label: "Spent Today",
+        value: todaySpend > 0 ? formatPhp(todaySpend) : formatPhp(0),
+        sub: dailyBudget > 0 ? ("of " + formatPhp(Math.round(dailyBudget)) + "/day") : "no budget set",
+        mod: overDailyBudget ? " week-kpi-card--danger" : (todaySpend > 0 ? " week-kpi-card--active" : "")
+      },
+      {
+        id: "kpiWeekCount",
+        label: "Expenses",
+        value: String(weekCount),
+        sub: weekCount === 1 ? "logged this week" : "logged this week",
+        mod: weekCount > 0 ? " week-kpi-card--active" : ""
+      },
+      {
+        id: "kpiTopCat",
+        label: "Top Category",
+        value: topCatMeta ? ((topCatMeta.emoji || "\u{1F4B8}") + "\u00a0" + escapeHtml(topCatMeta.label || topCatKey)) : "\u2014",
+        sub: topCatMeta ? formatPhp(topCatAmt) + " spent" : "no data yet",
+        mod: ""
+      },
+      {
+        id: "kpiDaysLeft",
+        label: "Days Left",
+        value: String(daysLeft),
+        sub: daysLeft === 1 ? "day until reset" : "days until reset",
+        mod: daysLeft <= 2 ? " week-kpi-card--warn" : ""
+      }
+    ];
+
+    grid.innerHTML = "";
+    CARDS.forEach(function (c) {
+      var div = document.createElement("div");
+      div.id = c.id;
+      div.className = "week-kpi-card" + (c.mod || "");
+      div.innerHTML =
+        '<p class="week-kpi-label">' + escapeHtml(c.label) + '</p>' +
+        '<p class="week-kpi-value">' + c.value + '</p>' +
+        '<p class="week-kpi-sub">' + escapeHtml(c.sub) + '</p>';
+      grid.appendChild(div);
+    });
+  }
+
+  // ── spending breakdown ───────────────────────────────────
+  function renderSpendingBreakdown() {
+    var container = document.getElementById("spendingBreakdown");
+    if (!container || !window.StorageAPI) { return; }
+
+    var now       = new Date();
+    var dow       = now.getDay();
+    var weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((dow + 6) % 7));
+    var weekEnd   = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
+
+    var allExpenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var cats        = window.StorageAPI.getExpenseCategories ? window.StorageAPI.getExpenseCategories() : [];
+    var catMap = {};
+    cats.forEach(function (c) { catMap[c.id] = c; });
+
+    var catTotals = {};
+    var total = 0;
+    allExpenses.forEach(function (e) {
+      var d = new Date(e.timestamp);
+      if (d >= weekStart && d < weekEnd) {
+        var key = e.categoryId || e.category || "others";
+        catTotals[key] = (catTotals[key] || 0) + Number(e.amount || 0);
+        total += Number(e.amount || 0);
+      }
+    });
+
+    var sorted = Object.keys(catTotals).sort(function (a, b) {
+      return catTotals[b] - catTotals[a];
+    }).slice(0, 5);
+
+    if (sorted.length === 0) {
+      container.innerHTML = '<p class="text-sm text-slate-400 text-center py-3">No spending data this week yet.</p>';
+      return;
+    }
+
+    var html = "";
+    sorted.forEach(function (key, idx) {
+      var meta = catMap[key] || { label: key, emoji: "\u{1F4B8}", color: "#e2e8f0" };
+      var amt  = catTotals[key];
+      var pct  = total > 0 ? Math.round((amt / total) * 100) : 0;
+      var barColor = meta.color || "#2b8259";
+      html +=
+        '<div class="sbd-row' + (idx > 0 ? " sbd-row--border" : "") + '">' +
+          '<span class="sbd-chip" style="background:' + escapeHtml(meta.color || "#e2e8f0") + '">' +
+            (meta.emoji || "\u{1F4B8}") +
+          '</span>' +
+          '<div class="sbd-info">' +
+            '<div class="sbd-header">' +
+              '<span class="sbd-label">' + escapeHtml(meta.label || key) + '</span>' +
+              '<span class="sbd-amount">' + formatPhp(amt) + '</span>' +
+            '</div>' +
+            '<div class="sbd-bar-track">' +
+              '<div class="sbd-bar-fill" style="width:' + pct + '%;background:' + escapeHtml(barColor) + '"></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function renderXpWidget() {
+    if (!window.StorageAPI) { return; }
+    var xpLevelNameEl  = document.getElementById("xpLevelName");
+    var xpLevelBadgeEl = document.getElementById("xpLevelBadge");
+    var greetingStreakEl = document.getElementById("greetingStreakBadge");
+    var streakCountEl  = document.getElementById("streakBadgeCount");
+    var xpBarEl        = document.getElementById("xpBar");
+    var xpValueEl      = document.getElementById("xpValue");
+    var xpNextEl       = document.getElementById("xpNextLabel");
+    var barTrack       = document.querySelector(".xp-bar-hero .xp-bar-track");
+
+    var xpInfo = window.StorageAPI.getXpInfo ? window.StorageAPI.getXpInfo() : { xp: 0, level: 1, levelName: "Rookie Saver", xpForNext: 50, progressPct: 0 };
+    var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
+
+    if (xpLevelNameEl) { xpLevelNameEl.textContent = xpInfo.levelName || "Rookie Saver"; }
+    if (xpLevelBadgeEl) { xpLevelBadgeEl.textContent = "Lv. " + xpInfo.level; }
+    if (xpValueEl) { xpValueEl.textContent = xpInfo.xp + " XP"; }
+    if (xpNextEl) {
+      if (!xpInfo.xpForNext) { xpNextEl.textContent = "Max level reached!"; }
+      else if (xpInfo.xp === 0) { xpNextEl.textContent = "Log your first expense to earn XP"; }
+      else { xpNextEl.textContent = (xpInfo.xpForNext - xpInfo.xp) + " XP to next level"; }
+    }
+    if (xpBarEl) { xpBarEl.style.width = (xpInfo.progressPct || 0) + "%"; }
+    if (barTrack) { barTrack.setAttribute("aria-valuenow", String(xpInfo.progressPct || 0)); }
+
+    // Streak badge
+    if (greetingStreakEl) {
+      greetingStreakEl.classList.remove(
+        "streak-badge--cold", "streak-badge--amber",
+        "streak-badge--orange", "streak-badge--orange-glow", "streak-badge--crimson"
+      );
+      greetingStreakEl.setAttribute("aria-label", "Daily streak: " + streak + (streak === 1 ? " day" : " days"));
+
+      if (streak <= 0) {
+        greetingStreakEl.classList.add("streak-badge--cold");
+        if (streakCountEl) { streakCountEl.textContent = "Start"; }
+      } else if (streak < 7) {
+        greetingStreakEl.classList.add("streak-badge--amber");
+        if (streakCountEl) { streakCountEl.textContent = streak; }
+      } else if (streak < 14) {
+        greetingStreakEl.classList.add("streak-badge--orange");
+        if (streakCountEl) { streakCountEl.textContent = streak; }
+      } else if (streak < 30) {
+        greetingStreakEl.classList.add("streak-badge--orange-glow");
+        if (streakCountEl) { streakCountEl.textContent = streak; }
+      } else {
+        greetingStreakEl.classList.add("streak-badge--crimson");
+        if (streakCountEl) { streakCountEl.textContent = streak; }
+      }
+    }
+  }
+
+  // ── today's mission ─────────────────────────────────────────
+  function renderTodayMission() {
+    var card    = document.getElementById("todayMissionCard");
+    var msgEl   = document.getElementById("todayMissionMsg");
+    var iconEl  = document.getElementById("todayMissionIcon");
+    var btnEl   = document.getElementById("todayMissionBtn");
+    if (!card || !msgEl || !window.StorageAPI) { return; }
+
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    var expenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var loggedToday = expenses.some(function (e) {
+      var d = new Date(e.timestamp);
+      return d >= today && d < tomorrow;
+    });
+
+    var streak  = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
+    var summary = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
+    var pct     = summary.percentageSpent || 0;
+
+    var state;
+    if (loggedToday && pct < 80)  { state = "perfect"; }
+    else if (loggedToday)          { state = "in-progress"; }
+    else if (streak >= 1)          { state = "at-risk"; }
+    else                           { state = "none"; }
+
+    var streakLabel = streak > 0 ? streak + "-day streak" : "streak";
+    var configs = {
+      "none": {
+        icon: "\uD83D\uDCCB",
+        desc: "Log your first expense today to start building your streak.",
+        btn: "Log Now",
+        showBtn: true
+      },
+      "in-progress": {
+        icon: "\u26A1",
+        desc: "You\u2019ve logged expenses today \u2014 watch your budget, you\u2019re getting close.",
+        btn: "Log Anyway",
+        showBtn: true
+      },
+      "at-risk": {
+        icon: "\uD83D\uDD25",
+        desc: "Log an expense today to protect your " + streakLabel + "!",
+        btn: "Protect Streak",
+        showBtn: true
+      },
+      "perfect": {
+        icon: "\u2705",
+        desc: "Mission complete! You\u2019ve logged expenses and you\u2019re within budget.",
+        btn: "Done \u2713",
+        showBtn: false
+      }
+    };
+
+    var cfg = configs[state];
+    card.className = "today-mission-card today-mission-card--" + state;
+    if (iconEl) { iconEl.textContent = cfg.icon; }
+    msgEl.textContent = cfg.desc;
+
+    if (btnEl) {
+      btnEl.textContent = cfg.btn;
+      btnEl.style.display = cfg.showBtn ? "" : "none";
+      btnEl.onclick = null;
+      if (cfg.showBtn) {
+        btnEl.onclick = function () {
+          var grid = document.getElementById("quickAddGrid");
+          if (grid) { grid.scrollIntoView({ behavior: "smooth", block: "center" }); }
+        };
+      }
+    }
+
+    // card is no longer interactive
+    card.style.cursor = "";
+    card.removeAttribute("tabindex");
+    card.onclick   = null;
+    card.onkeydown = null;
+  }
+
+  // -- recent expenses ------------------------------------------
   function renderRecentExpenses() {
     if (!window.StorageAPI) {
       return;
@@ -754,8 +1165,10 @@
 
     // Optimistically hide from list
     updateBudgetCard();
-    updateQuickSummaryStats();
+    renderTodayMission();
     renderRecentExpenses();
+    renderWeekAtGlance();
+    renderSpendingBreakdown();
     if (window.SpendingChart) { window.SpendingChart.update(); }
 
     var toast   = document.getElementById("undoToast");
@@ -785,8 +1198,10 @@
     var toast = document.getElementById("undoToast");
     if (toast) { toast.classList.add("hidden"); }
     updateBudgetCard();
-    updateQuickSummaryStats();
+    renderTodayMission();
     renderRecentExpenses();
+    renderWeekAtGlance();
+    renderSpendingBreakdown();
     if (window.SpendingChart) { window.SpendingChart.update(); }
   }
 
@@ -798,8 +1213,10 @@
     var toast = document.getElementById("undoToast");
     if (toast) { toast.classList.add("hidden"); }
     updateBudgetCard();
-    updateQuickSummaryStats();
+    renderTodayMission();
     renderRecentExpenses();
+    renderWeekAtGlance();
+    renderSpendingBreakdown();
     if (window.SpendingChart) { window.SpendingChart.update(); }
   }
 
@@ -1138,15 +1555,14 @@
       renderGreeting();
       renderQuickAddButtons();
       updateBudgetCard();
-      updateQuickSummaryStats();
       renderXpWidget();
+      renderTodayMission();
       renderRecentExpenses();
-      renderCategoryStats();
-      wireDashboardStats();
-      renderDashboardStats();
+      renderWeekAtGlance();
+      renderSpendingBreakdown();
       initModal();
       initDashboardAccountMenu();
-      initLogExpense();
+      initCustomLogModal();
 
       // Budget-gate modal cancel
       var budgetGateCancel = document.getElementById("budgetGateCancel");
@@ -1160,21 +1576,30 @@
       window.addEventListener("sugbocents:synced", function () {
         renderGreeting();
         updateBudgetCard();
-        updateQuickSummaryStats();
         renderXpWidget();
+        renderTodayMission();
         renderRecentExpenses();
+        renderWeekAtGlance();
+        renderSpendingBreakdown();
         renderQuickAddButtons();
-        renderCategoryStats();
-        renderDashboardStats();
         if (window.SpendingChart) { window.SpendingChart.update(); }
       });
 
-      var addNewBtn = document.getElementById("addNewQaBtn");
-      if (addNewBtn) {
-        addNewBtn.addEventListener("click", function () {
-          openQaModal(null);
-        });
-      }
+      window.addEventListener("sugbocents:dataChanged", function () {
+        updateBudgetCard();
+        renderXpWidget();
+        renderTodayMission();
+        renderWeekAtGlance();
+        renderSpendingBreakdown();
+        renderRecentExpenses();
+      });
+
+
+
+
+
+
+
     }
 
     if (page === "settings") {

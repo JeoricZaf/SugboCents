@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   if (document.body.dataset.page !== "activity") { return; }
 
   // ── undo toast state ──────────────────────────────────────
@@ -404,7 +404,6 @@
     });
   }
 
-  // ── init ──────────────────────────────────────────────────
   // ── XP mini bar ──────────────────────────────────────────
   function renderXpMiniBar() {
     if (!window.StorageAPI || !window.StorageAPI.getXpInfo) { return; }
@@ -415,14 +414,14 @@
     var trackEl  = document.getElementById("xpMiniTrack");
     var streakEl = document.getElementById("xpMiniStreak");
     if (levelEl) {
-      levelEl.innerHTML = '<i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i> Lv. ' + info.level + ' — ' + info.levelName;
+      levelEl.innerHTML = '<i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i> Lv. ' + info.level + ' \u2014 ' + info.levelName;
     }
     if (fillEl)   { fillEl.style.width = info.progressPct + "%"; }
     if (trackEl)  { trackEl.setAttribute("aria-valuenow", info.progressPct); }
     if (streakEl) {
       var cls = "xp-mini-streak" + (streak >= 7 ? " xp-mini-streak--week" : streak >= 3 ? " xp-mini-streak--hot" : streak >= 1 ? " xp-mini-streak--warm" : "");
       streakEl.className = cls;
-      streakEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + (streak === 0 ? "0" : streak);
+      streakEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + (streak === 0 ? "0" : streak);
     }
   }
 

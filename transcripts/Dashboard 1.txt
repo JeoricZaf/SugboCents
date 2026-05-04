@@ -1,0 +1,72 @@
+This is the First Video Relating to Dashboards
+
+Hello everyone and welcome to this interesting video. You have created many many kind of dashboards in Excel, in Power BI, in Alteryx, and many places.
+Now in this video you'll understand how to create this kind of dashboard in Claude.
+Okay, without any coding knowledge or you just feed the data, give a single prompt, and you get the output here.
+Clean, simple, easy. Claude is best as compared to now GPT which is moving right now, and I want you to see this video in just few [music] minutes how to create a dashboard. The very first thing what we can do here is I have this claude.ai option. I can use a free version of Claude to get the output here. First thing I will be uploading a data. I have a data set kept into one of the folder. I can just click on this plus sign, add files or photos, and I have a data kept into one of the folder which I can pick up, Superstore data.
+Now this data is very simple. It's about the customer information, sales and profit information, but a prompt has to be given better, but I don't know how to write a prompt. So please see this technique. I will ask Claude to write a prompt for me. I will copy that prompt and again give it to this Claude to create a dashboard. So please see. I can just press Windows H from my keyboard.
+Observe the data given in the Excel file, understand about this place, and I want you to write a prompt.
+>> [music] >> You have to behave like a best expert into prompt writing. You have to behave like you are in the top 0.001 person expert in the world who knows how to write a prompt, also who knows how to uh create a dashboard. So first I want to write a prompt. This data is about sales and profit information. Okay, customer information. I want to create a dashboard for my CEO and CFO of the company. Okay, this is for one of the company, let's say Bajaj, and the dashboard has to be simple, easy to understand. It has to have at least 10 plus visuals, 10 plus uh charts. Okay, it has to be interactive with lot of slicers and filters, [music] and also it should give me insights about the data.
+So first of all, you write a prompt for me.
+And once I finish, I can press enter.
+Now what will happen is it will understand the data, observe it, and then it will start giving me a prompt.
+Now this prompt which I get as an output will be an input again to the same Claude because if I simply give it just create a dashboard, it will not be enough. A prompt has to be much much better. It has to be best in fact.
+And finally it has given me a prompt.
+Now what I can do is this particular prompt, I need to copy this, and [music] then I'll just feed the same prompt again back into this Claude. Let's copy this.
+Control C copy. I can just paste this.
+Maybe I can just create a new chat over here. Paste this particular prompt.
+Again add the data. Okay, so I'm starting a fresh chat over here, and then once this prompt is pasted here, this is much much better prompt than what I could give. So make sure you read that prompt before you give the input here. Now what will happen is within three, four, five minutes over here, this will create a beautiful dashboard.
+So let's wait for finishing this dashboard creation process.
+And finally it has created one dashboard. So let me just extend this, [music] and you can see this is a simple dashboard. Not a simple, I think this is very interesting dashboard it has prepared, and in order to see it completely, I can just click on download, and once the link is downloaded, I can just click on this HTML link. Now this HTML link, I can open this and I can send it to anyone who's watching this video. I can share in the link description as well. So this is the HTML report which is prepared, and you can see all the values are given here. Revenue, profit, profit margin, total orders, unique customers. Now why it is so better? Because the prompt which I was given is excellent. Okay. So remember, the more better prompt you give it, the more better output you can get it. So now this has created a beautiful dashboard with many many visuals over here, and I think these are some slicers over here or table. Now let's say if I don't like this one, if I want to change something, I can just give a simple prompt over here, and automatically this dashboard will be updated. Let's say the line chart is not good, you just give a prompt, and the line chart will automatically change. So that's all about the uh Claude, how to create a dashboard in Claude in a free version, and I hope you understood.
+That's all for this video.
+
+This was the prompt that they used in the video, you dont have to follow it 1 to 1 but it is very useful in creating a good dashboard, of course the data set isnt the same as ours but you can take the idea and apply it to our app:
+
+"Role: You are a senior data visualization engineer and BI dashboard expert specializing in executive-level reporting. You build production-grade, interactive dashboards that transform raw transactional data into boardroom-ready intelligence.
+Context: I am presenting this dashboard to the CEO and CFO of Bajaj. It must be clean, authoritative, and immediately interpretable — zero guesswork for a time-poor executive. The data spans 4 years (2018–2021) of US retail transactions with 9,994 orders across 3 product categories (Furniture, Office Supplies, Technology), 3 customer segments (Consumer, Corporate, Home Office), 4 regions (East, West, Central, South), and 17 sub-categories. Key financial metrics include Sales, Profit, Quantity, and Discount.
+Task: Build a fully interactive HTML + JavaScript dashboard (single self-contained file) with the following specifications:
+
+SECTION 1 — KPI Summary Bar (top of page)
+Display 5 metric cards in a horizontal row:
+
+Total Revenue: $2.84M
+Total Profit: $286K
+Profit Margin: 10.1%
+Total Orders: 9,994
+Unique Customers: 793
+Each card shows the metric name, value in large bold font, and a subtle trend arrow or color indicator.
+
+
+SECTION 2 — Global Filter Panel (sticky or top-positioned)
+Interactive slicers that filter ALL charts simultaneously:
+
+Year selector (2018, 2019, 2020, 2021, or All)
+Region multi-select (East, West, Central, South)
+Segment multi-select (Consumer, Corporate, Home Office)
+Category multi-select (Furniture, Office Supplies, Technology)
+Ship Mode filter (Same Day, First Class, Second Class, Standard Class)
+
+
+SECTION 3 — 10+ Charts (described below)
+Build these charts using Chart.js or D3.js. Each chart must respond to the global filters:
+
+Monthly Sales & Profit Trend (Line Chart) — Dual-axis line chart showing monthly Sales (left axis) and Profit (right axis) over time. Helps CEO spot seasonal patterns and peak periods.
+Sales by Category (Donut Chart) — Furniture vs Office Supplies vs Technology. Show % share and absolute value. CFO can instantly see revenue concentration.
+Profit Margin by Sub-Category (Horizontal Bar Chart) — Ranked from highest to lowest margin. Color-code bars: green if margin > 15%, amber if 5–15%, red if negative. This is a critical profitability view for the CFO.
+Regional Performance (Bar + Line Combo Chart) — Grouped bars for Sales per region, overlaid with a Profit Margin % line. East vs West vs Central vs South.
+Customer Segment Revenue Split (Stacked Bar Chart by Year) — Shows Consumer, Corporate, and Home Office revenue stacked per year (2018–2021). Reveals growth trajectory of each segment.
+Sales vs Profit Scatter Plot (Bubble Chart) — Each bubble = one sub-category. X-axis = Total Sales, Y-axis = Total Profit, Bubble size = Total Quantity sold. Color by Category. Instantly shows which products drive volume vs value.
+Discount Impact Analysis (Line Chart) — X-axis = Discount % bands (0%, 10%, 20%, 30%, 40%, 50%), Y-axis = Average Profit. Shows the inflection point where discounts destroy margin — critical CFO insight.
+Top 10 States by Revenue (Horizontal Bar Chart) — Clean ranked list. Color by Region. Add a small profit margin % label at the end of each bar.
+Shipping Mode Distribution & Cost Impact (Pie + KPI) — Pie chart of orders by ship mode. Below it, show average days to ship and average profit per mode as a small table. Helps CEO evaluate logistics strategy.
+Year-over-Year Revenue Growth (Waterfall or Grouped Bar) — Show annual Sales and Profit side-by-side for 2018, 2019, 2020, 2021. Add % YoY growth labels above each bar.
+(Bonus) Monthly Orders Heatmap (Calendar Heatmap) — Rows = months, Columns = days or weeks. Cell color intensity = number of orders. Reveals peak ordering periods. Green color ramp.
+
+
+SECTION 4 — Automated Insights Panel (right sidebar or bottom row)
+Generate 5 dynamic text insights that update when filters change. Examples:
+
+"Technology drives the highest profit margin at 17.4%, but Furniture has the lowest at 2.5%."
+"Discounts above 20% result in negative average profit — currently applied to 18% of orders."
+"The West region generates the most revenue ($725K) but Central has the weakest margins."
+Style these as card-based callout boxes with an icon prefix (warning, info, success).:

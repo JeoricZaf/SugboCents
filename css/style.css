@@ -2,6 +2,7 @@
   --brand-900: #164f33;
   --brand-800: #1f6b46;
   --brand-700: #2b8259;
+  --brand-600: #3aaa72;
   --ink-900: #0f172a;
   --mist: #f3f7f4;
   --card: #ffffff;
@@ -520,7 +521,94 @@ body {
   color: var(--brand-700, #2b8259);
 }
 
-/* Streak chip variants (Duolingo graduated heat) */
+/* ── Streak Badge (56×56px min, replaces streak chip in hero) ── */
+@keyframes streak-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+}
+@keyframes streak-bounce {
+  0%, 100% { transform: translateY(0); }
+  40%      { transform: translateY(-5px); }
+  70%      { transform: translateY(-2px); }
+}
+
+.streak-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  min-height: 64px;
+  border-radius: 16px;
+  gap: 0;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  flex-shrink: 0;
+  transition: background 300ms ease, box-shadow 300ms ease;
+  padding: 0.4rem;
+}
+
+.streak-badge-icon {
+  font-size: 1.75rem !important;
+  line-height: 1;
+}
+
+.streak-badge-count {
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1;
+  margin-top: 0.1rem;
+}
+
+/* 0 days — invitation state */
+.streak-badge--cold {
+  border: 2.5px solid var(--brand-700, #2b8259);
+  color: #94a3b8;
+}
+.streak-badge--cold .streak-badge-icon { color: #94a3b8; }
+.streak-badge--cold .streak-badge-count { color: var(--brand-700, #2b8259); font-size: 0.7rem; font-weight: 700; }
+
+/* 1–6 days — amber */
+.streak-badge--amber {
+  background: #f59e0b;
+  color: #ffffff;
+}
+.streak-badge--amber .streak-badge-icon,
+.streak-badge--amber .streak-badge-count { color: #ffffff; }
+
+/* 7–13 days — orange */
+.streak-badge--orange {
+  background: #ea580c;
+  color: #ffffff;
+}
+.streak-badge--orange .streak-badge-icon,
+.streak-badge--orange .streak-badge-count { color: #ffffff; }
+
+/* 14–29 days — orange + glow ring */
+.streak-badge--orange-glow {
+  background: #ea580c;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.35), 0 0 12px rgba(234, 88, 12, 0.25);
+}
+.streak-badge--orange-glow .streak-badge-icon,
+.streak-badge--orange-glow .streak-badge-count { color: #ffffff; }
+
+/* 30+ days — crimson + pulse */
+.streak-badge--crimson {
+  background: #dc2626;
+  color: #ffffff;
+  animation: streak-pulse 2s infinite;
+}
+.streak-badge--crimson .streak-badge-icon,
+.streak-badge--crimson .streak-badge-count { color: #ffffff; }
+
+/* Bounce animation on streak increase */
+.streak-badge.bouncing {
+  animation: streak-bounce 300ms ease;
+}
+
+/* ── Streak chip (kept for other pages) ── */
 .streak-chip {
   display: inline-flex;
   align-items: center;
@@ -559,19 +647,33 @@ body {
 }
 .streak-chip--week .bi { color: #ffffff; }
 
-/* XP bar */
+/* XP bar — 15px tall fuel gauge */
 .xp-bar-track {
-  height: 6px;
-  background: #e2e8f0;
-  border-radius: 999px;
+  height: 15px;
+  background: var(--brand-100, #dcfce7);
+  border-radius: 8px;
   overflow: hidden;
 }
 
 .xp-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--brand-700, #2b8259) 0%, #22c55e 100%);
-  border-radius: 999px;
-  transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  background: linear-gradient(90deg, var(--brand-600, #3aaa72) 0%, var(--brand-800, #1f6b46) 100%);
+  border-radius: 8px;
+  transition: width 500ms ease-out;
+  position: relative;
+}
+
+/* Shine pass on XP gain */
+@keyframes xp-shine {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.xp-bar-fill.xp-gaining::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
+  animation: xp-shine 600ms ease-out;
 }
 
 .xp-widget-bottom {
@@ -586,6 +688,371 @@ body {
   font-weight: 600;
   color: #64748b;
 }
+
+/* ── Dashboard Greeting Hero (new layout) ────────────────── */
+.page-greeting {
+  display: block;
+  margin-bottom: 1.5rem;
+}
+
+.greeting-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0;
+}
+
+/* Level name — dominant h1 of the dashboard (Sora 800, 2rem) */
+.level-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.xp-level-name {
+  font-family: 'Sora', 'Plus Jakarta Sans', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--brand-900, #164f33);
+  margin: 0;
+}
+
+/* Level number pill beside the level name */
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  background: var(--brand-800, #1f6b46);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+/* XP bar row below the greeting */
+.xp-bar-hero {
+  margin-top: 1rem;
+}
+
+.xp-bar-hero-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.35rem;
+}
+
+.xp-next-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--brand-800, #1f6b46);
+}
+
+/* ── Today's Mission Card ────────────────────────────────── */
+.today-mission-card {
+  border-radius: 1.1rem;
+  padding: 0.9rem 1rem;
+  transition: background 400ms ease, box-shadow 400ms ease;
+}
+
+.today-mission-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.today-mission-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.today-mission-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.today-mission-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.2rem;
+}
+
+.today-mission-desc {
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.today-mission-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* State: none (no streak, nothing logged today) */
+.today-mission-card--none {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+.today-mission-card--none .today-mission-title  { color: #94a3b8; }
+.today-mission-card--none .today-mission-desc   { color: #64748b; }
+.today-mission-card--none .today-mission-badge  { background: #e2e8f0; color: #64748b; }
+
+/* State: in-progress (logged today but budget is tight) */
+.today-mission-card--in-progress {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fde68a;
+}
+.today-mission-card--in-progress .today-mission-title  { color: #92400e; }
+.today-mission-card--in-progress .today-mission-desc   { color: #78350f; }
+.today-mission-card--in-progress .today-mission-badge  { background: #fbbf24; color: #78350f; }
+
+/* State: at-risk (streak about to break — pulsing) */
+.today-mission-card--at-risk {
+  background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+  border: 1px solid #fdba74;
+  animation: mission-pulse 2.4s ease-in-out infinite;
+}
+.today-mission-card--at-risk .today-mission-title  { color: #9a3412; }
+.today-mission-card--at-risk .today-mission-desc   { color: #7c2d12; }
+.today-mission-card--at-risk .today-mission-badge  { background: #f97316; color: #ffffff; }
+
+/* State: perfect (logged today + within budget) */
+.today-mission-card--perfect {
+  background: linear-gradient(135deg, #f0fdf4 0%, #d1fae5 100%);
+  border: 1px solid #6ee7b7;
+}
+.today-mission-card--perfect .today-mission-title  { color: #065f46; }
+.today-mission-card--perfect .today-mission-desc   { color: #047857; }
+.today-mission-card--perfect .today-mission-badge  { background: var(--brand-700, #2b8259); color: #ffffff; }
+
+@keyframes mission-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+  50%       { box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.18); }
+}
+
+/* ── Action Zone ─────────────────────────────────────────── */
+.action-zone {
+  /* spacing context only */
+}
+
+.action-zone-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.log-one-time-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px dashed var(--brand-700, #2b8259);
+  border-radius: var(--radius-lg, 1.1rem);
+  background: transparent;
+  color: var(--brand-700, #2b8259);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 180ms ease, color 180ms ease;
+}
+.log-one-time-btn:hover {
+  background: rgba(43, 130, 89, 0.07);
+}
+.log-one-time-btn .material-icons {
+  font-size: 1.1rem !important;
+}
+
+/* ── View Full Stats Link Card ───────────────────────────── */
+.view-stats-link-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #ffffff;
+  border: 1px solid rgba(31, 107, 70, 0.12);
+  border-radius: 1.1rem;
+  padding: 1rem 1.1rem;
+  text-decoration: none;
+  box-shadow: 0 1px 6px rgba(15, 23, 42, 0.04);
+  transition: box-shadow 200ms ease, transform 150ms ease;
+  margin-top: 1.5rem;
+}
+
+.view-stats-link-card:hover,
+.view-stats-link-card:focus-visible {
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.10);
+  transform: translateY(-1px);
+}
+
+.view-stats-link-card-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.view-stats-link-card-text {
+  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--brand-800, #1f6b46);
+}
+
+.view-stats-link-card-arrow {
+  font-size: 1.4rem;
+  color: var(--brand-700, #2b8259);
+}
+
+/* ── Week at a Glance KPI Grid ───────────────────────────── */
+.week-kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.week-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 0.85rem 0.9rem;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+  min-width: 0;
+}
+
+.week-kpi-card--active {
+  border-color: rgba(43, 130, 89, 0.3);
+  background: #f0fdf4;
+}
+
+.week-kpi-card--danger {
+  border-color: rgba(239, 68, 68, 0.28);
+  background: #fef2f2;
+}
+
+.week-kpi-card--warn {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: #fffbeb;
+}
+
+.week-kpi-label {
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+  margin-bottom: 0.22rem;
+}
+
+.week-kpi-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.week-kpi-sub {
+  font-size: 0.67rem;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-top: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Spending Breakdown ──────────────────────────────────── */
+.section-mini-header {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.sbd-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0;
+}
+
+.sbd-row--border {
+  border-top: 1px solid #f1f5f9;
+}
+
+.sbd-chip {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.sbd-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sbd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.2rem;
+}
+
+.sbd-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0f172a;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sbd-amount {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
+.sbd-bar-track {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.sbd-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 500ms ease-out;
+}
+
+
 
 /* ── XP Float Popup ──────────────────────────────────────── */
 @keyframes xp-float {
@@ -797,6 +1264,45 @@ body {
   padding: 0.42rem 0.8rem;
 }
 
+/* Budget card gear icon (replaces edit-chip) */
+.budget-gear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  transition: background 200ms ease;
+  flex-shrink: 0;
+}
+.budget-gear-btn:hover { background: rgba(255, 255, 255, 0.25); }
+.budget-gear-btn .material-icons { font-size: 1.1rem !important; }
+
+/* Budget health line */
+.budget-health-line {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  font-style: italic;
+}
+
+/* Budget card state-based backgrounds */
+.budget-card--caution {
+  outline: 2.5px solid #f59e0b;
+  outline-offset: -2px;
+}
+.budget-card--warning {
+  background: linear-gradient(160deg, #b45309 0%, #92400e 60%, #78350f 100%) !important;
+  box-shadow: 0 20px 30px rgba(120, 53, 15, 0.3);
+}
+.budget-card--danger {
+  background: linear-gradient(160deg, #b91c1c 0%, #7f1d1d 60%, #5c1010 100%) !important;
+  box-shadow: 0 20px 30px rgba(127, 29, 29, 0.35);
+}
+
 .quick-add {
   border: none;
   border-radius: var(--radius-lg);
@@ -813,6 +1319,21 @@ body {
 
 .quick-add:hover {
   filter: brightness(0.98);
+}
+
+/* Add shortcut cell — dashed brand border, transparent background */
+.quick-add--add-new {
+  background: transparent !important;
+  border: 1.5px dashed var(--brand-600, #3aaa72) !important;
+  box-shadow: none !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  padding: 0.75rem 0.5rem;
+  min-height: 3.5rem;
+  cursor: pointer;
 }
 
 .qa-initial {
@@ -1661,18 +2182,7 @@ body.edit-mode .qa-add-new-btn {
   animation: qa-pulse-anim 420ms ease;
 }
 
-/* ── page greeting header ── */
-.page-greeting {
-  display: flex;
-  margin-bottom: 1.75rem;
-  gap: 1rem;
-}
-  .greeting-text {
-    display:flex;
-    flex-direction: column;
-    align-items: flex-start;
-     gap: 0.25rem;
-  }
+/* ── page greeting header (overridden by hero block above) ── */
 
 .page-greeting-sub {
   font-size: 0.8rem;
@@ -2430,7 +2940,7 @@ body.edit-mode .qa-add-new-btn {
 .log-date-input:focus { border-color: var(--brand-700); }
 
 /* ═══════════════════════════════════════════════════════════════
-   Badge Grid (Tigom achievements page)
+   Badge Grid (Sugbo achievements page)
 ═══════════════════════════════════════════════════════════════ */
 .badge-grid {
   display: grid;
@@ -2583,3 +3093,379 @@ body.edit-mode .qa-add-new-btn {
 .badge-card--unlockable .badge-icon-wrap--unlockable {
   animation: ring-pulse 1.8s ease-out infinite;
 }
+
+/* ── floating chat launcher ── */
+.sc-chat-fab {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(5.4rem + env(safe-area-inset-bottom));
+  width: 3.5rem;
+  height: 3.5rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--brand-700), var(--brand-800));
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 12px 26px rgba(31, 107, 70, 0.35);
+  z-index: 65;
+  transition: transform 120ms ease, filter 150ms ease;
+}
+
+.sc-chat-fab:hover {
+  filter: brightness(1.03);
+}
+
+.sc-chat-fab:active {
+  transform: scale(0.96);
+}
+
+.sc-chat-shell {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 70;
+}
+
+.sc-chat-overlay {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(15, 23, 42, 0.48);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.sc-chat-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: min(380px, 100%);
+  height: 100dvh;
+  background: #ffffff;
+  transform: translateX(100%);
+  transition: transform 220ms ease;
+  box-shadow: -12px 0 36px rgba(15, 23, 42, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.sc-chat-shell.is-open {
+  pointer-events: auto;
+}
+
+.sc-chat-shell.is-open .sc-chat-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sc-chat-shell.is-open .sc-chat-panel {
+  transform: translateX(0);
+}
+
+.sc-chat-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.8rem 0.95rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sc-chat-panel-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sc-chat-panel-sub {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin-top: 0.1rem;
+}
+
+.sc-chat-close {
+  border: none;
+  background: #f1f5f9;
+  color: #475569;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.sc-chat-frame {
+  border: 0;
+  width: 100%;
+  height: 100%;
+}
+
+@media (min-width: 1024px) {
+  .sc-chat-fab {
+    bottom: 1.35rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .sc-chat-panel {
+    width: 100%;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GAMIFICATION — Phase 3: Profile Hero + Streak Calendar
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── btn-secondary (alias for btn-outline, used in profile) ── */
+.btn-secondary {
+  border: 1px solid #c9d7e2;
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 0.95rem;
+  padding: 0.82rem 1rem;
+  font-weight: 700;
+  transition: transform 140ms ease, box-shadow 160ms ease, background-color 160ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.btn-secondary:hover { background: #f8fafc; }
+.btn-secondary:active { transform: translateY(1px) scale(0.99); }
+
+/* ── Profile Identity Hero ──────────────────────────────── */
+.profile-hero {
+  background: linear-gradient(155deg, var(--brand-800) 0%, var(--brand-900) 100%);
+  border-radius: 1.25rem;
+  padding: 1.25rem 1rem 1rem;
+  color: white;
+  box-shadow: 0 8px 24px rgba(22, 79, 51, 0.28);
+}
+
+.profile-hero-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.profile-hero-avatar {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+
+.profile-hero-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-hero-level-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+  line-height: 1;
+}
+
+.profile-hero-name {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: white;
+  margin: 0.18rem 0 0;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-hero-xp-row {
+  margin-bottom: 0.9rem;
+}
+
+.profile-hero-xp-hint {
+  display: block;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.3rem;
+  text-align: right;
+}
+
+.profile-hero-stats {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 0.75rem;
+}
+
+.profile-stat {
+  flex: 1;
+  text-align: center;
+}
+
+.profile-stat-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+
+.profile-stat-value {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+}
+
+.profile-stat-label {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.18rem;
+}
+
+/* ── Profile badge preview chips ────────────────────────── */
+.profile-badge-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-height: 2rem;
+  align-items: center;
+}
+
+.profile-badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.6rem;
+  background: #f1f5f9;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #334155;
+  text-decoration: none;
+}
+
+.profile-badge-chip i {
+  color: var(--brand-700);
+  font-size: 0.75rem;
+}
+
+.profile-badge-chip--more {
+  background: rgba(43, 130, 89, 0.1);
+  color: var(--brand-700);
+}
+
+/* ── Streak Calendar (Don't Break the Chain) ─────────────── */
+.streak-cal-section { /* no extra styles needed — mb-4 from Tailwind handles spacing */ }
+
+.streak-cal-wrap { /* wrapper for the day grid */ }
+
+.streak-cal-days-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 3px;
+  text-align: center;
+}
+
+.streak-cal-days-header span {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.streak-cal-cells {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.streak-cal-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: #e9eff5;
+}
+
+/* Logged day — brand green fill */
+.streak-cal-cell--logged {
+  background: var(--brand-700);
+}
+
+/* Today, already logged — brand green with ring */
+.streak-cal-cell--today.streak-cal-cell--logged {
+  background: var(--brand-700);
+  outline: 2px solid #16a34a;
+  outline-offset: 1px;
+}
+
+/* Today, not yet logged — white + amber ring (urgency) */
+.streak-cal-cell--today.streak-cal-cell--pending {
+  background: #fffbeb;
+  outline: 2px solid #f97316;
+  outline-offset: 1px;
+}
+
+/* Missed day */
+.streak-cal-cell--missed {
+  background: #e9eff5;
+}
+
+/* Empty padding cell */
+.streak-cal-cell--empty {
+  background: transparent;
+}
+
+.streak-cal-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.18em 0.55em;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.streak-cal-badge--cold {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.streak-cal-badge--warm {
+  background: #fef9c3;
+  color: #92400e;
+}
+
+.streak-cal-badge--hot {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+}
+
+.streak-cal-hint {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin-top: 0.4rem;
+  line-height: 1.45;
+}
+

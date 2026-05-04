@@ -1,54 +1,56 @@
 (function () {
   // ── Mascot state definitions ─────────────────────────────
   var STATES = {
-    happy:   { img: "assets/images/mascot/mascot-happy.png",   label: "Doing great!",  cls: "mascot-happy" },
-    neutral: { img: "assets/images/mascot/mascot-neutral.png",  label: "On track",      cls: "mascot-neutral" },
-    worried: { img: "assets/images/mascot/mascot-sad.png",      label: "Heads up!",     cls: "mascot-worried" },
-    alarmed: { img: "assets/images/mascot/mascot-shocked.png",  label: "Budget alert!", cls: "mascot-alarmed" }
+    happy:       { img: "assets/images/mascot/mascot-happy.png",    label: "Doing great!",                           cls: "mascot-happy"       },
+    neutral:     { img: "assets/images/mascot/mascot-neutral.png",   label: "On track",                               cls: "mascot-neutral"     },
+    worried:     { img: "assets/images/mascot/mascot-sad.png",       label: "Heads up!",                              cls: "mascot-worried"     },
+    alarmed:     { img: "assets/images/mascot/mascot-shocked.png",   label: "Budget alert!",                          cls: "mascot-alarmed"     },
+    // Extended states — celebrating PLACEHOLDER: swap mascot-happy.png → mascot-celebrating.png when asset is ready
+    celebrating: { img: "assets/images/mascot/mascot-happy.png",    label: "You leveled up! 🎉",              cls: "mascot-celebrating" },
+    streak:      { img: "assets/images/mascot/mascot-happy.png",    labelFn: function (n) { return "🔥 " + n + "-day streak!"; }, cls: "mascot-streak"      },
+    encouraging: { img: "assets/images/mascot/mascot-sad.png",      label: "Don\u2019t forget to log \uD83D\uDCDD",  cls: "mascot-encouraging" }
   };
 
-  // ── Rule-based chatbot responses ─────────────────────────
-  var RESPONSES = {
-    happy: [
-      "You're killing it this week! 🎉 Budget is in great shape.",
-      "Love the discipline! Keep it up and you'll reach your goals fast.",
-      "Great job! You still have plenty of budget left. Maybe add a goal?"
-    ],
-    neutral: [
-      "You're doing okay, but keep an eye on spending.",
-      "Halfway through your budget. Think before the next big expense!",
-      "Not bad! A little mindfulness goes a long way."
-    ],
-    worried: [
-      "⚠️ Budget is getting tight. Slow down on non-essentials.",
-      "You've spent a good chunk already. Tread carefully!",
-      "Consider reviewing your quick-add shortcuts to avoid overspending."
-    ],
-    alarmed: [
-      "🚨 You're nearly out of budget! No more spending today.",
-      "Budget critical! Check your recent expenses in Activity.",
-      "Time to tighten up. Your goals may be at risk if spending continues."
-    ]
-  };
+  // Tracks whether the panel iframe is currently showing a pending-new-chat state
+  var isPanelNewPending = false;
 
-  var KEYWORD_REPLIES = [
-    { keys: ["hello", "hi", "hey"],        reply: "Hey there! 👋 I'm Sugbo, your budget buddy. How can I help?" },
-    { keys: ["budget"],                     reply: "Your weekly budget is your spending limit. Set it in Settings!" },
-    { keys: ["goal", "goals"],              reply: "Go to the Tigom tab to create and track your savings goals! 🎯" },
-    { keys: ["expense", "expenses"],        reply: "Log expenses on the Dashboard or browse them in Activity." },
-    { keys: ["streak"],                     reply: "Streaks reward consistent saving. Complete goals to build yours! 🔥" },
-    { keys: ["chart", "graph", "stats"],    reply: "Scroll down on the Dashboard to see your spending chart! 📊" },
-    { keys: ["help"],                       reply: "I can help with budget tips, goals, and streaks. Just ask me anything!" },
-    { keys: ["thanks", "thank you", "ty"],  reply: "You're welcome! Keep saving, you've got this. 💪" },
-    { keys: ["good", "great", "awesome"],   reply: "Glad to hear it! 😄 Your finances are looking up!" },
-    { keys: ["bad", "terrible", "awful"],   reply: "Hang in there! Every peso saved counts. You can turn it around." }
-  ];
 
-  // ── Compute mascot state from budget data ────────────────
+
+  // ── Helper: did the user log an expense today? ─────────────
+  function hasLoggedToday() {
+    if (!window.StorageAPI || !window.StorageAPI.getExpenses) { return false; }
+    var todayStr = new Date().toISOString().slice(0, 10);
+    var recent = window.StorageAPI.getExpenses(30);
+    return recent.some(function (e) {
+      return e.timestamp && String(e.timestamp).slice(0, 10) === todayStr;
+    });
+  }
+
+  // ── Compute mascot state from data + overrides ───────────
+  var STREAK_MILESTONES = [7, 14, 30, 60, 100];
+
   function getMascotState() {
-    if (!window.StorageAPI) {
-      return "neutral";
+    // 1. Timed override (e.g., set by gamification.js on level-up)
+    if (window._mascotOverrideState) {
+      var ov = window._mascotOverrideState;
+      if (ov.expires > Date.now()) { return ov.key; }
+      window._mascotOverrideState = null; // expired — clear
     }
+
+    if (!window.StorageAPI) { return "neutral"; }
+
+    // 2. Streak milestone: celebrate when user hits a milestone
+    var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
+    if (streak > 0 && STREAK_MILESTONES.indexOf(streak) !== -1 && hasLoggedToday()) {
+      return "streak";
+    }
+
+    // 3. Encouraging: no expense logged today and it's past 1 PM
+    if (!hasLoggedToday() && new Date().getHours() >= 13) {
+      return "encouraging";
+    }
+
+    // 4. Budget-based states
     var summary = window.StorageAPI.getBudgetSummary();
     var pct = summary.percentageSpent;
     if (pct >= 90) { return "alarmed"; }
@@ -57,26 +59,11 @@
     return "happy";
   }
 
-  function getRandomReply(state) {
-    var arr = RESPONSES[state] || RESPONSES.neutral;
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-
-  function getKeywordReply(text) {
-    var lower = text.toLowerCase();
-    for (var i = 0; i < KEYWORD_REPLIES.length; i++) {
-      var entry = KEYWORD_REPLIES[i];
-      for (var j = 0; j < entry.keys.length; j++) {
-        if (lower.indexOf(entry.keys[j]) !== -1) {
-          return entry.reply;
-        }
-      }
-    }
-    return null;
-  }
-
- // ── Build DOM ────────────────────────────────────────────
+  // ── Build DOM ────────────────────────────────────────────
   function buildWidget() {
+    // Don't render on the chat page itself
+    if (document.body.getAttribute("data-page") === "chat") { return; }
+
     var state = getMascotState();
     var stateObj = STATES[state];
 
@@ -84,207 +71,122 @@
     var fab = document.createElement("button");
     fab.id = "mascotFab";
     fab.className = "mascot-fab " + stateObj.cls;
-    fab.setAttribute("aria-label", "Open Tigom assistant");
-    fab.setAttribute("title", "Chat with Tigom");
-    
-    // --> ADDED: Insert the image instead of textContent
+    fab.setAttribute("aria-label", "Open Sugbo assistant");
+    fab.setAttribute("title", "Chat with Sugbo");
     fab.innerHTML = '<img src="' + stateObj.img + '" class="mascot-fab-img" alt="Sugbo" draggable="false" />';
-    
     document.body.appendChild(fab);
 
-    // Chatbox
-    var chatbox = document.createElement("div");
-    chatbox.id = "mascotChatbox";
-    chatbox.className = "mascot-chatbox hidden";
-    chatbox.setAttribute("role", "dialog");
-    chatbox.setAttribute("aria-label", "Sugbo assistant chat");
-
-    var healthPct = getHealthPct();
-    var healthCls = healthPct > 60 ? "" : (healthPct > 30 ? "health-warn" : "health-danger");
-
-    
-
-    chatbox.innerHTML =
-      '<div class="mascot-chatbox-header">' +
-        // --> ADDED: Use an <img> tag for the chatbox avatar
-        '<img class="mascot-avatar" id="mascotAvatarImg" src="' + stateObj.img + '" alt="Sugbo" draggable="false" />' +
-        '<div>' +
-          '<div class="mascot-name">Tigom</div>' +
-          '<div class="mascot-status" id="mascotStatusText">' + stateObj.label + '</div>' +
+    // Side panel overlay
+    var overlay = document.createElement("div");
+    overlay.id = "mascotPanelOverlay";
+    overlay.className = "mascot-panel-overlay";
+    overlay.innerHTML =
+      '<div class="mascot-panel" id="mascotPanel">' +
+        '<div class="mascot-panel-header">' +
+          '<img id="mascotPanelAvatar" class="mascot-panel-header-avatar" src="' + stateObj.img + '" alt="Sugbo" draggable="false" />' +
+          '<div class="mascot-panel-header-info">' +
+            '<div class="mascot-panel-header-title">Sugbo</div>' +
+            '<div class="mascot-panel-header-sub" id="mascotPanelStatus">' + stateObj.label + '</div>' +
+          '</div>' +
+          '<button class="mascot-panel-new" id="mascotPanelNew" aria-label="New chat" title="New chat">' +
+            '<i class="bi bi-pencil-square" aria-hidden="true" style="font-size:0.8rem;"></i>' +
+          '</button>' +
+          '<button class="mascot-panel-expand" id="mascotPanelExpand" aria-label="Open full chat page" title="Open full chat">' +
+            '<i class="bi bi-box-arrow-up-right" aria-hidden="true" style="font-size:0.8rem;"></i>' +
+          '</button>' +
+          '<button class="mascot-panel-close" id="mascotPanelClose" aria-label="Close chat">' +
+            '<svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13"/></svg>' +
+          '</button>' +
         '</div>' +
-
-
-        
-        '<button class="mascot-chatbox-close" id="mascotCloseBtn" aria-label="Close chat">✕</button>' +
-      '</div>' +
-      '<div class="mascot-health-bar-wrap">' +
-        '<span class="mascot-health-label">Mood</span>' +
-        '<div class="mascot-health-track">' +
-          '<div class="mascot-health-fill ' + healthCls + '" id="mascotHealthFill" style="width:' + healthPct + '%"></div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="mascot-chatbox-body" id="mascotBody"></div>' +
-      '<div class="mascot-chatbox-footer">' +
-        '<input class="mascot-input" id="mascotInput" type="text" placeholder="Ask Tigom…" maxlength="200" autocomplete="off" />' +
-        '<button class="mascot-send-btn" id="mascotSendBtn" aria-label="Send">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
-        '</button>' +
-      '</div>' +
-      '<div class="mascot-chatbox-fullchat">' +
-        '<a href="chat.html" class="mascot-fullchat-link">Open full conversation →</a>' +
+        '<iframe class="mascot-panel-frame" id="mascotPanelFrame" src="" title="Chat with Sugbo" allowfullscreen></iframe>' +
       '</div>';
-
-    document.body.appendChild(chatbox);
+    document.body.appendChild(overlay);
   }
 
-  function getHealthPct() {
-    if (!window.StorageAPI) { return 100; }
-    var summary = window.StorageAPI.getBudgetSummary();
-    return Math.max(0, 100 - summary.percentageSpent);
-  }
-
-  // ── Chat functionality ────────────────────────────────────
-  function addMessage(text, who) {
-    var body = document.getElementById("mascotBody");
-    if (!body) { return; }
-    var msg = document.createElement("div");
-    msg.className = "mascot-msg mascot-msg-" + who;
-    var bubble = document.createElement("div");
-    bubble.className = "mascot-bubble";
-    bubble.textContent = text;
-    msg.appendChild(bubble);
-    body.appendChild(msg);
-    body.scrollTop = body.scrollHeight;
-  }
-
-  function addTypingIndicator() {
-    var body = document.getElementById("mascotBody");
-    if (!body) { return null; }
-    var id = "mascot-typing-" + Date.now();
-    var msg = document.createElement("div");
-    msg.id = id;
-    msg.className = "mascot-msg mascot-msg-bot";
-    var bubble = document.createElement("div");
-    bubble.className = "mascot-bubble mascot-typing";
-    bubble.innerHTML = "<span></span><span></span><span></span>";
-    msg.appendChild(bubble);
-    body.appendChild(msg);
-    body.scrollTop = body.scrollHeight;
-    return id;
-  }
-
-  function removeTypingIndicator(id) {
-    if (!id) { return; }
-    var el = document.getElementById(id);
-    if (el && el.parentNode) { el.parentNode.removeChild(el); }
-  }
-
-  function sendUserMessage(text) {
-    if (!text.trim()) { return; }
-    addMessage(text, "user");
-    var state = getMascotState();
-
-    if (window.ChatAI && window.ChatAI.isAvailable()) {
-      var typingId = addTypingIndicator();
-      // Build short history from visible messages for context
-      var history = [];
-      var body = document.getElementById("mascotBody");
-      if (body) {
-        var msgs = body.querySelectorAll(".mascot-msg");
-        var start = Math.max(0, msgs.length - 7); // last few messages
-        for (var i = start; i < msgs.length - 1; i++) {
-          var role = msgs[i].classList.contains("mascot-msg-user") ? "user" : "bot";
-          var bubbleEl = msgs[i].querySelector(".mascot-bubble");
-          if (bubbleEl && !bubbleEl.classList.contains("mascot-typing")) {
-            history.push({ role: role, text: bubbleEl.textContent });
-          }
-        }
-      }
-      window.ChatAI.send(text, history).then(function (result) {
-        removeTypingIndicator(typingId);
-        if (result.ok && result.reply) {
-          addMessage(result.reply, "bot");
-        } else {
-          addMessage(window.ChatAI.getFallbackReply(text, state), "bot");
-        }
-      }).catch(function () {
-        removeTypingIndicator(typingId);
-        addMessage(window.ChatAI.getFallbackReply(text, state), "bot");
-      });
-    } else {
-      var reply = getKeywordReply(text) || getRandomReply(state);
-      setTimeout(function () {
-        addMessage(reply, "bot");
-      }, 500);
-    }
-  }
-
-  function openChat() {
-    var chatbox = document.getElementById("mascotChatbox");
-    var fab = document.getElementById("mascotFab");
-    if (!chatbox) { return; }
-    chatbox.classList.remove("hidden");
-    fab.classList.add("mascot-bounce");
-    setTimeout(function () { fab.classList.remove("mascot-bounce"); }, 600);
-
-    // Post greeting if no messages yet
-    var body = document.getElementById("mascotBody");
-    if (body && body.children.length === 0) {
-      var state = getMascotState();
-      if (window.ChatAI && window.ChatAI.isAvailable()) {
-        var typingId = addTypingIndicator();
-        window.ChatAI.send("Hi! Give me a quick, friendly greeting and one tip about my budget this week.", []).then(function (result) {
-          removeTypingIndicator(typingId);
-          addMessage(result.ok ? result.reply : getRandomReply(getMascotState()), "bot");
-        }).catch(function () {
-          removeTypingIndicator(typingId);
-          addMessage(getRandomReply(getMascotState()), "bot");
-        });
+  // ── Panel open / close ────────────────────────────────────
+  function getPanelSrc() {
+    // If the user hasn't chatted in >6 hours, open a fresh chat
+    var SIX_HOURS = 6 * 60 * 60 * 1000;
+    if (window.StorageAPI && window.StorageAPI.getPreferences) {
+      var prefs = window.StorageAPI.getPreferences();
+      if (prefs && prefs.lastChatAt) {
+        var elapsed = Date.now() - new Date(prefs.lastChatAt).getTime();
+        if (elapsed > SIX_HOURS) { return "chat.html?new=1"; }
       } else {
-        addMessage(getRandomReply(state), "bot");
+        // No chat history at all — open fresh
+        return "chat.html";
       }
     }
-
-    var input = document.getElementById("mascotInput");
-    if (input) { input.focus(); }
-
-    updateMascotState();
+    return "chat.html";
   }
 
-  function closeChat() {
-    var chatbox = document.getElementById("mascotChatbox");
-    if (chatbox) { chatbox.classList.add("hidden"); }
-  }
-
-
-  // ── Update mascot appearance ─────────────────────────────
-  function updateMascotState() {
-    var state = getMascotState();
-    var stateObj = STATES[state];
+  function openPanel() {
+    var overlay = document.getElementById("mascotPanelOverlay");
+    var frame = document.getElementById("mascotPanelFrame");
+    if (!overlay) { return; }
+    if (frame) {
+      var src = getPanelSrc();
+      // Reload only if not already showing a live session (same base URL)
+      var currentBase = (frame.src || "").split("?")[0];
+      var targetBase = (new URL(src, window.location.href)).href.split("?")[0];
+      if (!frame.getAttribute("data-loaded") || currentBase !== targetBase || src.indexOf("new=1") !== -1) {
+        frame.src = src;
+        frame.setAttribute("data-loaded", "1");
+      }
+      isPanelNewPending = src.indexOf("new=1") !== -1;
+    }
+    overlay.classList.add("is-open");
     var fab = document.getElementById("mascotFab");
-    var avatarImg = document.getElementById("mascotAvatarImg"); // Changed to target the image
-    var statusText = document.getElementById("mascotStatusText");
-    var fill = document.getElementById("mascotHealthFill");
+    if (fab) {
+      fab.classList.add("mascot-bounce");
+      setTimeout(function () { fab.classList.remove("mascot-bounce"); }, 600);
+    }
+  }
+
+  function closePanel() {
+    var overlay = document.getElementById("mascotPanelOverlay");
+    if (overlay) { overlay.classList.remove("is-open"); }
+    isPanelNewPending = false;
+  }
+
+
+
+  // ── Update mascot appearance (with image fade) ──────────
+  function updateMascotState() {
+    var state    = getMascotState();
+    var stateObj = STATES[state] || STATES.neutral;
+    var fab      = document.getElementById("mascotFab");
+    var panelAvatar = document.getElementById("mascotPanelAvatar");
+    var panelStatus = document.getElementById("mascotPanelStatus");
+
+    // Resolve dynamic label (e.g., streak count)
+    var streakCount = window.StorageAPI && window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
+    var label = stateObj.labelFn ? stateObj.labelFn(streakCount) : stateObj.label;
 
     if (fab) {
       fab.className = "mascot-fab " + stateObj.cls;
-      // Update the FAB image source safely
-      var fabImg = fab.querySelector('.mascot-fab-img');
+      var fabImg = fab.querySelector(".mascot-fab-img");
       if (fabImg) {
-        fabImg.src = stateObj.img;
+        if (fabImg.getAttribute("data-state") !== state) {
+          // Fade out, swap image, fade in
+          fabImg.setAttribute("data-state", state);
+          fabImg.style.opacity = "0";
+          var tmpImg = new window.Image();
+          var newSrc = stateObj.img;
+          tmpImg.onload = function () {
+            fabImg.src = newSrc;
+            fabImg.style.opacity = "1";
+          };
+          tmpImg.onerror = function () {
+            fabImg.src = STATES.happy.img; // fallback if asset missing
+            fabImg.style.opacity = "1";
+          };
+          tmpImg.src = newSrc;
+        }
       }
     }
-    
-    // Update Chatbox Avatar image
-    if (avatarImg) { avatarImg.src = stateObj.img; }
-    if (statusText) { statusText.textContent = stateObj.label; }
-
-    var pct = getHealthPct();
-    if (fill) {
-      fill.style.width = pct + "%";
-      fill.className = "mascot-health-fill" +
-        (pct > 60 ? "" : (pct > 30 ? " health-warn" : " health-danger"));
-    }
+    if (panelAvatar) { panelAvatar.src = stateObj.img; }
+    if (panelStatus) { panelStatus.textContent = label; }
   }
 
   // ── Draggable FAB ────────────────────────────────────────
@@ -329,11 +231,11 @@
       
       if (!moved) {
         fab.style.transition = ""; 
-        var chatbox = document.getElementById("mascotChatbox");
-        if (chatbox && chatbox.classList.contains("hidden")) {
-          openChat();
+        var panelOverlay = document.getElementById("mascotPanelOverlay");
+        if (panelOverlay && panelOverlay.classList.contains("is-open")) {
+          closePanel();
         } else {
-          closeChat();
+          openPanel();
         }
       } else {
         // ── DISTANCE-BASED CORNER SNAPPING LOGIC ──
@@ -417,142 +319,72 @@
       }
 
 
-      
-
-  // ── Draggable Chatbox ─────────────────────────────────────
-      function makeChatboxDraggable(chatbox) {
-        // Only grab the header to drag, so the user can still type and scroll inside the chat!
-        var handle = chatbox.querySelector(".mascot-chatbox-header");
-        if (!handle) return;
-
-        var isDragging = false;
-        var startX, startY, origRight, origBottom;
-
-        function onStart(clientX, clientY, target) {
-          // Do not start dragging if the user clicked the close button
-          if (target && target.closest('#mascotCloseBtn')) {
-            return;
-          }
-          
-          isDragging = true;
-          startX = clientX;
-          startY = clientY;
-          
-          chatbox.style.transition = "none";
-          
-          var rect = chatbox.getBoundingClientRect();
-          origRight  = window.innerWidth  - rect.right;
-          origBottom = window.innerHeight - rect.bottom;
-        }
-
-        function onMove(clientX, clientY) {
-          if (!isDragging) { return; }
-          
-          var dx = clientX - startX;
-          var dy = clientY - startY;
-          
-          var newRight  = Math.max(0, origRight  - dx);
-          var newBottom = Math.max(0, origBottom - dy); 
-          
-          // Keep the chatbox from being dragged completely off the screen
-          newRight  = Math.min(window.innerWidth  - chatbox.offsetWidth, newRight);
-          newBottom = Math.min(window.innerHeight - chatbox.offsetHeight, newBottom);
-          
-          chatbox.style.right  = newRight  + "px";
-          chatbox.style.bottom = newBottom + "px";
-        }
-
-        function onEnd() {
-          if (!isDragging) { return; } 
-          isDragging = false;
-          chatbox.style.transition = ""; 
-          // No corner snapping here! It just stays exactly where dropped.
-        }
-
-        // Event Listeners for the Header
-        handle.addEventListener("mousedown", function (e) {
-          if (e.target.closest('#mascotCloseBtn')) return;
-          e.preventDefault(); // Prevents text highlighting while dragging
-          onStart(e.clientX, e.clientY, e.target);
-        });
-        
-        document.addEventListener("mousemove", function (e) {
-          onMove(e.clientX, e.clientY);
-        });
-        
-        document.addEventListener("mouseup", function () {
-          onEnd();
-        });
-
-        handle.addEventListener("touchstart", function (e) {
-          if (e.target.closest('#mascotCloseBtn')) return;
-          var t = e.touches[0];
-          onStart(t.clientX, t.clientY, e.target);
-        }, { passive: true });
-        
-        document.addEventListener("touchmove", function (e) {
-          if (!isDragging) { return; }
-          e.preventDefault(); // Stops the page from scrolling on mobile
-          var t = e.touches[0];
-          onMove(t.clientX, t.clientY);
-        }, { passive: false });
-        
-        document.addEventListener("touchend", function () {
-          onEnd();
-        });
-      }
-
 
   // ── Init ─────────────────────────────────────────────────
   function init() {
     buildWidget();
 
     var fab = document.getElementById("mascotFab");
-    var chatbox = document.getElementById("mascotChatbox"); // <-- ADD THIS
-    var closeBtn = document.getElementById("mascotCloseBtn");
-    var sendBtn = document.getElementById("mascotSendBtn");
-    var input = document.getElementById("mascotInput");
+    var panelClose = document.getElementById("mascotPanelClose");
+    var overlay = document.getElementById("mascotPanelOverlay");
 
-    if (fab) { makeDraggable(fab); }
+    if (!fab) { return; }
+    makeDraggable(fab);
 
-    if (chatbox) { makeChatboxDraggable(chatbox); } // <-- ADD THIS
-
-    if (closeBtn) {
-      closeBtn.addEventListener("click", closeChat);
+    if (panelClose) {
+      panelClose.addEventListener("click", closePanel);
+    }
+    var panelExpand = document.getElementById("mascotPanelExpand");
+    if (panelExpand) {
+      panelExpand.addEventListener("click", function () {
+        window.location.href = isPanelNewPending ? "chat.html?new=1" : "chat.html";
+      });
+    }
+    if (overlay) {
+      overlay.addEventListener("click", function (e) {
+        if (e.target === overlay) { closePanel(); }
+      });
     }
 
-    if (sendBtn) {
-      sendBtn.addEventListener("click", function () {
-        var val = input ? input.value.trim() : "";
-        if (val) {
-          sendUserMessage(val);
-          if (input) { input.value = ""; }
+    // Listen for close message from iframe
+    window.addEventListener("message", function (event) {
+      if (event && event.data && event.data.type === "sugbocents:closeChat") {
+        closePanel();
+      }
+      // iframe signals a message was sent — no longer a pending new chat
+      if (event && event.data && event.data.type === "sugbocents:messageSent") {
+        isPanelNewPending = false;
+      }
+    });
+
+    var panelNew = document.getElementById("mascotPanelNew");
+    if (panelNew) {
+      panelNew.addEventListener("click", function () {
+        var frame = document.getElementById("mascotPanelFrame");
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: "sugbocents:newChat" }, "*");
+          isPanelNewPending = true;
         }
       });
     }
 
-    if (input) {
-      input.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-          var val = input.value.trim();
-          if (val) {
-            sendUserMessage(val);
-            input.value = "";
-          }
-        }
-      });
-    }
-
-    // Re-run state update when expenses change
     window.addEventListener("sugbocents:synced", updateMascotState);
+    window.addEventListener("sugbocents:dataChanged", updateMascotState);
   }
 
   document.addEventListener("DOMContentLoaded", function () {
     init();
+    // Auto-open panel when returning from chat.html via back button
+    if (window.location.hash === "#chat") {
+      window.history.replaceState(null, "", window.location.pathname);
+      setTimeout(openPanel, 150);
+    }
   });
 
   window.MascotWidget = {
-    update: updateMascotState
+    update: updateMascotState,
+    open: openPanel,
+    close: closePanel
   };
 })();
 

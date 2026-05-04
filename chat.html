@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#1f6b46" />
-  <title>SugboCents - Chat with Tigom</title>
+  <title>SugboCents - Chat with Sugbo</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,6 +15,184 @@
   <link rel="stylesheet" href="css/dark-mode.css" />
   <script>if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");</script>
   <style>
+    .chat-shell {
+      display: flex;
+      height: 100dvh;
+      width: 100%;
+      background: #fff;
+      position: relative;
+    }
+
+    /* ── New app-layout overrides for chat ── */
+    .chat-layout { overflow: hidden; height: 100dvh; }
+    .chat-app-main {
+      display: flex; flex-direction: row; overflow: hidden; position: relative;
+      height: calc(100dvh - 4rem); /* mobile: account for bottom nav */
+    }
+    @media (min-width: 1024px) {
+      .chat-app-main { height: 100vh; overflow: hidden; }
+    }
+
+    .chat-sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 100dvh;
+      width: 280px;
+      padding: 1.1rem 1rem;
+      background: #f8fafb;
+      border-right: 1px solid #e2e8f0;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transform: translateX(-100%);
+      transition: transform 220ms ease;
+      z-index: 20;
+    }
+
+    .chat-sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      border: none;
+      background: rgba(15, 23, 42, 0.48);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+      z-index: 15;
+    }
+
+    .chat-app-main.is-sidebar-open .chat-sidebar {
+      transform: translateX(0);
+    }
+
+    .chat-app-main.is-sidebar-open .chat-sidebar-overlay {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .chat-sidebar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+    }
+
+    .chat-sidebar-title {
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #4b6354;
+      margin: 0;
+    }
+
+    .chat-sidebar-close {
+      border: none;
+      background: #e2e8f0;
+      color: #475569;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .chat-new-thread-btn {
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0;
+      width: 2rem;
+      height: 2rem;
+      font-size: 1rem;
+      background: #e7f5ed;
+      color: #1f6b46;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 150ms;
+    }
+    .chat-new-thread-btn:hover { background: #c6e8d4; }
+
+    .chat-history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      overflow-y: auto;
+      padding-right: 0.4rem;
+    }
+
+    .chat-thread-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      width: 100%;
+      padding: 0.45rem 0.5rem;
+      border-radius: 0.85rem;
+      border: 1px solid transparent;
+      background: #ffffff;
+      color: #1f2937;
+      transition: border-color 150ms, box-shadow 150ms;
+    }
+
+    .chat-thread-row.is-active {
+      border-color: rgba(31, 107, 70, 0.35);
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+    }
+
+    .chat-thread-main {
+      flex: 1;
+      text-align: left;
+      background: transparent;
+      border: none;
+      padding: 0.35rem 0.35rem;
+      cursor: pointer;
+      color: inherit;
+    }
+
+    .chat-thread-title {
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .chat-thread-meta {
+      font-size: 0.7rem;
+      color: #6b7280;
+      margin-top: 0.15rem;
+      font-weight: 600;
+    }
+
+    .chat-thread-delete {
+      border: none;
+      background: #f1f5f9;
+      color: #94a3b8;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.65rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .chat-thread-delete:hover {
+      background: #fee2e2;
+      color: #b42318;
+    }
+
+    .chat-history-empty {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      line-height: 1.5;
+      padding: 0.35rem 0.2rem;
+    }
+
     .chat-page-wrap {
       display: flex;
       flex-direction: column;
@@ -22,6 +200,9 @@
       max-width: 640px;
       margin: 0 auto;
       background: #fff;
+      flex: 1;
+      min-width: 0;
+      position: relative;
     }
 
     .chat-page-header {
@@ -46,7 +227,6 @@
       color: #fff;
       cursor: pointer;
       font-size: 1.05rem;
-      text-decoration: none;
       flex-shrink: 0;
       transition: background 150ms;
     }
@@ -61,21 +241,18 @@
       background: rgba(255,255,255,0.15);
       padding: 2px;
       flex-shrink: 0;
+      transition: opacity 150ms ease, transform 150ms ease;
+    }
+
+    .chat-page-avatar.is-fading {
+      opacity: 0.4;
+      transform: scale(0.95);
     }
 
     .chat-page-title { font-weight: 800; font-size: 1rem; }
     .chat-page-subtitle { font-size: 0.72rem; opacity: 0.78; }
 
-    .chat-ai-badge {
-      margin-left: auto;
-      background: rgba(255,255,255,0.22);
-      border-radius: 999px;
-      padding: 0.22rem 0.6rem;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      white-space: nowrap;
-    }
+    .chat-ai-badge { display: none; }
 
     .chat-messages {
       flex: 1;
@@ -84,6 +261,64 @@
       display: flex;
       flex-direction: column;
       gap: 0.65rem;
+    }
+
+    /* Push welcome block to the bottom of the empty message area */
+    .chat-messages.is-empty {
+      justify-content: flex-end;
+    }
+
+    .chat-connection-layer {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+      z-index: 5;
+    }
+
+    .chat-connection-layer.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .chat-connection-card {
+      background: #ffffff;
+      border-radius: 1rem;
+      padding: 1.2rem 1.3rem;
+      text-align: center;
+      width: min(320px, 90%);
+      box-shadow: 0 18px 30px rgba(15, 23, 42, 0.2);
+      border: 1px solid #e2e8f0;
+    }
+
+    .chat-connection-spinner {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 3px solid #d9e6df;
+      border-top-color: #2b8259;
+      margin: 0 auto 0.6rem;
+      animation: chat-spin 1s linear infinite;
+    }
+
+    .chat-connection-title {
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 0.2rem;
+    }
+
+    .chat-connection-sub {
+      font-size: 0.78rem;
+      color: #64748b;
+    }
+
+    @keyframes chat-spin {
+      to { transform: rotate(360deg); }
     }
 
     .chat-msg {
@@ -126,11 +361,48 @@
       border-bottom-right-radius: 0.25rem;
     }
 
+    .chat-msg-body { display: flex; flex-direction: column; }
+    .chat-msg--user .chat-msg-body { align-items: flex-end; }
+
     .chat-bubble-time {
       font-size: 0.65rem;
-      opacity: 0.5;
+      opacity: 0.7;
+      color: #64748b;
       margin-top: 0.2rem;
       display: block;
+    }
+
+    .chat-msg--user .chat-bubble-time {
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .chat-suggestions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.6rem;
+      margin-top: 1.25rem;
+    }
+
+    .chat-suggestion-btn {
+      border: 1px solid rgba(31, 107, 70, 0.18);
+      background: #f8fafb;
+      border-radius: 0.9rem;
+      padding: 0.65rem 0.75rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #1f6b46;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: transform 120ms, box-shadow 160ms, border-color 160ms;
+    }
+
+    .chat-suggestion-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(31, 107, 70, 0.35);
+      box-shadow: 0 10px 18px rgba(15, 23, 42, 0.1);
     }
 
     /* Typing indicator */
@@ -160,14 +432,23 @@
       40%           { transform: translateY(-5px); opacity: 1; }
     }
 
-    /* Date separator */
-    .chat-date-sep {
-      text-align: center;
-      font-size: 0.7rem;
-      color: #94a3b8;
-      font-weight: 600;
-      margin: 0.5rem 0;
+    .chat-sidebar-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1rem;
+      flex-shrink: 0;
+      transition: background 150ms;
     }
+
+    .chat-sidebar-toggle:hover { background: rgba(255,255,255,0.28); }
 
     .chat-footer {
       padding: 0.65rem 0.75rem calc(0.65rem + env(safe-area-inset-bottom));
@@ -237,42 +518,185 @@
 
     .chat-clear-btn:hover { color: #fff; }
 
+    /* Scroll-to-bottom button */
+    .chat-scroll-btn {
+      position: absolute;
+      bottom: 5.5rem;
+      right: 0.85rem;
+      z-index: 10;
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1.5px solid #dbe2ea;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.14);
+      transition: opacity 150ms, transform 100ms;
+    }
+    .chat-scroll-btn.hidden { display: none; }
+    .chat-scroll-btn:hover { background: #f8fafb; color: #1f2937; }
+    .dark-mode .chat-scroll-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
+
+    /* Info toast (e.g. thread limit reached) */
+    .chat-info-toast { position: fixed; bottom: 5.5rem; left: 50%; transform: translateX(-50%); background: #1e293b; color: #f8fafc; font-size: 0.82rem; padding: 0.55rem 1.1rem; border-radius: 999px; white-space: nowrap; max-width: calc(100vw - 2rem); text-align: center; z-index: 200; box-shadow: 0 4px 14px rgba(15,23,42,0.22); pointer-events: none; }
+
+    /* Resume conversation separator */
+    .chat-resume-sep { display: flex; align-items: center; gap: 0.6rem; margin: 0.9rem 1rem; color: #94a3b8; font-size: 0.75rem; }
+    .chat-resume-sep::before, .chat-resume-sep::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
+    .dark-mode .chat-resume-sep { color: #64748b; }
+    .dark-mode .chat-resume-sep::before, .dark-mode .chat-resume-sep::after { background: #334155; }
+
+    /* Rate indicator colour states */
+    #chatRateCount.rate-warn  { color: #b45309; font-weight: 700; }
+    #chatRateCount.rate-limit { color: #b42318; font-weight: 700; }
+
+    @media (min-width: 1024px) {
+      .chat-sidebar {
+        position: relative;
+        transform: none;
+        height: auto;
+      }
+      .chat-sidebar-overlay { display: none; }
+      .chat-sidebar-close { display: none; }
+      .chat-sidebar-toggle { display: none; }
+      .chat-page-wrap { max-width: none; margin: 0; }
+    }
+
+    @media (min-width: 1200px) {
+      .chat-suggestions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
+    body.chat-embedded .app-sidebar { display: none !important; }
+    body.chat-embedded .bottom-nav { display: none !important; }
+    body.chat-embedded .chat-sidebar { display: none; }
+    body.chat-embedded .chat-app-main { height: 100dvh; }
+    body.chat-embedded .chat-page-wrap { height: 100%; }
+    body.chat-embedded .chat-page-header { display: none !important; }
+
     /* Dark mode */
     .dark-mode .chat-page-wrap { background: #0f172a; }
     .dark-mode .chat-footer { border-top-color: rgba(255,255,255,0.08); }
     .dark-mode .chat-footer-input { background: #1e293b; border-color: #334155; color: #e2e8f0; }
     .dark-mode .chat-msg--bot .chat-bubble { background: #1e293b; color: #e2e8f0; }
+    .dark-mode .chat-sidebar { background: #0b1220; border-right-color: #1f2a3a; }
+    .dark-mode .chat-sidebar-title { color: #a7b5c2; }
+    .dark-mode .chat-thread-row { background: #111827; color: #e2e8f0; }
+    .dark-mode .chat-thread-title { color: #e2e8f0; }
+    .dark-mode .chat-thread-meta { color: #94a3b8; }
+    .dark-mode .chat-thread-delete { background: #0f172a; color: #94a3b8; }
+    .dark-mode .chat-new-thread-btn { background: rgba(31, 107, 70, 0.25); color: #a7f3d0; }
+    .dark-mode .chat-new-thread-btn:hover { background: rgba(31, 107, 70, 0.4); }
+    .dark-mode .chat-connection-card { background: #0f172a; border-color: #1f2a3a; }
   </style>
 </head>
 <body data-page="chat" data-protected="true" class="bg-mist min-h-screen antialiased">
 
-  <div class="chat-page-wrap">
+  <div class="app-layout chat-layout">
+
+  <!-- Desktop sidebar -->
+  <aside class="app-sidebar" aria-label="Sidebar navigation">
+    <div class="sidebar-header">
+      <a href="dashboard.html" class="sidebar-brand" tabindex="-1" aria-hidden="true">
+        <span class="sidebar-brand-mark" aria-hidden="true">SC</span>
+        <span class="sidebar-brand-name">SugboCents</span>
+      </a>
+      <button id="sidebarToggle" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="1.5" y="1.5" width="15" height="15" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 1.5v15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <nav class="sidebar-nav-section" aria-label="Main navigation">
+      <a href="dashboard.html" data-nav="dashboard" class="sidebar-nav-link" data-tooltip="Dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span class="nav-link-label">Dashboard</span>
+      </a>
+      <a href="activity.html" data-nav="activity" class="sidebar-nav-link" data-tooltip="Activity">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span class="nav-link-label">Activity</span>
+      </a>
+      <a href="stats.html" data-nav="stats" class="sidebar-nav-link" data-tooltip="Profile">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="nav-link-label">Profile</span>
+      </a>
+      <a href="tigom.html" data-nav="tigom" class="sidebar-nav-link" data-tooltip="Goals">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        <span class="nav-link-label">Goals</span>
+      </a>
+      <a href="chat.html" data-nav="chat" class="sidebar-nav-link" data-tooltip="Sugbo AI">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="nav-link-label">Sugbo AI</span>
+      </a>
+    </nav>
+    <a href="settings.html" class="sidebar-user" aria-label="Account settings">
+      <div id="sidebarAvatar" class="sidebar-user-avatar">U</div>
+      <div class="min-w-0 sidebar-user-info">
+        <div id="sidebarName" class="sidebar-user-name">Loading…</div>
+        <div class="sidebar-user-sub">Account settings</div>
+      </div>
+      <svg class="sidebar-user-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
+  </aside>
+
+  <!-- Chat main area -->
+  <div class="app-main chat-app-main">
+
+    <button id="chatSidebarOverlay" class="chat-sidebar-overlay" aria-label="Close conversations"></button>
+
+    <aside class="chat-sidebar" aria-label="Chat history">
+      <div class="chat-sidebar-head">
+        <div class="chat-sidebar-title">Conversations</div>
+        <div style="display:flex;align-items:center;gap:0.3rem;">
+          <button id="chatNewThreadBtn" class="chat-new-thread-btn" type="button" aria-label="New chat" title="New chat">
+            <i class="bi bi-pencil-square" aria-hidden="true"></i>
+          </button>
+          <button id="chatSidebarClose" class="chat-sidebar-close" aria-label="Close conversations">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+      <div id="chatHistoryList" class="chat-history-list"></div>
+    </aside>
+
+    <div class="chat-page-wrap">
     <!-- Header -->
     <header class="chat-page-header">
-      <a href="dashboard.html" class="chat-page-back" aria-label="Back to dashboard">
+      <button id="chatSidebarToggle" class="chat-sidebar-toggle" aria-label="Open conversations">
+        <i class="bi bi-list" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="chat-page-back" id="chatBackBtn" aria-label="Back to dashboard">
         <i class="bi bi-arrow-left" aria-hidden="true"></i>
-      </a>
+      </button>
       <img
         id="chatAvatarImg"
         src="assets/images/mascot/mascot-happy.png"
-        alt="Tigom mascot"
+        alt="Sugbo mascot"
         class="chat-page-avatar"
       />
       <div>
-        <div class="chat-page-title">Tigom</div>
+        <div class="chat-page-title">Sugbo</div>
         <div class="chat-page-subtitle" id="chatSubtitle">Your budget buddy</div>
       </div>
       <div class="chat-ai-badge">AI · Groq</div>
-      <button id="chatClearBtn" class="chat-clear-btn" title="Clear chat history" aria-label="Clear chat history">
-        <i class="bi bi-trash" aria-hidden="true"></i>
-      </button>
     </header>
+
+    <div id="chatStatusBanner" class="chat-status-banner hidden" role="status" aria-live="polite">
+      <span class="chat-status-spinner" aria-hidden="true"></span>
+      <span id="chatStatusText">Trying to connect...</span>
+    </div>
 
     <!-- Messages -->
     <div class="chat-messages" id="chatMessages" role="log" aria-live="polite" aria-label="Chat messages"></div>
 
-    <!-- Attribution -->
-    <div class="chat-attribution">Powered by Groq · Llama 3.1</div>
+    <!-- Scroll to bottom button -->
+    <button id="chatScrollBtn" class="chat-scroll-btn hidden" aria-label="Scroll to latest message" type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+
+    <!-- Attribution + rate limit indicator -->
+    <div class="chat-attribution">Powered by Groq · Llama 3.1 · <span id="chatRateCount"></span></div>
 
     <!-- Input footer -->
     <div class="chat-footer">
@@ -280,7 +704,7 @@
         id="chatInput"
         type="text"
         class="chat-footer-input"
-        placeholder="Ask Tigom anything…"
+        placeholder="Ask about your spending, budget, or goals…"
         maxlength="500"
         autocomplete="off"
         aria-label="Chat message"
@@ -292,12 +716,50 @@
         </svg>
       </button>
     </div>
+    </div>
+  </div><!-- .chat-app-main -->
+
+  </div><!-- .app-layout -->
+
+  <!-- Delete conversation confirmation modal -->
+  <div id="chatClearModal" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="chatClearModalTitle">
+    <div class="modal-sheet" style="max-width:360px;">
+      <p class="modal-title" id="chatClearModalTitle">Delete this conversation?</p>
+      <p style="font-size:0.85rem;color:#475569;margin:0 0 1.25rem;">This conversation will be permanently deleted. This can't be undone.</p>
+      <div class="modal-actions">
+        <button id="chatClearModalCancel" class="btn-outline" type="button">Cancel</button>
+        <button id="chatClearModalConfirm" class="btn-danger" type="button">Delete</button>
+      </div>
+    </div>
   </div>
 
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <a href="dashboard.html" data-nav="dashboard" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-text">Dashboard</span>
+    </a>
+    <a href="activity.html" data-nav="activity" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="nav-text">Activity</span>
+    </a>
+    <a href="tigom.html" data-nav="tigom" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+      <span class="nav-text">Goals</span>
+    </a>
+    <a href="chat.html" data-nav="chat" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="nav-text">Sugbo AI</span>
+    </a>
+    <a href="settings.html" data-nav="settings" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="nav-text">Settings</span>
+    </a>
+  </nav>
+
+  <script src="js/storage.js"></script>
   <script src="js/firebase-init.js"></script>
   <script src="js/firebase-auth-service.js"></script>
   <script src="js/firestore-service.js"></script>
-  <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
   <script src="js/dark-mode.js"></script>
   <script src="js/chat-ai.js"></script>

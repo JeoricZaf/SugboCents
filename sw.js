@@ -1,4 +1,4 @@
-const CACHE_NAME = "sugbocents-shell-v54";
+const CACHE_NAME = "sugbocents-shell-v72";
 const SHELL_FILES = [
   "./",
   "index.html",

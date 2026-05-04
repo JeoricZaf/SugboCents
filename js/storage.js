@@ -654,6 +654,7 @@
 
     user.weeklyBudget = Math.max(0, sanitizeAmount(amount));
     saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
 
     if (window.FirestoreService) {
       window.FirestoreService.setUserDoc(store.session.userId, { weeklyBudget: user.weeklyBudget });
@@ -720,6 +721,7 @@
       return beforeUnlockable.indexOf(id) === -1;
     });
     saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
 
     if (window.FirestoreService) {
       window.FirestoreService.addExpenseDoc(store.session.userId, entry);
@@ -961,6 +963,7 @@
 
     user.expenses.splice(idx, 1);
     saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
 
     if (window.FirestoreService && window.FirestoreService.deleteExpenseDoc) {
       window.FirestoreService.deleteExpenseDoc(store.session.userId, expenseId);
@@ -1206,20 +1209,288 @@
 
   // ── AI Chatbot ───────────────────────────────────────────
 
-  function getChatHistory() {
+  function makeThreadId() {
+    return "thread_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+  }
+
+  function sanitizeThreadTitle(title) {
+    var next = String(title || "").trim();
+    if (!next) { return "New chat"; }
+    if (next.length > 40) { next = next.slice(0, 40).trim(); }
+    return next;
+  }
+
+  function cloneMessage(msg) {
+    return {
+      role: String(msg.role || ""),
+      text: String(msg.text || ""),
+      timestamp: msg.timestamp || nowIso()
+    };
+  }
+
+  function cloneMessages(messages) {
+    if (!Array.isArray(messages)) { return []; }
+    return messages.map(cloneMessage);
+  }
+
+  function cloneThread(thread) {
+    return {
+      id: thread.id,
+      title: thread.title,
+      createdAt: thread.createdAt,
+      updatedAt: thread.updatedAt || thread.createdAt,
+      messages: cloneMessages(thread.messages)
+    };
+  }
+
+  function getLastMessageTimestamp(thread) {
+    if (!thread || !Array.isArray(thread.messages) || thread.messages.length === 0) {
+      return null;
+    }
+    var last = thread.messages[thread.messages.length - 1];
+    return last && last.timestamp ? last.timestamp : null;
+  }
+
+  function ensureChatThreads() {
+    var session = getSession();
+    if (!session) {
+      return { chatThreads: [], activeChatThreadId: null };
+    }
+
     var prefs = getPreferences();
-    return Array.isArray(prefs.chatHistory) ? prefs.chatHistory.slice() : [];
+    var threads = Array.isArray(prefs.chatThreads) ? prefs.chatThreads : null;
+
+    if (threads && threads.length > 0) {
+      var activeId = prefs.activeChatThreadId || threads[0].id;
+      var hasActive = false;
+      for (var i = 0; i < threads.length; i++) {
+        if (threads[i].id === activeId) {
+          hasActive = true;
+          break;
+        }
+      }
+      if (!hasActive) {
+        activeId = threads[0].id;
+        savePreferences({ activeChatThreadId: activeId });
+      }
+      prefs.activeChatThreadId = activeId;
+      return prefs;
+    }
+
+    var legacy = Array.isArray(prefs.chatHistory) ? prefs.chatHistory.slice() : [];
+    var createdAt = nowIso();
+    var updatedAt = legacy.length ? (legacy[legacy.length - 1].timestamp || createdAt) : createdAt;
+    var title = legacy.length
+      ? "Chat " + new Date(createdAt).toLocaleDateString("en-PH", { month: "short", day: "numeric" })
+      : "New chat";
+    var thread = {
+      id: makeThreadId(),
+      title: title,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      messages: legacy
+    };
+
+    savePreferences({
+      chatThreads: [thread],
+      activeChatThreadId: thread.id,
+      chatHistory: []
+    });
+
+    prefs.chatThreads = [thread];
+    prefs.activeChatThreadId = thread.id;
+    prefs.chatHistory = [];
+    return prefs;
+  }
+
+  function getChatThreads() {
+    var prefs = ensureChatThreads();
+    var threads = Array.isArray(prefs.chatThreads) ? prefs.chatThreads : [];
+    return threads.map(function (thread) {
+      var cloned = cloneThread(thread);
+      var last = getLastMessageTimestamp(thread);
+      cloned.messageCount = Array.isArray(thread.messages) ? thread.messages.length : 0;
+      cloned.lastMessage = null;
+      if (thread.messages && thread.messages.length > 0) {
+        cloned.lastMessage = cloneMessage(thread.messages[thread.messages.length - 1]);
+      }
+      cloned.updatedAt = thread.updatedAt || last || thread.createdAt;
+      delete cloned.messages;
+      return cloned;
+    });
+  }
+
+  function getActiveChatThreadId() {
+    var prefs = ensureChatThreads();
+    return prefs.activeChatThreadId || null;
+  }
+
+  function setActiveChatThread(threadId) {
+    var prefs = ensureChatThreads();
+    var threads = Array.isArray(prefs.chatThreads) ? prefs.chatThreads : [];
+    for (var i = 0; i < threads.length; i++) {
+      if (threads[i].id === threadId) {
+        savePreferences({ activeChatThreadId: threadId });
+        return { ok: true };
+      }
+    }
+    return { ok: false, error: "Thread not found." };
+  }
+
+  function getActiveChatThread() {
+    var prefs = ensureChatThreads();
+    var threads = Array.isArray(prefs.chatThreads) ? prefs.chatThreads : [];
+    var activeId = prefs.activeChatThreadId;
+    var active = null;
+    for (var i = 0; i < threads.length; i++) {
+      if (threads[i].id === activeId) {
+        active = threads[i];
+        break;
+      }
+    }
+    if (!active && threads.length > 0) {
+      active = threads[0];
+      savePreferences({ activeChatThreadId: active.id });
+    }
+    return active ? cloneThread(active) : null;
+  }
+
+  function createChatThread(title) {
+    var prefs = ensureChatThreads();
+    var threads = Array.isArray(prefs.chatThreads) ? prefs.chatThreads.slice() : [];
+    var thread = {
+      id: makeThreadId(),
+      title: sanitizeThreadTitle(title),
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+      messages: []
+    };
+    threads.unshift(thread);
+    savePreferences({ chatThreads: threads, activeChatThreadId: thread.id });
+    return { ok: true, thread: cloneThread(thread) };
+  }
+
+  function deleteChatThread(threadId) {
+    var prefs = ensureChatThreads();
+    var threads = Array.isArray(prefs.chatThreads) ? prefs.chatThreads.slice() : [];
+    var next = [];
+    var removed = false;
+    for (var i = 0; i < threads.length; i++) {
+      if (threads[i].id === threadId) {
+        removed = true;
+      } else {
+        next.push(threads[i]);
+      }
+    }
+    if (!removed) { return { ok: false, error: "Thread not found." }; }
+
+    if (next.length === 0) {
+      var fresh = {
+        id: makeThreadId(),
+        title: "New chat",
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+        messages: []
+      };
+      savePreferences({ chatThreads: [fresh], activeChatThreadId: fresh.id });
+      return { ok: true, activeThreadId: fresh.id };
+    }
+
+    var activeId = prefs.activeChatThreadId;
+    var nextActive = activeId === threadId ? next[0].id : activeId;
+    savePreferences({ chatThreads: next, activeChatThreadId: nextActive });
+    return { ok: true, activeThreadId: nextActive };
+  }
+
+  function getChatHistory() {
+    var thread = getActiveChatThread();
+    return thread && Array.isArray(thread.messages) ? thread.messages.slice() : [];
   }
 
   function saveChatMessage(role, text) {
-    var history = getChatHistory();
-    history.push({ role: String(role), text: String(text), timestamp: nowIso() });
-    if (history.length > 50) { history = history.slice(-50); }
-    return savePreferences({ chatHistory: history });
+    var prefs = ensureChatThreads();
+    var threads = Array.isArray(prefs.chatThreads) ? prefs.chatThreads.slice() : [];
+    var activeId = prefs.activeChatThreadId;
+    var updatedThreads = [];
+    var saved = false;
+
+    for (var i = 0; i < threads.length; i++) {
+      var thread = threads[i];
+      if (thread.id !== activeId) {
+        updatedThreads.push(thread);
+        continue;
+      }
+
+      var messages = Array.isArray(thread.messages) ? cloneMessages(thread.messages) : [];
+      messages.push({ role: String(role), text: String(text), timestamp: nowIso() });
+      if (messages.length > 50) { messages = messages.slice(-50); }
+      updatedThreads.push({
+        id: thread.id,
+        title: thread.title,
+        createdAt: thread.createdAt,
+        updatedAt: nowIso(),
+        messages: messages
+      });
+      saved = true;
+    }
+
+    if (!saved) {
+      var fallback = {
+        id: makeThreadId(),
+        title: "New chat",
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+        messages: [{ role: String(role), text: String(text), timestamp: nowIso() }]
+      };
+      updatedThreads.unshift(fallback);
+      activeId = fallback.id;
+    }
+
+    return savePreferences({ chatThreads: updatedThreads, activeChatThreadId: activeId });
   }
 
   function clearChatHistory() {
-    return savePreferences({ chatHistory: [] });
+    var prefs = ensureChatThreads();
+    var threads = Array.isArray(prefs.chatThreads) ? prefs.chatThreads.slice() : [];
+    var activeId = prefs.activeChatThreadId;
+    var updatedThreads = [];
+    var cleared = false;
+
+    for (var i = 0; i < threads.length; i++) {
+      var thread = threads[i];
+      if (thread.id === activeId) {
+        updatedThreads.push({
+          id: thread.id,
+          title: thread.title,
+          createdAt: thread.createdAt,
+          updatedAt: nowIso(),
+          messages: []
+        });
+        cleared = true;
+      } else {
+        updatedThreads.push(thread);
+      }
+    }
+
+    if (!cleared) {
+      return { ok: false, error: "Thread not found." };
+    }
+    return savePreferences({ chatThreads: updatedThreads, activeChatThreadId: activeId });
+  }
+
+  function updateChatThreadTitle(threadId, title) {
+    var prefs = ensureChatThreads();
+    var threads = Array.isArray(prefs.chatThreads) ? prefs.chatThreads.slice() : [];
+    var found = false;
+    for (var i = 0; i < threads.length; i++) {
+      if (threads[i].id === threadId) {
+        threads[i] = Object.assign({}, threads[i], { title: sanitizeThreadTitle(title) });
+        found = true;
+        break;
+      }
+    }
+    if (!found) { return { ok: false, error: "Thread not found." }; }
+    return savePreferences({ chatThreads: threads });
   }
 
   function seedDemoData() {
@@ -1357,9 +1628,16 @@
     checkNewAchievements: checkNewAchievements,
     markAchievementsNotified: markAchievementsNotified,
     claimAchievement: claimAchievement,
+    getChatThreads: getChatThreads,
+    getActiveChatThreadId: getActiveChatThreadId,
+    setActiveChatThread: setActiveChatThread,
+    getActiveChatThread: getActiveChatThread,
+    createChatThread: createChatThread,
+    deleteChatThread: deleteChatThread,
     getChatHistory: getChatHistory,
     saveChatMessage: saveChatMessage,
     clearChatHistory: clearChatHistory,
+    updateChatThreadTitle: updateChatThreadTitle,
     seedDemoData: seedDemoData
   };
 })();

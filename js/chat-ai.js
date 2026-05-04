@@ -8,12 +8,24 @@
   var RL_MAX        = 20;              // max AI messages per window
   var RL_WINDOW_MS  = 60 * 60 * 1000; // 1 hour
 
+  var rlMemory = { timestamps: [] };
+
   function getRateLimitData() {
-    try {
-      return JSON.parse(localStorage.getItem(RL_KEY)) || { timestamps: [] };
-    } catch (_) {
+    if (window.StorageAPI && window.StorageAPI.getPreferences) {
+      var prefs = window.StorageAPI.getPreferences();
+      var data = prefs && prefs.aiRateLimit ? prefs.aiRateLimit : null;
+      if (data && Array.isArray(data.timestamps)) { return data; }
       return { timestamps: [] };
     }
+    return rlMemory;
+  }
+
+  function saveRateLimitData(data) {
+    if (window.StorageAPI && window.StorageAPI.savePreferences) {
+      window.StorageAPI.savePreferences({ aiRateLimit: data });
+      return;
+    }
+    rlMemory = data;
   }
 
   function checkRateLimit() {
@@ -28,7 +40,7 @@
       return { allowed: false, resetMins: resetMins };
     }
     data.timestamps.push(now);
-    try { localStorage.setItem(RL_KEY, JSON.stringify(data)); } catch (_) {}
+    saveRateLimitData(data);
     return { allowed: true };
   }
 
@@ -48,12 +60,13 @@
 
   function buildSystemPrompt() {
     var base =
-      "You are Tigom, a friendly and encouraging savings mascot for SugboCents, " +
+      "You are Tigom, a friendly budget buddy for SugboCents, " +
       "a Filipino personal budgeting app for students and young adults. " +
-      "Keep responses SHORT (2-3 sentences max), conversational, warm, and motivating. " +
-      "Occasionally use Filipino-friendly expressions (like 'kaya mo yan!' or 'grabe ang galing mo!'). " +
-      "Currency is Philippine Peso (₱). Always stay positive and practical. " +
-      "Never give long financial lectures — keep it friendly and brief.";
+      "Respond in English by default. If the user uses Filipino, you can mirror lightly. " +
+      "Keep responses SHORT (2-3 sentences), warm, and encouraging. " +
+      "Be coach-like and direct when the user is off-track or over budget. " +
+      "Currency is Philippine Peso (₱). Be practical, not preachy. " +
+      "Never give long financial lectures.";
 
     if (!window.StorageAPI) { return base; }
 
@@ -94,7 +107,7 @@
       return {
         ok: false,
         rateLimited: true,
-        error: "You've reached the limit of " + RL_MAX + " AI messages per hour. Try again in " + rl.resetMins + " min."
+        error: "I'm taking a breather. You've asked a lot this hour. Try again in " + rl.resetMins + " min."
       };
     }
 
@@ -126,23 +139,25 @@
 
   // Keyword-based fallback (used when offline or AI call fails)
   var KEYWORD_REPLIES = [
-    { keys: ["hello", "hi", "hey"],         reply: "Hey there! 👋 I'm Tigom, your budget buddy. How can I help?" },
-    { keys: ["budget"],                      reply: "Your weekly budget is your spending limit. Set it in Settings!" },
-    { keys: ["goal", "goals"],               reply: "Go to the Goals tab to create and track your savings goals! 🎯" },
-    { keys: ["expense", "expenses"],         reply: "Log expenses on the Dashboard or browse them in Activity." },
-    { keys: ["streak"],                      reply: "Streaks reward consistent daily logging. Keep it up! 🔥" },
-    { keys: ["chart", "graph", "stats"],     reply: "Check the Stats tab to see your spending breakdown! 📊" },
-    { keys: ["help"],                        reply: "I can help with budget tips, goals, and streaks. Just ask me anything!" },
-    { keys: ["thanks", "thank you", "ty"],   reply: "You're welcome! Keep saving, you've got this. 💪" },
-    { keys: ["good", "great", "awesome"],    reply: "Glad to hear it! 😄 Your finances are looking up!" },
-    { keys: ["bad", "terrible", "awful"],    reply: "Hang in there! Every peso saved counts. You can turn it around." }
+    { keys: ["hello", "hi", "hey"],                 reply: "Hey there! 👋 I'm Tigom, your budget buddy. How can I help?" },
+    { keys: ["budget", "limit"],                     reply: "Your weekly budget is your spending limit. Want help setting a realistic one?" },
+    { keys: ["goal", "goals"],                       reply: "Go to the Goals tab to create and track your savings goals! 🎯" },
+    { keys: ["expense", "expenses"],                 reply: "Log expenses on the Dashboard or browse them in Activity." },
+    { keys: ["streak", "streaks"],                   reply: "Streaks reward consistent daily logging. Keep it up! 🔥" },
+    { keys: ["chart", "graph", "stats"],             reply: "Check the Stats tab to see your spending breakdown! 📊" },
+    { keys: ["overspend", "over budget", "spent"],   reply: "Let's take a quick look at where the money went this week so we can adjust." },
+    { keys: ["save", "saving", "savings"],           reply: "Small daily wins add up. Want me to suggest a simple savings goal?" },
+    { keys: ["help", "tips", "advice"],             reply: "I can help with spending analysis, goals, and budget tips. Ask me anything!" },
+    { keys: ["remaining", "left"],                   reply: "Want me to check how much budget you have left this week?" },
+    { keys: ["thanks", "thank you", "ty"],           reply: "You're welcome! Keep saving, you've got this. 💪" },
+    { keys: ["good", "great", "awesome"],            reply: "Glad to hear it! 😄 Your finances are looking up!" },
+    { keys: ["bad", "terrible", "awful"],            reply: "Hang in there. Every peso saved counts. You can turn it around." }
   ];
 
   var MOOD_REPLIES = {
-    happy:   ["You're killing it this week! 🎉 Budget is in great shape.", "Love the discipline! Keep it up and you'll reach your goals fast."],
-    neutral: ["You're doing okay, but keep an eye on spending.", "Not bad! A little mindfulness goes a long way."],
-    worried: ["⚠️ Budget is getting tight. Slow down on non-essentials.", "Consider reviewing your expenses to avoid overspending."],
-    alarmed: ["🚨 You're nearly out of budget! No more spending today.", "Budget critical! Check your recent expenses in Activity."]
+    happy:       ["You're doing well this week. Keep the momentum going.", "Nice pace. A few mindful choices keep you on track."],
+    celebrating: ["You're crushing it! 🎉 Love the discipline this week.", "Great job staying on track. Your goals are closer than you think."],
+    concerned:   ["Let's slow down a bit. Your budget is getting tight.", "Heads up — spending is high this week. Let's review your top categories."]
   };
 
   function getFallbackReply(userMessage, mascotState) {
@@ -154,7 +169,7 @@
         if (lower.indexOf(entry.keys[j]) !== -1) { return entry.reply; }
       }
     }
-    var arr = MOOD_REPLIES[mascotState] || MOOD_REPLIES.neutral;
+    var arr = MOOD_REPLIES[mascotState] || MOOD_REPLIES.happy;
     return arr[Math.floor(Math.random() * arr.length)];
   }
 

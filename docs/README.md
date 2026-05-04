@@ -8,5 +8,4 @@ This folder contains project documentation files that were moved from the worksp
 
 ## UX and QA References
 - UI_UX_ACCEPTANCE_CHECKLIST_V1.md
-- UI_UX_REFERENCES_SPRINT1_Version2.md
-- UI_UX_REFERENCES_SPRINT1_Version4.md
+- UI_UX_REFERENCES_SPRINT1_Version4.md *(canonical design guide)*

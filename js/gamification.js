@@ -197,6 +197,9 @@
   // ── Level-up notification ──────────────────────────────────────────────────
   function notifyLevelUp(prevLevel, newLevel, newLevelName) {
     if (!newLevel || newLevel <= prevLevel) { return; }
+    // Signal the mascot FAB to celebrate for 8 seconds
+    window._mascotOverrideState = { key: "celebrating", expires: Date.now() + 8000 };
+    if (window.MascotWidget && window.MascotWidget.update) { window.MascotWidget.update(); }
     var xpInfo = window.StorageAPI ? window.StorageAPI.getXpInfo() : null;
     queueModal({
       iconClass: "bi-rocket-takeoff-fill",
