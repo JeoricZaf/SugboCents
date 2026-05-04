@@ -61,23 +61,9 @@
   }
 
   // ── greeting ─────────────────────────────────────────────
-  function renderGreeting() {
-    var titleEl = document.getElementById("greetingTitle");
-    var dateEl  = document.getElementById("greetingDate");
-    if (!titleEl || !dateEl) {
-      return;
-    }
+  // renderGreeting() removed — target elements (#greetingTitle, #greetingDate) no longer exist in dashboard.html
+  function renderGreeting() {}
 
-    var user = window.StorageAPI ? window.StorageAPI.getCurrentUser() : null;
-    var name = user && user.firstName ? user.firstName : null;
-
-    titleEl.textContent = name ? "Welcome back, " + name + "!" : "Welcome back.";
-
-    var now = new Date();
-    var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-    var months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    dateEl.textContent = days[now.getDay()] + ", " + months[now.getMonth()] + " " + now.getDate();
-  }
   function updateBudgetCard() {
     if (!window.StorageAPI) {
       return;
@@ -213,27 +199,72 @@
   }
 
   // ── quick-add grid ───────────────────────────────────────
+  // Emoji fallback map for items that were created before emoji picker existed
+  var CATEGORY_EMOJI_MAP = {
+    "jeepney": "🚌", "transportation": "🚌", "commute": "🚌", "bus": "🚌",
+    "food": "🍔", "meal": "🍔", "lunch": "🍔", "dinner": "🍔", "breakfast": "🍳",
+    "coffee": "☕", "cafe": "☕", "milk tea": "🧋",
+    "load": "📱", "data": "📱", "phone": "📱",
+    "laundry": "👕",
+    "school": "📚", "tuition": "📚", "books": "📚",
+    "gym": "🏋️",
+    "snack": "🍜",
+    "water": "💧",
+    "gas": "⛽", "gasoline": "⛽",
+    "medicine": "💊", "health": "💊", "meds": "💊",
+    "taxi": "🚗", "grab": "🚗", "car": "🚗",
+    "grocery": "🛍️", "groceries": "🛍️", "market": "🛍️",
+    "rent": "🏠", "utilities": "💡", "electricity": "💡",
+    "others": "💼", "miscellaneous": "💼"
+  };
+
+  function getItemEmoji(item) {
+    var stored = item.emoji;
+    if (stored && stored !== "\u2022" && stored !== "\u00b7" && stored.trim().length > 0) {
+      return stored;
+    }
+    var key = String(item.label || item.category || "").toLowerCase().trim();
+    return CATEGORY_EMOJI_MAP[key] || "💸";
+  }
+
   function renderQuickAddButtons() {
     var grid = document.getElementById("quickAddGrid");
-    if (!grid || !window.StorageAPI) {
-      return;
-    }
+    if (!grid || !window.StorageAPI) { return; }
 
     var items = window.StorageAPI.getQuickAddItems();
     grid.innerHTML = "";
 
+    // Determine first-log-of-day for XP pill text
+    var today = new Date();
+    var todayKey = today.getFullYear() + "-" +
+      String(today.getMonth() + 1).padStart(2, "0") + "-" +
+      String(today.getDate()).padStart(2, "0");
+    var expenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var loggedToday = expenses.some(function (e) {
+      if (!e.timestamp) { return false; }
+      var d = new Date(e.timestamp);
+      var dk = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      return dk === todayKey;
+    });
+    var xpLabel     = loggedToday ? "⚡ +5 XP"  : "⚡ +10 XP";
+    var xpBonusCls  = loggedToday ? "" : " quest-tile-xp--bonus";
+
+    // Responsive column count — 2 cols for ≤4 tiles + Add, 3 cols for 5+
+    var totalCells = items.length + 1; // +1 for "Add" cell
+    grid.style.gridTemplateColumns = totalCells <= 4 ? "1fr 1fr" : "1fr 1fr 1fr";
+
     if (items.length === 0) {
       var SUGGESTIONS = [
-        { label: "Jeepney",  amount: 18,  color: "#d8efe2" },
-        { label: "Food",     amount: 120, color: "#ffedd5" },
-        { label: "Load",     amount: 50,  color: "#dbeafe" },
-        { label: "Laundry",  amount: 60,  color: "#fee2e2" },
-        { label: "School",   amount: 80,  color: "#f3e8ff" },
-        { label: "Coffee",   amount: 75,  color: "#fef9c3" }
+        { label: "Jeepney", amount: 18,  color: "#d8efe2" },
+        { label: "Food",    amount: 120, color: "#ffedd5" },
+        { label: "Load",    amount: 50,  color: "#dbeafe" },
+        { label: "Laundry", amount: 60,  color: "#fee2e2" },
+        { label: "School",  amount: 80,  color: "#f3e8ff" },
+        { label: "Coffee",  amount: 75,  color: "#fef9c3" }
       ];
 
       var emptyWrap = document.createElement("div");
-      emptyWrap.className = "col-span-2";
+      emptyWrap.style.gridColumn = "1 / -1";
       emptyWrap.innerHTML =
         '<p class="text-sm font-semibold text-ink mb-1">Add your first shortcut</p>' +
         '<p class="text-xs text-slate-500 mb-3">Tap a suggestion or use the Add button above.</p>' +
@@ -257,21 +288,23 @@
 
     items.forEach(function (item) {
       var wrap = document.createElement("div");
-      wrap.className = "quick-add-wrap";
+      wrap.className = "quest-tile-wrap";
 
       var button = document.createElement("button");
       button.type = "button";
-      button.className = "quick-add";
+      button.className = "quest-tile-btn";
       button.style.background = item.color || "#e2e8f0";
       button.setAttribute("data-qa-id", item.id || "");
-      var displayLabel = item.label || item.category;
-      var abbrev = escapeHtml((displayLabel || "?").slice(0, 2).toUpperCase());
+
+      var emoji       = getItemEmoji(item);
+      var displayLabel = escapeHtml(item.label || item.category || "?");
+      var amountText   = formatPhp(item.amount);
+
       button.innerHTML =
-        '<span class="qa-initial">' + abbrev + "</span>" +
-        "<span>" +
-        '<span class="block text-sm font-bold">' + escapeHtml(displayLabel) + "</span>" +
-        '<span class="block text-xs text-slate-500 mt-0.5">' + formatPhp(item.amount) + "</span>" +
-        "</span>";
+        '<span class="quest-tile-emoji" aria-hidden="true">' + emoji + '</span>' +
+        '<span class="quest-tile-label">' + displayLabel + '</span>' +
+        '<span class="quest-tile-amount">' + amountText + '</span>' +
+        '<span class="quest-tile-xp' + xpBonusCls + '">' + xpLabel + '</span>';
 
       button.addEventListener("click", function () {
         // Budget gate
@@ -284,14 +317,18 @@
           }
           return;
         }
+
         var dlabel = item.label || item.category;
         var catId  = item.label ? item.category : (item.categoryId || "");
 
-        // Rate limit check for quick-add
         var qaRl = checkExpenseRateLimit();
         if (!qaRl.allowed) {
-          button.textContent = "Slow down!";
-          setTimeout(function () { button.textContent = dlabel; }, 2000);
+          var xpEl = button.querySelector(".quest-tile-xp");
+          if (xpEl) { xpEl.textContent = "Slow down!"; }
+          setTimeout(function () {
+            var xpEl2 = button.querySelector(".quest-tile-xp");
+            if (xpEl2) { xpEl2.textContent = xpLabel; }
+          }, 2000);
           return;
         }
 
@@ -303,28 +340,26 @@
           categoryId: catId || undefined
         });
 
-        if (!result.ok) {
-          return;
-        }
+        if (!result.ok) { return; }
 
         if (window.GamificationUI && result.xpAwarded > 0) {
           window.GamificationUI.showXpPopup(result.xpAwarded, button);
           window.GamificationUI.maybeNotifyNewAchievements(result.newlyUnlockableAchievements || []);
         }
+
         updateBudgetCard();
         renderXpWidget();
         renderTodayMission();
+        renderBadgeTeaser();
         renderRecentExpenses();
 
-        renderSpendingBreakdown();
         if (window.SpendingChart) { window.SpendingChart.update(); }
 
-        // brief visual feedback: pulse the button
         button.classList.add("qa-pulse");
         setTimeout(function () { button.classList.remove("qa-pulse"); }, 500);
       });
 
-      // options (⋯) button — always visible on touch, hover on pointer devices
+      // Options (⋯) button — edit shortcut
       var optBtn = document.createElement("button");
       optBtn.type = "button";
       optBtn.className = "qa-option-btn";
@@ -340,16 +375,16 @@
       grid.appendChild(wrap);
     });
 
-    // "Add shortcut" cell — always last in the grid
+    // "Add shortcut" cell — always last
     var addWrap = document.createElement("div");
-    addWrap.className = "quick-add-wrap";
+    addWrap.className = "quest-tile-wrap";
     var addBtn = document.createElement("button");
     addBtn.type = "button";
-    addBtn.className = "quick-add quick-add--add-new";
+    addBtn.className = "quest-tile-btn quest-tile-btn--add-new";
     addBtn.setAttribute("aria-label", "Add new shortcut");
     addBtn.innerHTML =
-      '<span class="material-icons" style="font-size:1.4rem;color:var(--brand-700)">add</span>' +
-      '<span class="block text-xs font-semibold mt-0.5" style="color:var(--brand-700)">Add</span>';
+      '<span class="quest-tile-emoji" aria-hidden="true" style="font-size:1.4rem;color:var(--brand-700)">+</span>' +
+      '<span class="quest-tile-label" style="color:var(--brand-700)">Add</span>';
     addBtn.addEventListener("click", function () { openQaModal(null); });
     addWrap.appendChild(addBtn);
     grid.appendChild(addWrap);
@@ -371,8 +406,17 @@
   }
 
   // ── modal ────────────────────────────────────────────────
+  var EMOJI_PRESETS = [
+    "🍔","🍜","🍕","🌮","🍳","☕","🧋","🍺",
+    "🚌","🚶","🚗","🛵","🏍️","✈️","🚂","🚲",
+    "💊","🏋️","🎮","📱","💡","👕","📚","🛍️",
+    "🏠","💈","🐾","🎬","💄","🌐","🎵","💼"
+  ];
+
   var qaModal           = null;
   var qaModalItemIdEl   = null;
+  var qaModalEmoji      = null;
+  var qaModalEmojiGrid  = null;
   var qaModalCategory   = null;
   var qaModalCategoryId = null;
   var qaModalAmount     = null;
@@ -384,12 +428,33 @@
   function initModal() {
     qaModal           = document.getElementById("qaModal");
     qaModalItemIdEl   = document.getElementById("qaModalItemId");
+    qaModalEmoji      = document.getElementById("qaModalEmoji");
+    qaModalEmojiGrid  = document.getElementById("qaModalEmojiGrid");
     qaModalCategory   = document.getElementById("qaModalCategory");
     qaModalCategoryId = document.getElementById("qaModalCategoryId");
     qaModalAmount     = document.getElementById("qaModalAmount");
     qaModalCatErr     = document.getElementById("qaModalCategoryError");
     qaModalAmtErr     = document.getElementById("qaModalAmountError");
     qaModalDeleteBtn  = document.getElementById("qaModalDelete");
+
+    // Build emoji picker grid
+    if (qaModalEmojiGrid && qaModalEmoji) {
+      EMOJI_PRESETS.forEach(function (emoji) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "emoji-option";
+        btn.textContent = emoji;
+        btn.setAttribute("data-emoji", emoji);
+        btn.addEventListener("click", function () {
+          qaModalEmojiGrid.querySelectorAll(".emoji-option").forEach(function (b) {
+            b.classList.remove("emoji-option--selected");
+          });
+          btn.classList.add("emoji-option--selected");
+          qaModalEmoji.value = emoji;
+        });
+        qaModalEmojiGrid.appendChild(btn);
+      });
+    }
 
     // Populate predefined category select
     if (qaModalCategoryId && window.StorageAPI && window.StorageAPI.getExpenseCategories) {
@@ -426,6 +491,24 @@
       qaModalCategoryId.value = predId;
     }
 
+    // Pre-select emoji in picker
+    if (qaModalEmojiGrid && qaModalEmoji) {
+      var storedEmoji = item ? (item.emoji || "") : "";
+      // Treat legacy bullet placeholder as no selection
+      if (storedEmoji === "\u2022" || storedEmoji === "\u00b7" || storedEmoji.trim() === "") {
+        storedEmoji = "";
+      }
+      var targetEmoji = storedEmoji || EMOJI_PRESETS[0];
+      qaModalEmoji.value = targetEmoji;
+      qaModalEmojiGrid.querySelectorAll(".emoji-option").forEach(function (btn) {
+        if (btn.getAttribute("data-emoji") === targetEmoji) {
+          btn.classList.add("emoji-option--selected");
+        } else {
+          btn.classList.remove("emoji-option--selected");
+        }
+      });
+    }
+
     qaModalCatErr.textContent = "";
     qaModalAmtErr.textContent = "";
 
@@ -446,6 +529,7 @@
     var cat    = (qaModalCategory.value || "").trim();
     var amt    = Number(qaModalAmount.value);
     var itemId = qaModalItemIdEl.value;
+    var emojiVal = (qaModalEmoji && qaModalEmoji.value) ? qaModalEmoji.value : EMOJI_PRESETS[0];
 
     var valid = true;
 
@@ -475,14 +559,14 @@
     if (itemId) {
       items = items.map(function (i) {
         if (i.id === itemId) {
-          return { id: i.id, category: cat, categoryId: catId || undefined, emoji: "\u2022", amount: amt, color: i.color || COLORS[0] };
+          return { id: i.id, category: cat, categoryId: catId || undefined, emoji: emojiVal, amount: amt, color: i.color || COLORS[0] };
         }
         return i;
       });
     } else {
       var newId = "qa_custom_" + Date.now();
       var color = COLORS[items.length % COLORS.length];
-      items.push({ id: newId, category: cat, categoryId: catId || undefined, emoji: "\u2022", amount: amt, color: color });
+      items.push({ id: newId, category: cat, categoryId: catId || undefined, emoji: emojiVal, amount: amt, color: color });
     }
 
     window.StorageAPI.saveQuickAddItems(items);
@@ -545,6 +629,23 @@
   }
 
   // ── custom log modal ─────────────────────────────────────
+  function updateLogOnceXpBadge() {
+    var badge = document.getElementById("logOnceXpBadge");
+    if (!badge || !window.StorageAPI) { return; }
+    var expenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var today = new Date();
+    var todayKey = today.getFullYear() + "-" +
+      String(today.getMonth() + 1).padStart(2, "0") + "-" +
+      String(today.getDate()).padStart(2, "0");
+    var loggedToday = expenses.some(function (e) {
+      if (!e.timestamp) { return false; }
+      var d = new Date(e.timestamp);
+      var dk = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      return dk === todayKey;
+    });
+    badge.textContent = loggedToday ? "\u26a1 +5 XP" : "\u26a1 +10 XP";
+  }
+
   function initCustomLogModal() {
     var modal       = document.getElementById("customLogModal");
     var amountEl    = document.getElementById("customLogAmount");
@@ -557,6 +658,8 @@
     var triggerBtn  = document.getElementById("logOneTimeBtn");
 
     if (!modal || !triggerBtn) { return; }
+
+    updateLogOnceXpBadge();
 
     // Populate categories
     if (categoryEl && window.StorageAPI && window.StorageAPI.getExpenseCategories) {
@@ -642,8 +745,11 @@
         updateBudgetCard();
         renderXpWidget();
         renderTodayMission();
+        renderBadgeTeaser();
         renderRecentExpenses();
-        renderSpendingBreakdown();
+        updateLogOnceXpBadge();
+        renderQuickAddButtons();
+
         if (window.SpendingChart) { window.SpendingChart.update(); }
         window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
       });
@@ -742,65 +848,137 @@
     });
   }
 
-  // ── spending breakdown ───────────────────────────────────
-  function renderSpendingBreakdown() {
-    var container = document.getElementById("spendingBreakdown");
-    if (!container || !window.StorageAPI) { return; }
+  // ── badge teaser ─────────────────────────────────────────
+  function renderBadgeTeaser() {
+    var section      = document.getElementById("badgeTeaserSection");
+    var targetEl     = document.getElementById("badgeTeaserTarget");
+    var nameEl       = document.getElementById("badgeTeaserName");
+    var journeyEl    = document.getElementById("badgeTeaserJourney");
+    var conditionEl  = document.getElementById("badgeTeaserCondition");
+    var progressWrap = document.getElementById("badgeTeaserProgressWrap");
+    var progressFill = document.getElementById("badgeTeaserProgressFill");
+    var claimBtn     = document.getElementById("badgeTeaserClaimBtn");
+    var moreEl       = document.getElementById("badgeTeaserMore");
+    if (!section || !window.StorageAPI || !window.StorageAPI.getAchievements) { return; }
 
-    var now       = new Date();
-    var dow       = now.getDay();
-    var weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((dow + 6) % 7));
-    var weekEnd   = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
+    var all = window.StorageAPI.getAchievements();
+    if (!all || all.length === 0) { section.classList.add("hidden"); return; }
 
-    var allExpenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
-    var cats        = window.StorageAPI.getExpenseCategories ? window.StorageAPI.getExpenseCategories() : [];
-    var catMap = {};
-    cats.forEach(function (c) { catMap[c.id] = c; });
+    // A-2: Smart selection — show the badge closest to being earned.
+    // Priority: (1) unlockable+unclaimed, (2) highest progress ratio, (3) easiest to start
+    var unclaimed = all.filter(function (a) { return !a.claimed; });
+    if (unclaimed.length === 0) { section.classList.add("hidden"); return; }
 
-    var catTotals = {};
-    var total = 0;
-    allExpenses.forEach(function (e) {
-      var d = new Date(e.timestamp);
-      if (d >= weekStart && d < weekEnd) {
-        var key = e.categoryId || e.category || "others";
-        catTotals[key] = (catTotals[key] || 0) + Number(e.amount || 0);
-        total += Number(e.amount || 0);
-      }
+    var unlockable   = unclaimed.filter(function (a) { return a.unlockable; });
+    var withProgress = unclaimed.filter(function (a) { return a.progress > 0 && !a.unlockable; });
+    var noProgress   = unclaimed.filter(function (a) { return a.progress === 0; });
+
+    withProgress.sort(function (a, b) {
+      var rA = a.target > 0 ? a.progress / a.target : 0;
+      var rB = b.target > 0 ? b.progress / b.target : 0;
+      return rB - rA; // highest completion ratio first
     });
+    noProgress.sort(function (a, b) { return a.target - b.target; }); // easiest target first
 
-    var sorted = Object.keys(catTotals).sort(function (a, b) {
-      return catTotals[b] - catTotals[a];
-    }).slice(0, 5);
+    var target = unlockable[0] || withProgress[0] || noProgress[0];
 
-    if (sorted.length === 0) {
-      container.innerHTML = '<p class="text-sm text-slate-400 text-center py-3">No spending data this week yet.</p>';
-      return;
+    // Category \u2192 CSS modifier class
+    var catClassMap = {
+      "Logging": "badge-target--logging",
+      "Streak":  "badge-target--streak",
+      "Budget":  "badge-target--budget",
+      "Misc":    "badge-target--misc",
+      "Goals":   "badge-target--goals",
+      "XP":      "badge-target--xp"
+    };
+    var catClass = catClassMap[target.category] || "";
+
+    // Populate target badge (64px, category-tinted)
+    if (targetEl) {
+      targetEl.className = "badge-target" + (catClass ? " " + catClass : "");
+      targetEl.innerHTML = '<i class="bi ' + escapeHtml(target.icon) + '" aria-hidden="true"></i>';
+      targetEl.setAttribute("aria-label", target.name);
     }
 
-    var html = "";
-    sorted.forEach(function (key, idx) {
-      var meta = catMap[key] || { label: key, emoji: "\u{1F4B8}", color: "#e2e8f0" };
-      var amt  = catTotals[key];
-      var pct  = total > 0 ? Math.round((amt / total) * 100) : 0;
-      var barColor = meta.color || "#2b8259";
-      html +=
-        '<div class="sbd-row' + (idx > 0 ? " sbd-row--border" : "") + '">' +
-          '<span class="sbd-chip" style="background:' + escapeHtml(meta.color || "#e2e8f0") + '">' +
-            (meta.emoji || "\u{1F4B8}") +
-          '</span>' +
-          '<div class="sbd-info">' +
-            '<div class="sbd-header">' +
-              '<span class="sbd-label">' + escapeHtml(meta.label || key) + '</span>' +
-              '<span class="sbd-amount">' + formatPhp(amt) + '</span>' +
-            '</div>' +
-            '<div class="sbd-bar-track">' +
-              '<div class="sbd-bar-fill" style="width:' + pct + '%;background:' + escapeHtml(barColor) + '"></div>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-    });
-    container.innerHTML = html;
+    if (nameEl) { nameEl.textContent = target.name; }
+
+    // Journey framing line — "On your way to <next level>"
+    var levelLadder = ["Rookie Saver", "Budget Aware", "Money Smart", "Week Crusher", "Streak Hunter", "Finance Pro", "Budget Legend"];
+    if (journeyEl && window.StorageAPI.getXpInfo) {
+      var xpInfo = window.StorageAPI.getXpInfo();
+      var nextLevelName = levelLadder[xpInfo.level] || null; // level is 1-indexed; ladder[1] = "Budget Aware"
+      if (nextLevelName) {
+        journeyEl.textContent = "On your way to " + nextLevelName + " \u2192";
+        journeyEl.classList.remove("hidden");
+      } else {
+        journeyEl.classList.add("hidden");
+      }
+    }
+
+    // A-3: Type-specific, gap-focused condition text — unambiguous and action-oriented
+    if (conditionEl) {
+      if (target.unlockable) {
+        conditionEl.textContent = "Ready to claim!";
+      } else {
+        var gap = Math.max(0, target.target - target.progress);
+        if (target.type === "expense_count") {
+          conditionEl.textContent = "Log " + gap + " more expense" + (gap !== 1 ? "s" : "") + " to unlock this";
+        } else if (target.type === "streak") {
+          conditionEl.textContent = "Reach a " + target.target + "-day streak \u2014 " + gap + " more day" + (gap !== 1 ? "s" : "") + " to go";
+        } else if (target.type === "budget_week") {
+          conditionEl.textContent = "Finish a week under budget to unlock";
+        } else if (target.type === "budget_frugal") {
+          conditionEl.textContent = "Spend \u226450% of your budget this week";
+        } else if (target.type === "level") {
+          conditionEl.textContent = "Reach Level " + target.target + " \u2014 " + gap + " level" + (gap !== 1 ? "s" : "") + " away";
+        } else if (target.type === "goal_count") {
+          conditionEl.textContent = "Create your first savings goal to unlock";
+        } else {
+          conditionEl.textContent = target.description;
+        }
+      }
+    }
+
+    // Progress bar OR Claim button
+    if (target.unlockable) {
+      if (progressWrap) { progressWrap.classList.add("hidden"); }
+      if (claimBtn) {
+        claimBtn.classList.remove("hidden");
+        claimBtn.onclick = function () {
+          if (window.StorageAPI.claimAchievement) {
+            window.StorageAPI.claimAchievement(target.id);
+          }
+          renderBadgeTeaser();
+        };
+      }
+    } else {
+      if (claimBtn) { claimBtn.classList.add("hidden"); }
+      if (progressWrap) { progressWrap.classList.remove("hidden"); }
+      if (progressFill) {
+        var pct = target.target > 0 ? Math.min(100, Math.round((target.progress / target.target) * 100)) : 0;
+        progressFill.style.width = pct + "%";
+      }
+    }
+
+    // "X more badges to earn" count link
+    if (moreEl) {
+      var moreCount = unclaimed.length - 1;
+      if (moreCount > 0) {
+        // A-1: Achievements live in stats.html (Profile page), NOT tigom.html (Goals/savings)
+        moreEl.innerHTML = "+ " + moreCount + " more badge" + (moreCount !== 1 ? "s" : "") + " to earn \u00b7 <a href=\"stats.html\" class=\"badge-more-link-anchor\">View all \u2192</a>";
+        moreEl.classList.remove("hidden");
+      } else {
+        moreEl.classList.add("hidden");
+      }
+    }
+
+    section.classList.remove("hidden");
   }
+
+  // ── spending breakdown ───────────────────────────────────
+  // renderSpendingBreakdown() removed — replaced by renderTopCategories() in Phase F.
+  // Target element #spendingBreakdown no longer exists in dashboard.html.
+  function renderSpendingBreakdown() {}
 
   function renderXpWidget() {
     if (!window.StorageAPI) { return; }
@@ -862,12 +1040,13 @@
     var btnEl   = document.getElementById("todayMissionBtn");
     if (!card || !msgEl || !window.StorageAPI) { return; }
 
-    var today = new Date();
+    var now   = new Date();
+    var today = new Date(now);
     today.setHours(0, 0, 0, 0);
     var tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
 
-    var expenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var expenses    = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
     var loggedToday = expenses.some(function (e) {
       var d = new Date(e.timestamp);
       return d >= today && d < tomorrow;
@@ -876,42 +1055,99 @@
     var streak  = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
     var summary = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
     var pct     = summary.percentageSpent || 0;
+    var nowHour = now.getHours();
 
+    // Last expense date for comeback detection
+    var sortedExp    = expenses.slice().sort(function (a, b) { return new Date(b.timestamp) - new Date(a.timestamp); });
+    var lastExpTs    = sortedExp.length ? new Date(sortedExp[0].timestamp) : null;
+    var daysSinceLast = lastExpTs ? Math.floor((now.getTime() - lastExpTs.getTime()) / 86400000) : Infinity;
+
+    // Priority: perfect → over-budget → pace-warning → in-progress → early-bird → at-risk → comeback → none
+    // Reference: Duolingo uses warm orange for setbacks (not red) — over-budget placed high but styled empathetically
     var state;
-    if (loggedToday && pct < 80)  { state = "perfect"; }
-    else if (loggedToday)          { state = "in-progress"; }
-    else if (streak >= 1)          { state = "at-risk"; }
-    else                           { state = "none"; }
+    if      (loggedToday && pct < 50)                                       { state = "perfect"; }
+    else if (loggedToday && pct >= 100)                                     { state = "over-budget"; }
+    else if (loggedToday && pct >= 80)                                      { state = "pace-warning"; }
+    else if (loggedToday)                                                   { state = "in-progress"; }
+    else if (!loggedToday && nowHour < 12 && expenses.length > 0)          { state = "early-bird"; }
+    else if (!loggedToday && streak >= 1)                                   { state = "at-risk"; }
+    else if (!loggedToday && daysSinceLast >= 2 && expenses.length > 0)    { state = "comeback"; }
+    else                                                                    { state = "none"; }
 
-    var streakLabel = streak > 0 ? streak + "-day streak" : "streak";
+    var streakLabel  = streak > 0 ? streak + "-day" : "";
+    // Remaining for pace-warning (Monzo/Revolut: show concrete number, not vague warning)
+    var remainingPhp = formatPhp(Math.max(0, summary.remaining || 0));
+
     var configs = {
       "none": {
         icon: "\uD83D\uDCCB",
-        desc: "Log your first expense today to start building your streak.",
+        desc: "Log your first expense today to start your journey.",
         btn: "Log Now",
-        showBtn: true
+        showBtn: true,
+        scrollTo: "quickAddGrid",
+        navigate: null
       },
-      "in-progress": {
-        icon: "\u26A1",
-        desc: "You\u2019ve logged expenses today \u2014 watch your budget, you\u2019re getting close.",
-        btn: "Log Anyway",
-        showBtn: true
+      "early-bird": {
+        icon: "\uD83C\uDF05",
+        desc: "Log before noon for the Early Bird badge \u2014 you\u2019ve still got time!",
+        btn: "Log Now",
+        showBtn: true,
+        scrollTo: "quickAddGrid",
+        navigate: null
       },
       "at-risk": {
         icon: "\uD83D\uDD25",
-        desc: "Log an expense today to protect your " + streakLabel + "!",
+        desc: "Log an expense today to protect your " + streakLabel + " streak!",
         btn: "Protect Streak",
-        showBtn: true
+        showBtn: true,
+        scrollTo: "quickAddGrid",
+        navigate: null
+      },
+      "comeback": {
+        icon: "\uD83D\uDCAA",
+        desc: "You\u2019ve been away \u2014 log today and start fresh.",
+        btn: "Get Back On Track",
+        showBtn: true,
+        scrollTo: "quickAddGrid",
+        navigate: null
+      },
+      "in-progress": {
+        icon: "\u26A1",
+        desc: "Logged today and on track \u2014 great work!",
+        btn: "Log Anyway",
+        showBtn: true,
+        scrollTo: "quickAddGrid",
+        navigate: null
+      },
+      // Reference: Monzo/Revolut links to spending breakdown, NOT the budget card already on screen
+      "pace-warning": {
+        icon: "\u26A0\uFE0F",
+        desc: "You\u2019re close to your limit \u2014 " + remainingPhp + " left this week.",
+        btn: "Review spending",
+        showBtn: true,
+        scrollTo: null,
+        navigate: "activity.html"
+      },
+      // Reference: Duolingo streak-break screen = acknowledge setback + forward path, warm not punishing
+      "over-budget": {
+        icon: "\uD83D\uDD04",
+        desc: "You\u2019ve gone over budget this week \u2014 that\u2019s okay. Logging helps you understand why.",
+        btn: "See where it went",
+        showBtn: true,
+        scrollTo: null,
+        navigate: "activity.html"
       },
       "perfect": {
         icon: "\u2705",
-        desc: "Mission complete! You\u2019ve logged expenses and you\u2019re within budget.",
+        desc: "Mission complete \u2014 you\u2019re winning today!",
         btn: "Done \u2713",
-        showBtn: false
+        showBtn: false,
+        scrollTo: null,
+        navigate: null
       }
     };
 
-    var cfg = configs[state];
+    var cfg = configs[state] || configs["none"];
     card.className = "today-mission-card today-mission-card--" + state;
     if (iconEl) { iconEl.textContent = cfg.icon; }
     msgEl.textContent = cfg.desc;
@@ -921,10 +1157,18 @@
       btnEl.style.display = cfg.showBtn ? "" : "none";
       btnEl.onclick = null;
       if (cfg.showBtn) {
-        btnEl.onclick = function () {
-          var grid = document.getElementById("quickAddGrid");
-          if (grid) { grid.scrollIntoView({ behavior: "smooth", block: "center" }); }
-        };
+        if (cfg.navigate) {
+          (function (url) {
+            btnEl.onclick = function () { window.location.href = url; };
+          }(cfg.navigate));
+        } else if (cfg.scrollTo) {
+          (function (targetId) {
+            btnEl.onclick = function () {
+              var el = document.getElementById(targetId);
+              if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); }
+            };
+          }(cfg.scrollTo));
+        }
       }
     }
 
@@ -933,6 +1177,270 @@
     card.removeAttribute("tabindex");
     card.onclick   = null;
     card.onkeydown = null;
+  }
+
+  // ── Stats Block (Phase F) ─────────────────────────────────
+
+  // Shared helper: Mon-start week range for a given Date
+  function getWeekRange(now) {
+    var dow = now.getDay();
+    var weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - ((dow + 6) % 7));
+    weekStart.setHours(0, 0, 0, 0);
+    var weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+    return { start: weekStart, end: weekEnd };
+  }
+
+  // renderWeekChallenge — Stats Block A+C hybrid
+  // Reference: Peloton status position (pill), Strava PR framing (vs last week delta),
+  // Finch variable reward (CTA text changes based on week state)
+  function renderWeekChallenge() {
+    var statusPill = document.getElementById("weekStatusPill");
+    var vsLastWeek = document.getElementById("vsLastWeek");
+    var ctaText    = document.getElementById("seeStatsCtaText");
+    if (!window.StorageAPI) { return; }
+
+    var expenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var now      = new Date();
+    var wr       = getWeekRange(now);
+    var summary  = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
+    var pct      = summary.percentageSpent || 0;
+    var budget   = summary.weeklyBudget || 0;
+
+    // This week's total
+    var thisWeekTotal = expenses
+      .filter(function (e) { var d = new Date(e.timestamp); return d >= wr.start && d < wr.end; })
+      .reduce(function (s, e) { return s + (parseFloat(e.amount) || 0); }, 0);
+
+    // Last week's range
+    var lastWrStart = new Date(wr.start); lastWrStart.setDate(wr.start.getDate() - 7);
+    var lastWrEnd   = new Date(wr.end);   lastWrEnd.setDate(wr.end.getDate() - 7);
+    // Last week: same point in the week (up to and including same day-of-week)
+    var todayDayIdx      = (now.getDay() + 6) % 7; // 0=Mon .. 6=Sun
+    var lastWeekCutoff   = new Date(lastWrStart);
+    lastWeekCutoff.setDate(lastWrStart.getDate() + todayDayIdx);
+    lastWeekCutoff.setHours(23, 59, 59, 999);
+
+    var lastWeekExps = expenses.filter(function (e) {
+      var d = new Date(e.timestamp); return d >= lastWrStart && d < lastWrEnd;
+    });
+    var hasLastWeekData = lastWeekExps.length > 0;
+    var lastWeekSameDayTotal = lastWeekExps
+      .filter(function (e) { return new Date(e.timestamp) <= lastWeekCutoff; })
+      .reduce(function (s, e) { return s + (parseFloat(e.amount) || 0); }, 0);
+
+    // Status pill — Peloton leaderboard-position concept: one answer to "am I winning this week?"
+    var pillState = "default";
+    if (budget > 0) {
+      if      (pct >= 100) { pillState = "over-budget"; }
+      else if (pct >= 80)  { pillState = "watch-out"; }
+      else                 { pillState = "on-pace"; }
+    }
+
+    if (statusPill) {
+      statusPill.className = "week-status-pill";
+      if (pillState === "default") {
+        statusPill.classList.add("hidden");
+      } else {
+        statusPill.classList.remove("hidden");
+        var pillLabels = {
+          "on-pace":     "On pace \u2713",
+          "watch-out":   "Watch out",
+          "over-budget": "Over budget"
+        };
+        statusPill.textContent = pillLabels[pillState];
+        statusPill.classList.add("week-status-pill--" + pillState);
+      }
+    }
+
+    // vs Last Week delta — Strava PR framing: compete with your past self, new record every week
+    if (vsLastWeek) {
+      var thisWeekHasData = thisWeekTotal > 0;
+      if (!thisWeekHasData) {
+        vsLastWeek.classList.add("hidden");
+      } else if (!hasLastWeekData) {
+        vsLastWeek.innerHTML = '<span class="vs-delta--neutral">\uD83C\uDF1F First week tracking \u2014 you\u2019re building your baseline!</span>';
+        vsLastWeek.classList.remove("hidden");
+      } else {
+        var delta    = thisWeekTotal - lastWeekSameDayTotal;
+        var absDelta = Math.abs(delta);
+        var pctDelta = lastWeekSameDayTotal > 0 ? Math.round((absDelta / lastWeekSameDayTotal) * 100) : 0;
+        var pctSuffix = pctDelta > 0 ? " (" + pctDelta + "%)" : "";
+        if (delta < 0) {
+          vsLastWeek.innerHTML = '<span class="vs-delta--better">\u25BC ' + formatPhp(absDelta) + ' less than last week at this point' + pctSuffix + '</span>';
+        } else if (delta > 0) {
+          vsLastWeek.innerHTML = '<span class="vs-delta--worse">\u25B2 ' + formatPhp(absDelta) + ' more than last week at this point' + pctSuffix + '</span>';
+        } else {
+          vsLastWeek.innerHTML = '<span class="vs-delta--neutral">Same pace as last week</span>';
+        }
+        vsLastWeek.classList.remove("hidden");
+      }
+    }
+
+    // Dynamic CTA text — Finch variable reward: text shifts based on week state
+    // Different every day depending on your pace, creates an itch to check back
+    if (ctaText) {
+      var ctaMap = {
+        "on-pace":     "You\u2019re on a roll \u2014 see your full trend \u2192",
+        "watch-out":   "Check where your budget is going \u2192",
+        "over-budget": "See exactly where it went \u2192",
+        "default":     "See full stats \u2192"
+      };
+      ctaText.textContent = ctaMap[pillState] || ctaMap["default"];
+    }
+  }
+
+  function renderDailySpendBar() {
+    var container = document.getElementById("dailyBarChart");
+    if (!container || !window.StorageAPI) { return; }
+
+    var expenses     = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var weeklyBudget = window.StorageAPI.getWeeklyBudget ? window.StorageAPI.getWeeklyBudget() : 0;
+    var dailyLimit   = weeklyBudget > 0 ? weeklyBudget / 7 : 0;
+    var now          = new Date();
+    var wr           = getWeekRange(now);
+    var DAY_LABELS   = ["M", "T", "W", "T", "F", "S", "S"];
+    var dayTotals    = [0, 0, 0, 0, 0, 0, 0];
+    var todayDayIdx  = (now.getDay() + 6) % 7;
+
+    expenses.forEach(function (e) {
+      var d = new Date(e.timestamp);
+      if (d >= wr.start && d < wr.end) {
+        var idx = (d.getDay() + 6) % 7;
+        dayTotals[idx] += parseFloat(e.amount) || 0;
+      }
+    });
+
+    var maxAmount = Math.max.apply(null, dayTotals);
+    if (dailyLimit > 0) { maxAmount = Math.max(maxAmount, dailyLimit * 1.2); }
+    if (maxAmount < 1)  { maxAmount = 1; }
+
+    container.innerHTML = "";
+
+    // Budget reference line
+    if (dailyLimit > 0) {
+      var refPct        = (dailyLimit / maxAmount) * 100;
+      var containerH   = 6.5; // rem — must match CSS
+      var paddingB     = 1.2; // rem — must match CSS padding-bottom
+      var barAreaH     = containerH - paddingB;
+      var refBottomRem = paddingB + (refPct / 100) * barAreaH;
+      var refLine      = document.createElement("div");
+      refLine.className = "daily-bar-ref-line";
+      refLine.style.bottom = refBottomRem.toFixed(3) + "rem";
+      var refLbl = document.createElement("span");
+      refLbl.className = "daily-bar-ref-label";
+      refLbl.textContent = "daily limit";
+      refLine.appendChild(refLbl);
+      container.appendChild(refLine);
+    }
+
+    dayTotals.forEach(function (amount, i) {
+      var isEmpty  = amount === 0;
+      var isFuture = i > todayDayIdx;
+      var isToday  = i === todayDayIdx;
+
+      var col = document.createElement("div");
+      col.className = "daily-bar-col";
+      col.setAttribute("data-day-idx", String(i));
+
+      // Amount label above bar (consistent spacer even when zero)
+      var amtLabel = document.createElement("span");
+      if (amount > 0 && !isFuture) {
+        var amtDisplay = amount >= 1000
+          ? "\u20b1" + (amount / 1000).toFixed(1) + "k"
+          : "\u20b1" + Math.round(amount);
+        amtLabel.className = "daily-bar-amount" + (dailyLimit > 0 && amount > dailyLimit ? " daily-bar-amount--over" : "");
+        amtLabel.textContent = amtDisplay;
+      } else {
+        amtLabel.className = "daily-bar-amount daily-bar-amount--hidden";
+        amtLabel.textContent = "\u20b10";
+      }
+      col.appendChild(amtLabel);
+
+      // Bar
+      var heightPct = (isEmpty || isFuture) ? 4 : Math.max(6, Math.round((amount / maxAmount) * 100));
+      var bar = document.createElement("div");
+      var barClass = "daily-bar";
+      if (isEmpty || isFuture) {
+        barClass += " daily-bar--empty";
+      } else if (dailyLimit > 0 && amount > dailyLimit) {
+        barClass += " daily-bar--over";
+      } else if (dailyLimit > 0 && amount > dailyLimit * 0.8) {
+        barClass += " daily-bar--warn";
+      } else {
+        barClass += " daily-bar--good";
+      }
+      if (isToday) { barClass += " daily-bar--today"; }
+      bar.className = barClass;
+      bar.style.height = heightPct + "%";
+
+      // Day label
+      var dayLabel = document.createElement("span");
+      dayLabel.className = "daily-bar-day" + (isToday ? " daily-bar-day--today" : "");
+      dayLabel.textContent = DAY_LABELS[i];
+
+      col.appendChild(bar);
+      col.appendChild(dayLabel);
+
+      // Tap to highlight
+      col.addEventListener("click", function () {
+        var wasActive = col.classList.contains("daily-bar-col--active");
+        container.querySelectorAll(".daily-bar-col").forEach(function (c) {
+          c.classList.remove("daily-bar-col--active");
+        });
+        if (!wasActive) { col.classList.add("daily-bar-col--active"); }
+      });
+
+      container.appendChild(col);
+    });
+
+    // Dismiss tap-highlight when clicking outside the chart (registered once)
+    if (!container.dataset.tapListenerAdded) {
+      container.dataset.tapListenerAdded = "1";
+      document.addEventListener("click", function (e) {
+        if (!container.contains(e.target)) {
+          container.querySelectorAll(".daily-bar-col").forEach(function (c) {
+            c.classList.remove("daily-bar-col--active");
+          });
+        }
+      });
+    }
+  }
+
+  function renderTopCategories() {
+    var container = document.getElementById("topCatBars");
+    if (!container || !window.StorageAPI) { return; }
+
+    var expenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var now      = new Date();
+    var wr       = getWeekRange(now);
+    var weekExps = expenses.filter(function (e) { var d = new Date(e.timestamp); return d >= wr.start && d < wr.end; });
+
+    if (weekExps.length === 0) { container.innerHTML = ""; return; }
+
+    var catTotals = {};
+    weekExps.forEach(function (e) {
+      var cat = e.categoryId || e.category || "Other";
+      catTotals[cat] = (catTotals[cat] || 0) + (parseFloat(e.amount) || 0);
+    });
+
+    var sorted   = Object.keys(catTotals).map(function (k) { return { cat: k, total: catTotals[k] }; });
+    sorted.sort(function (a, b) { return b.total - a.total; });
+    var top3     = sorted.slice(0, 3);
+    var maxTotal = top3[0] ? top3[0].total : 1;
+
+    container.innerHTML = "";
+    top3.forEach(function (item) {
+      var pct = Math.round((item.total / maxTotal) * 100);
+      var row = document.createElement("div");
+      row.className = "cat-bar-row";
+      row.innerHTML =
+        '<span class="cat-bar-label" title="' + escapeHtml(item.cat) + '">' + escapeHtml(item.cat) + '</span>' +
+        '<div class="cat-bar-track"><div class="cat-bar-fill" style="width:' + pct + '%"></div></div>' +
+        '<span class="cat-bar-value">' + formatPhp(item.total) + '</span>';
+      container.appendChild(row);
+    });
   }
 
   // -- recent expenses ------------------------------------------
@@ -1166,9 +1674,10 @@
     // Optimistically hide from list
     updateBudgetCard();
     renderTodayMission();
+    renderBadgeTeaser();
     renderRecentExpenses();
     renderWeekAtGlance();
-    renderSpendingBreakdown();
+
     if (window.SpendingChart) { window.SpendingChart.update(); }
 
     var toast   = document.getElementById("undoToast");
@@ -1199,9 +1708,10 @@
     if (toast) { toast.classList.add("hidden"); }
     updateBudgetCard();
     renderTodayMission();
+    renderBadgeTeaser();
     renderRecentExpenses();
     renderWeekAtGlance();
-    renderSpendingBreakdown();
+
     if (window.SpendingChart) { window.SpendingChart.update(); }
   }
 
@@ -1214,9 +1724,10 @@
     if (toast) { toast.classList.add("hidden"); }
     updateBudgetCard();
     renderTodayMission();
+    renderBadgeTeaser();
     renderRecentExpenses();
     renderWeekAtGlance();
-    renderSpendingBreakdown();
+
     if (window.SpendingChart) { window.SpendingChart.update(); }
   }
 
@@ -1552,14 +2063,17 @@
     var page = document.body.getAttribute("data-page");
 
     if (page === "dashboard") {
-      renderGreeting();
       renderQuickAddButtons();
       updateBudgetCard();
       renderXpWidget();
       renderTodayMission();
+      renderBadgeTeaser();
       renderRecentExpenses();
       renderWeekAtGlance();
-      renderSpendingBreakdown();
+      renderWeekChallenge();
+      renderDailySpendBar();
+      renderTopCategories();
+
       initModal();
       initDashboardAccountMenu();
       initCustomLogModal();
@@ -1574,14 +2088,18 @@
       }
 
       window.addEventListener("sugbocents:synced", function () {
-        renderGreeting();
         updateBudgetCard();
         renderXpWidget();
         renderTodayMission();
+        renderBadgeTeaser();
         renderRecentExpenses();
         renderWeekAtGlance();
-        renderSpendingBreakdown();
+        renderWeekChallenge();
+        renderDailySpendBar();
+        renderTopCategories();
+
         renderQuickAddButtons();
+        updateLogOnceXpBadge();
         if (window.SpendingChart) { window.SpendingChart.update(); }
       });
 
@@ -1589,9 +2107,15 @@
         updateBudgetCard();
         renderXpWidget();
         renderTodayMission();
+        renderBadgeTeaser();
         renderWeekAtGlance();
-        renderSpendingBreakdown();
+        renderWeekChallenge();
+        renderDailySpendBar();
+        renderTopCategories();
+
         renderRecentExpenses();
+        updateLogOnceXpBadge();
+        renderQuickAddButtons();
       });
 
 

@@ -33,7 +33,7 @@
       var db = window.FirebaseInit.getDb();
       await db.collection("users").doc(userId).set(data, { merge: true });
     } catch (e) {
-      console.warn("[FirestoreService] setUserDoc error:", e);
+      console.error("[FirestoreService] setUserDoc error — user data may not be saved to cloud:", e);
     }
   }
 
@@ -51,7 +51,7 @@
         .doc(expense.id)
         .set(expense);
     } catch (e) {
-      console.warn("[FirestoreService] addExpenseDoc error:", e);
+      console.error("[FirestoreService] addExpenseDoc error — expense may not be persisted to cloud:", e);
     }
   }
 
@@ -113,7 +113,7 @@
         .doc(expenseId)
         .delete();
     } catch (e) {
-      console.warn("[FirestoreService] deleteExpenseDoc error:", e);
+      console.error("[FirestoreService] deleteExpenseDoc error:", e);
     }
   }
 
@@ -126,7 +126,7 @@
       var db = window.FirebaseInit.getDb();
       await db.collection("users").doc(userId).set({ quickAddItems: items }, { merge: true });
     } catch (e) {
-      console.warn("[FirestoreService] setQuickAddItems error:", e);
+      console.error("[FirestoreService] setQuickAddItems error:", e);
     }
   }
 

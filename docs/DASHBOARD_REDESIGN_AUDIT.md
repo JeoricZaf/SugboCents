@@ -219,11 +219,233 @@ Move identity + action to the top. Replace the "stats link" pattern with an inli
 - Compact list, max 3–5 rows — already well-built
 - Downsize section heading — supporting context, not an action
 
-#### 6. This Week At a Glance (inline stats)
-- **Position:** 6th
-- **Contains:** Top 3 spending categories with horizontal mini-bars and PHP amounts — rendered inline, no navigation required
-- **Below:** Single "View full stats →" link to `stats.html` — replaces both the "See chart" link and the emoji link card at the bottom (both removed)
-- **Why:** The dashboard should show statistics, not just link to them. On mobile, this is the only navigation route to `stats.html` — which is intentional. The bottom nav stays at 5 tabs.
+#### 6. Phase D — Remove Old Stats Sections
+- **Position:** 6th slot — cleared so Phase F can build fresh
+- **Remove:** The old `renderSpendingBreakdown()` section ("Where's your money going?" + top-5 category bars) — delete the `<section>` from HTML and remove all `renderSpendingBreakdown()` call sites in `dashboard.js`
+- **Remove:** The "View full stats" 📊 emoji link card at the bottom of the page — it will be replaced by the "See full stats →" CTA that Phase F places directly below the stats block
+- **No additions in this phase** — Phase D is a pure removal. Phase F builds the replacement.
+
+#### 7. Phase E — Gamification Polish & Engagement Foundation
+
+This phase addresses the issues raised in the May 4 UX review: the badge teaser feels out of place, the dashboard has no clear north star, and the visual language does not read as gamified. All changes in this phase are CSS + JS only — no new StorageAPI methods or HTML pages required.
+
+**7a. Chase Card Redesign (Badge Teaser)**
+Replace the current badge teaser layout with a single-focus "chase card":
+- Eyebrow label: `NEXT MILESTONE` — specific, not vague
+- Sub-line below card name: *"On your way to [next level name] →"* — pulled from `getXpInfo().levelName` of level+1, makes the badge a waypoint on the identity journey, not the destination
+- Badge icon: **64px** (up from 48px), background tinted by achievement `category` — green for Logging, orange for Streak, blue for Budget — makes it feel like a collectible
+- Badge name rendered in **Sora 700** — same font as the level name headline
+- Condition text reframed as a gap, not a total: *"22 more expenses to go"* not *"78/100"*
+- Progress bar kept; add a small **% label** inside the fill at the right edge
+- When `unlockable === true`: replace progress bar with a glowing green **"Claim badge →"** button — explicit reward moment
+- **Remove** the `badge-locked-row` (the three mystery icons) entirely — replace with one small line: *"+ 5 more badges to earn · View all →"* linking to `tigom.html`
+
+**7b. Sora Font to Section Headings**
+Extend Sora (already loaded for the Identity Hero) to:
+- All `h2` section headings (Recent expenses, Next Milestone, This week…)
+- All `.action-zone-label` caps labels (TODAY'S MISSION, YOUR SHORTCUTS, NEXT MILESTONE)
+- The badge name inside the chase card
+CSS-only change — one font-family override on the relevant selectors in `css/style.css`.
+
+**7c. Journey Framing Line**
+Add one line to `renderBadgeTeaser()` that renders: *"On your way to [next level name] →"* directly under the badge name. Reads `getXpInfo()` to get current level, calculates level+1 name from the ladder, appends it to the card. Ties every badge milestone to the overarching identity narrative.
+
+**7d. Expanded Daily Mission Types**
+Expand `renderTodayMission()` from 4 static states to a richer set of ~8 rotating mission types. No new StorageAPI methods — all data already available from `getExpenses()`, `getBudgetSummary()`, `getCurrentStreak()`. New mission types:
+
+| Mission ID | Trigger condition | Message | CTA |
+|---|---|---|---|
+| `none` | No expenses ever | Log your first expense today to start your journey | Log Now |
+| `at-risk` | Has streak, none today | Log today to protect your {{ n }}-day streak | Protect Streak |
+| `early-bird` | Before noon, none today | Log before noon for the Early Bird badge | Log Now |
+| `comeback` | No log in 2+ days | You've been away — log today to start fresh | Get Back On Track |
+| `pace-warning` | Logged today, over daily pace | You're spending above pace today — stay sharp | View Budget |
+| `in-progress` | Logged today, under budget | Logged today and on track — great work | Log Anyway |
+| `quest-nudge` | Active weekly quest, not yet complete | Weekly quest active: {{ progress }} — keep going | View Quest |
+| `perfect` | Logged today + under budget + on pace | Mission complete — you're winning today | Done ✓ |
+
+The `quest-nudge` type primes the habit loop for when weekly quests are built in a later phase — it shows the slot exists without requiring the backend.
+
+**Page order after Phase E:**
+```
+Identity Hero
+Budget Card
+Action Zone  (mission [expanded types] + shortcuts + custom log)
+Badge Teaser  ← Phase C, redesigned in Phase E
+Recent Expenses
+── Stats Block ──  ← Phase F
+  KPI Row
+  Daily Spend Bar
+  Top 3 Categories
+  See full stats →
+Cleanup  ← Phase G
+```
+
+---
+
+#### 8. Phase F — Stats Block (KPI Row + Daily Spend Bar + Top 3 Categories)
+- **Position:** 6th — directly after Recent Expenses, before the bottom nav
+- **Purpose:** Give the dashboard the actual "dashboard" feel — a scannable visual data overview that motivates users without requiring navigation to `stats.html`. Grounded in gamification psychology: visible daily progress + weekly trend + category awareness creates the "I want to come back and improve this" pull.
+- **Phase F prerequisite:** Remove the standalone `<a href="stats.html">See full stats →</a>` stub that Phase D left in the HTML as a placeholder. The "See full stats →" CTA belongs inside the stats block (section 8d below), not as a floating standalone element. Leaving the stub in place would result in two "See full stats →" links on the page.
+
+**8a. KPI Row — 3 chips**
+
+| Chip | Data | Why |
+|---|---|---|
+| **Spent Today** | ₱X of ₱Y/day | Budget card is weekly — this adds the daily pulse |
+| **Top Category** | 🍔 Food · ₱320 | Habit awareness — most powerful behavior-change signal |
+| **Week Count** | 12 logged | Reinforces the logging habit; ties to the XP/streak loop |
+
+- Rendered by a new `renderKpiRow()` function reading `StorageAPI.getBudgetSummary()` and `StorageAPI.getExpenses()`
+- Empty state (0 expenses this week): chips show `—` with a muted prompt "Start logging to see your stats"
+
+**8b. Daily Spend Bar — 7-bar Mon–Sun sparkline**
+- 7 vertical bars, one per day of the current week
+- Today's bar highlighted (brand-700 fill); other days use brand-200
+- Bar height proportional to spend that day; zero-spend days show a 2px base line so the gap is visible
+- If today's spend exceeds daily budget target → today's bar turns amber
+- Eyebrow label: "This week" left-aligned; today's day label underlined below its bar
+- **Psychology hook:** "don't break the chain" — users want all 7 bars to have height. Triggers Mechanism 2 (loss aversion) on empty days.
+- Rendered by a new `renderDailySpendBar()` function
+
+**8c. Top 3 Categories — horizontal mini-bars**
+- Top 3 categories by spend this week: emoji + label, ₱ amount right-aligned, proportional fill bar (max bar = highest category amount)
+- 4th+ categories collapsed: "and X more" — keeps section compact
+- Fewer than 3 categories: show only what exists; no empty placeholder rows
+- Consistent category color from `StorageAPI.getExpenseCategories()` color field
+- Rendered by a new `renderTopCategories()` function — replaces `renderSpendingBreakdown()` entirely
+
+**8d. "See full stats →" CTA**
+- Single right-aligned link: `<a href="stats.html" class="view-all-link">See full stats →</a>`
+- Placed directly below the Top 3 Categories block — natural "want more? tap here" follow-through
+- Replaces both the old "See chart" link (removed with Phase D) and the emoji link card (also removed with Phase D)
+
+**Page order after Phase F:**
+```
+Identity Hero
+Budget Card
+Action Zone  (mission + shortcuts + custom log)
+Badge Teaser  ← Phase C
+Recent Expenses
+── Stats Block ──  ← Phase F
+  KPI Row
+  Daily Spend Bar
+  Top 3 Categories
+  See full stats →
+```
+
+#### 9. Phase G — Firestore Reliability Fix + Dashboard Gamification Visual Upgrade
+
+> **Priority order within Phase G:** The Firestore bug fix (G-0) is a blocking P0. It must ship and be verified before any visual work begins. A dashboard that looks great but silently drops transactions is worse than a plain one that stores data reliably.
+
+---
+
+##### G-0 — Firestore / Firebase Bug Fix (P0 — fix first)
+
+**Problem:** Transactions (expenses) are disappearing or not persisting in the Firestore database. Users log an expense, it appears locally, but on the next session or device it is gone. Root cause is suspected to be in the Firestore sync path in `js/firestore-service.js` and/or `js/storage.js`.
+
+**Audit checklist:**
+
+1. **`addExpense()` in `js/storage.js`** — Verify that the Firestore sync call (`syncGamificationFields` or equivalent) actually writes the expense array, not just the gamification fields (XP, level, streak). The expense list must be written to Firestore, not only to `localStorage`.
+2. **`js/firestore-service.js`** — Audit every write path. Confirm that `setDoc` / `updateDoc` calls include `expenses` as a top-level field on the user document (or as a sub-collection — confirm which strategy is in use and that it is consistent). Check for silent `catch` blocks that swallow write errors without retrying.
+3. **Auth state dependency** — Confirm that the Firestore write does NOT silently skip if Firebase Auth has not yet resolved (async race condition on page load). If the user is not yet authenticated when `addExpense()` fires, the Firestore write must be queued, not dropped.
+4. **Offline / reconnect** — Confirm that Firestore offline persistence (`enableIndexedDbPersistence` or `initializeFirestore({ localCache: persistentLocalCache() })`) is enabled so writes made offline are synced when connectivity resumes.
+5. **Read path on login** — When a user logs in, confirm that `getExpenses()` returns the Firestore-sourced array, not a stale `localStorage` cache from a previous local-only session.
+6. **`js/firebase-init.js`** — Confirm the Firebase config (projectId, apiKey, etc.) is correct and that the Firestore database region matches the project.
+
+**Fix criteria:** After this fix, logging an expense on one device and refreshing on another (or re-logging in on the same device) must show the same expense list. No silent drops. Any Firestore write failure must log a `console.error` with the reason.
+
+---
+
+##### G-1 — Bar Chart: "Leaderboard Bars" (Liftoff + Revolut pattern)
+
+**References:** Liftoff shows weight label above each set's bar. Revolut makes charts tactile — "you drag and the graph responds with a soft glow, turning numbers into something tactile." (Gamification 4 transcript)
+
+**Changes to `renderDailySpendBar()` in `js/dashboard.js` and `.daily-bar-*` CSS in `css/style.css`:**
+
+1. **Taller chart** — raise container from `4.5rem` to `6.5rem`. Bars now have room to communicate magnitude.
+2. **Color-graded bars by day vs daily limit** (`weeklyBudget ÷ 7`):
+   - ≤ 80% of daily limit → brand green gradient (existing)
+   - 80–100% → amber `#f59e0b` (caution, not panic)
+   - > 100% → red-orange `#ea580c` (over daily limit)
+   - New CSS classes: `.daily-bar--good`, `.daily-bar--warn`, `.daily-bar--over`
+3. **Budget reference line** — dashed horizontal rule absolutely positioned at `y = (dailyLimit / maxAmount) * chartHeight`. A `"daily limit"` micro-label on the right edge. Bars now have context.
+4. **Amount label above each non-zero bar** — `formatPhp(amount)` above each bar that has spend > 0. Today's label in brand green. Over-budget day's label in red-orange. Liftoff weight-label pattern.
+5. **Today's bar glow** — `box-shadow: 0 0 8px 2px rgba(59, 170, 114, 0.4)` (or red-orange if over). Feels live.
+6. **Tap-to-highlight interactivity** (Revolut principle — data should respond to touch) — tapping a bar shows a tooltip with that day's full amount and hides on next tap or outside click.
+7. **Rounder tops** — `border-radius: 6px 6px 0 0`. Minor polish, meaningful difference at glance.
+
+---
+
+##### G-2 — Quick-Add Tiles: "Quest Tiles" (Duolingo + Clash Royale pattern)
+
+**References:** Duolingo's 3D press button is the most-copied tactile pattern in gamified apps. Clash Royale portrait cards (image/icon top 60%, name + cost bottom) is the industry standard for collectible/equippable items. Finch's square self-care tiles share the same structure.
+
+**Changes to `renderQuickAddButtons()` in `js/dashboard.js`, `#quickAddGrid` in `dashboard.html`, and CSS in `css/style.css`:**
+
+1. **Responsive columns** — 2 columns when user has ≤ 4 shortcuts (+ Add button), 3 columns when 5+. Prevents one lonely tile in the last row on small screens.
+2. **Portrait tile structure** — replaces horizontal `.quick-add` layout:
+   ```
+   .quest-tile-wrap (position:relative, full grid cell)
+     button.quest-tile-btn (tappable card, flex-col, align-items:center)
+       div.quest-tile-emoji   ← large centered emoji ~1.8rem, top 40% of tile
+       span.quest-tile-label  ← shortcut name, Sora bold
+       span.quest-tile-amount ← ₱54.00, small muted text
+       div.quest-tile-xp      ← ⚡ +5 XP pill, brand green, always visible
+     button.qa-option-btn     ← edit (⋯), top-right corner, existing behavior
+   ```
+3. **3D press effect** (Duolingo tactile pattern) — `.quest-tile-btn` has `box-shadow: 0 4px 0 0 rgba(0,0,0,0.15)` on bottom edge. On `:active`: `transform: translateY(3px)` + `box-shadow: none`. Feels physical. Satisfying on every tap.
+4. **Emoji source** — User picks an emoji when creating/editing a shortcut (emoji picker in QA modal, see G-3). Fallback: `CATEGORY_EMOJI_MAP` in `renderQuickAddButtons()` for existing shortcuts (e.g. `"jeepney"` → 🚌, `"food"` → 🍔, `"coffee"` → ☕).
+5. **"Add shortcut" tile** — adapts to portrait size, keeps dashed brand border.
+6. **Pulse on tap** — reuse existing `.qa-pulse` animation.
+
+---
+
+##### G-3 — Emoji Picker in QA Modal
+
+**Why:** Emoji is the visual identity of each Quest Tile (see G-2). The user must be able to set it. A preset grid (no free-text entry) is faster and cleaner than a keyboard emoji picker.
+
+**Changes to `#qaModal` in `dashboard.html`, `initModal()` / `openQaModal()` / `saveModal()` in `js/dashboard.js`, and CSS in `css/style.css`:**
+
+1. **New modal field above Name** — "Pick an icon" label, compact emoji grid: 8 columns × 4 rows = 32 emojis.
+   - Row 1 (Food): 🍔 🍜 🍕 🌮 🍳 ☕ 🧋 🍺
+   - Row 2 (Transport): 🚌 🚶 🚗 🛵 🏍️ ✈️ 🚂 🚲
+   - Row 3 (Life): 💊 🏋️ 🎮 📱 💡 👕 📚 🛍️
+   - Row 4 (Misc): 🏠 💈 🐾 🎬 💄 🌐 🎵 💼
+2. **Hidden input** `id="qaModalEmoji"` stores the selected emoji character.
+3. **CSS** — `.emoji-picker-grid` (8-column flex-wrap), `.emoji-option` (2rem square tappable), `.emoji-option--selected` (brand green ring).
+4. **Pre-selection** — `openQaModal(item)` pre-selects `item.emoji` in the grid if it is one of the 32 presets. Falls back to first emoji (🍔) if not set.
+5. **`saveModal()`** — reads `qaModalEmoji.value` instead of hardcoded `"\u2022"`.
+
+---
+
+##### G-4 — XP Reward Indicators (Habitica + Craving Machine pattern)
+
+**References:** Habitica shows exact XP reward on every task before completion. The reference screenshot (second image) shows "Exp 190 XP" inline. Gamification 6 transcript: "Variable ratio reinforcement produces the most compulsive behavior." G-4 implements the transparent baseline (Habitica) and layers a daily opening hook (craving machine).
+
+**Changes to `dashboard.html`, `js/dashboard.js`, and `css/style.css`:**
+
+1. **Quest tiles** — `⚡ +5 XP` pill is part of the tile structure (G-2). Always visible before tapping. Sets expectation — the user knows the reward before they act.
+2. **First-log-of-day bonus** — When user has NOT yet logged today, Quest Tiles show `⚡ +10 XP` with a pulse border. After first expense of the day is logged, they revert to `⚡ +5 XP`. This is the craving machine opening hook — a daily reason to open the app and tap before anything else.
+   - Requires awarding 10 XP (instead of 5) on first expense of the day in `addExpense()` in `js/storage.js`: check `loggedToday === false` before calling `addXpInternal()`.
+3. **"Log a one-time expense" button** — restructure from flat button to a row card: left icon, center text "Log anything", right `⚡ +5 XP` badge chip.
+4. **Custom log modal Save button** — add subtle `⚡ +5 XP` label inside the button to the right of "Log Expense" text. 0.72rem, brand-colored. Reinforces the reward at the moment of decision.
+
+---
+
+##### G-5 — Code Cleanup (previously Phase G)
+
+- Remove dead `renderGreeting()` function from `js/dashboard.js` — targets `#greetingTitle` and `#greetingDate` which no longer exist in the HTML
+- Remove dead `renderSpendingBreakdown()` function body from `js/dashboard.js` — replaced by `renderTopCategories()` in Phase F
+- Fix broken character: `"View all ?"` → `"View all →"` in the Recent Expenses section header
+- Fix empty state text: `"No expenses yet — use Quick add above to log one."` → `"No expenses yet — tap a shortcut above or log a one-time expense to get started."`
+- Bump `sw.js` cache version after all Phase G work is complete
+
+---
+
+#### 10. Phase H — Cleanup (renamed, previously Phase G)
+
+> This phase is now fully absorbed into Phase G-5. Kept here as a placeholder to preserve phase numbering for any external references.
 
 ---
 

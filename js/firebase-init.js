@@ -79,6 +79,13 @@
             : window.firebase.initializeApp(config);
           state.auth = window.firebase.auth();
           state.db = window.firebase.firestore();
+
+          // Enable offline persistence so writes queued while offline are
+          // flushed automatically when connectivity is restored.
+          state.db.enablePersistence({ synchronizeTabs: true }).catch(function (persistErr) {
+            console.warn("[SugboCents] Firestore offline persistence unavailable:", persistErr.code);
+          });
+
           state.mode = "firebase";
           state.reason = "";
         });

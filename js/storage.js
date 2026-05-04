@@ -319,7 +319,15 @@
 
     var firestoreExpenses = await window.FirestoreService.getExpenseDocs(userId);
     if (Array.isArray(firestoreExpenses) && firestoreExpenses.length > 0) {
-      user.expenses = firestoreExpenses;
+      // Smart merge: Firestore is ground truth for confirmed records.
+      // Also preserve any local-only entries (pending cloud writes from offline
+      // usage or slow connections) so they are not silently discarded.
+      var fsIdSet = {};
+      firestoreExpenses.forEach(function (e) { if (e && e.id) { fsIdSet[e.id] = true; } });
+      var pendingLocal = Array.isArray(user.expenses)
+        ? user.expenses.filter(function (e) { return e && e.id && !fsIdSet[e.id]; })
+        : [];
+      user.expenses = firestoreExpenses.concat(pendingLocal);
     }
 
     var firestoreQuickAdd = await window.FirestoreService.getQuickAddItemDocs(userId);
@@ -712,8 +720,15 @@
       user.expenses = [];
     }
 
+    // First expense of the day earns a bonus (10 XP vs 5 XP) — daily opening hook.
+    var todayDateKey = getLocalDateKey();
+    var isFirstLogToday = !user.expenses.some(function (e) {
+      return e.timestamp && getLocalDateKey(e.timestamp) === todayDateKey;
+    });
+
     user.expenses.unshift(entry);
-    var xpAwarded = addXpInternal(user, 5, "expense_log");
+    var xpToAward = isFirstLogToday ? 10 : 5;
+    var xpAwarded = addXpInternal(user, xpToAward, "expense_log");
     var afterUnlockable = buildAchievementState(user)
       .filter(function (a) { return a.unlockable && !a.claimed; })
       .map(function (a) { return a.id; });

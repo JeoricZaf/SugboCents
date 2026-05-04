@@ -133,42 +133,73 @@
       </div>
       <!-- quick add shortcuts -->
       <p class="action-zone-label mt-4">Your shortcuts</p>
-      <div id="quickAddGrid" class="mt-2 grid grid-cols-2 gap-3"></div>
+      <div id="quickAddGrid" class="mt-2 grid gap-3"></div>
       <!-- one-time expense log -->
       <button id="logOneTimeBtn" type="button" class="log-one-time-btn mt-3">
-        <span class="material-icons" aria-hidden="true">add_circle_outline</span>
-        Log a one-time expense
+        <span class="log-one-time-btn-left">
+          <span class="material-icons" aria-hidden="true">add_circle_outline</span>
+          Log a one-time expense
+        </span>
+        <span class="log-btn-xp" id="logOnceXpBadge">&#9889; +5 XP</span>
       </button>
     </section>
 
     <!-- hidden weekAtGlance stub (JS early-returns on null) -->
     <div id="weekAtGlance" class="hidden" aria-hidden="true"></div>
 
+    <!-- badge teaser -->
+    <section id="badgeTeaserSection" class="mt-5 hidden" aria-label="Next milestone">
+      <p class="action-zone-label mb-2">Next milestone</p>
+      <div class="badge-teaser-card card-panel p-3">
+        <div class="badge-teaser-row">
+          <div id="badgeTeaserTarget" class="badge-target" aria-label="Target badge"></div>
+          <div class="badge-teaser-info">
+            <p id="badgeTeaserName" class="badge-teaser-name"></p>
+            <p id="badgeTeaserJourney" class="badge-journey-line hidden"></p>
+            <p id="badgeTeaserCondition" class="badge-teaser-condition"></p>
+            <div id="badgeTeaserProgressWrap" class="badge-teaser-progress-track mt-1">
+              <div id="badgeTeaserProgressFill" class="badge-teaser-progress-fill" style="width:0%"></div>
+            </div>
+            <button id="badgeTeaserClaimBtn" class="badge-claim-btn hidden" type="button">Claim badge &#8594;</button>
+          </div>
+        </div>
+        <p id="badgeTeaserMore" class="badge-teaser-more hidden"></p>
+      </div>
+    </section>
+
     <!-- recent expenses -->
     <section class="mt-8">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-lg font-bold text-ink">Recent expenses</h2>
-        <a href="activity.html" class="view-all-link">View all ?</a>
+        <a href="activity.html" class="view-all-link">View all &#8594;</a>
       </div>
       <ul id="recentExpenseList" class="card-panel divide-y divide-slate-100"></ul>
-      <p id="emptyExpenseState" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses yet — use Quick add above to log one.</p>
+      <p id="emptyExpenseState" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses yet &#8212; tap a shortcut above or log a one-time expense to get started.</p>
     </section>
 
-    <!-- Spending breakdown this week -->
-    <section class="mt-7" aria-label="Spending breakdown this week">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="section-mini-header">Where's your money going?</h2>
-        <a href="spending-chart.html" class="view-all-link">See chart</a>
+    <!-- Phase F: Stats Block (Idea A+C hybrid) -->
+    <!-- Reference: Peloton status position (pill), Strava PR framing (vs last week), Finch variable CTA text -->
+    <section id="statsBlock" class="mt-8">
+      <div class="week-challenge-header mb-3">
+        <h2 class="text-lg font-bold text-ink">This week</h2>
+        <span id="weekStatusPill" class="week-status-pill hidden"></span>
       </div>
-      <div id="spendingBreakdown" class="card-panel px-4 py-2"></div>
+      <div class="card-panel p-4">
+        <!-- vs last week delta — compete with your past self (Strava PR) -->
+        <div id="vsLastWeek" class="vs-last-week-row hidden"></div>
+        <!-- Daily spend bars -->
+        <div id="dailyBarChart" class="daily-bar-chart" aria-hidden="true"></div>
+        <!-- Where it went this week -->
+        <p class="action-zone-label mt-4 mb-2">Where it went</p>
+        <div id="topCatBars" class="cat-bars"></div>
+      </div>
+      <!-- Dynamic CTA text changes based on week state (Finch variable reward) -->
+      <a href="stats.html" id="seeStatsCta" class="view-stats-link-card">
+        <span class="view-stats-link-card-icon"><i class="bi bi-bar-chart-fill" aria-hidden="true"></i></span>
+        <span id="seeStatsCtaText" class="view-stats-link-card-text">See full stats</span>
+        <span class="view-stats-link-card-arrow">&#8594;</span>
+      </a>
     </section>
-
-    <!-- view full stats link card -->
-    <a href="spending-chart.html" class="view-stats-link-card" aria-label="View full spending statistics">
-      <span class="view-stats-link-card-icon" aria-hidden="true">📊</span>
-      <span class="view-stats-link-card-text">View full stats</span>
-      <i class="bi bi-arrow-right-short view-stats-link-card-arrow" aria-hidden="true"></i>
-    </a>
   </main>
   </div><!-- /app-main -->
   </div><!-- /app-layout -->
@@ -215,6 +246,11 @@
     <div class="modal-sheet">
       <p class="modal-title" id="qaModalTitle">Edit shortcut</p>
       <input type="hidden" id="qaModalItemId" />
+      <input type="hidden" id="qaModalEmoji" value="&#x1F354;" />
+      <div class="modal-field emoji-picker-wrap">
+        <label class="label">Pick an icon</label>
+        <div class="emoji-picker-grid" id="qaModalEmojiGrid" role="group" aria-label="Select an emoji icon"></div>
+      </div>
       <div class="modal-field">
         <label class="label" for="qaModalCategory">Name</label>
         <input class="input" type="text" id="qaModalCategory" maxlength="24" placeholder="e.g. Snack, Gym, Bus" />
@@ -223,11 +259,11 @@
       <div class="modal-field">
         <label class="label" for="qaModalCategoryId">Category (for stats)</label>
         <select class="input" id="qaModalCategoryId">
-          <option value="">� pick one �</option>
+          <option value="">&#8213; pick one &#8213;</option>
         </select>
       </div>
       <div class="modal-field">
-        <label class="label" for="qaModalAmount">Default amount (?)</label>
+        <label class="label" for="qaModalAmount">Default amount (&#8369;)</label>
         <input class="input" type="number" id="qaModalAmount" min="1" step="1" placeholder="0" />
         <p class="field-error" id="qaModalAmountError"></p>
       </div>
@@ -262,7 +298,7 @@
       </div>
       <div class="modal-actions">
         <button type="button" id="customLogCancel" class="btn-outline">Cancel</button>
-        <button type="button" id="customLogSave" class="btn-primary">Log Expense</button>
+        <button type="button" id="customLogSave" class="btn-primary">Log Expense <span class="log-btn-xp-inline">&#9889; +5 XP</span></button>
       </div>
     </div>
   </div>

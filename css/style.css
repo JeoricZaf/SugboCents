@@ -842,6 +842,43 @@ body {
   50%       { box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.18); }
 }
 
+/* State: early-bird (before noon — sky blue morning energy) */
+.today-mission-card--early-bird {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #7dd3fc;
+}
+.today-mission-card--early-bird .today-mission-title  { color: #075985; }
+.today-mission-card--early-bird .today-mission-desc   { color: #0c4a6e; }
+.today-mission-card--early-bird .today-mission-badge  { background: #0284c7; color: #ffffff; }
+
+/* State: comeback (away 2+ days — lavender restart energy) */
+.today-mission-card--comeback {
+  background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%);
+  border: 1px solid #c4b5fd;
+}
+.today-mission-card--comeback .today-mission-title  { color: #5b21b6; }
+.today-mission-card--comeback .today-mission-desc   { color: #4c1d95; }
+.today-mission-card--comeback .today-mission-badge  { background: #7c3aed; color: #ffffff; }
+
+/* State: pace-warning (80–99% budget used — caution golden amber) */
+.today-mission-card--pace-warning {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef9c3 100%);
+  border: 1px solid #fcd34d;
+}
+.today-mission-card--pace-warning .today-mission-title  { color: #92400e; }
+.today-mission-card--pace-warning .today-mission-desc   { color: #78350f; }
+.today-mission-card--pace-warning .today-mission-badge  { background: #d97706; color: #ffffff; }
+
+/* State: over-budget (≥100% — warm clay, empathetic not punishing) */
+/* Reference: Duolingo streak-break uses warm orange/amber, never harsh red */
+.today-mission-card--over-budget {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 1px solid #fb923c;
+}
+.today-mission-card--over-budget .today-mission-title  { color: #9a3412; }
+.today-mission-card--over-budget .today-mission-desc   { color: #7c2d12; }
+.today-mission-card--over-budget .today-mission-badge  { background: #ea580c; color: #ffffff; }
+
 /* ── Action Zone ─────────────────────────────────────────── */
 .action-zone {
   /* spacing context only */
@@ -850,16 +887,21 @@ body {
 .action-zone-label {
   font-size: 0.7rem;
   font-weight: 700;
+  font-family: 'Sora', sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #94a3b8;
 }
 
+[data-page="dashboard"] h2 {
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+}
+
 .log-one-time-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
+  justify-content: space-between;
   width: 100%;
   padding: 0.75rem 1rem;
   border: 1.5px dashed var(--brand-700, #2b8259);
@@ -874,8 +916,206 @@ body {
 .log-one-time-btn:hover {
   background: rgba(43, 130, 89, 0.07);
 }
+.log-one-time-btn-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
 .log-one-time-btn .material-icons {
   font-size: 1.1rem !important;
+}
+
+/* XP reward badge on log buttons */
+.log-btn-xp {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--brand-800, #1f6b46);
+  background: rgba(43, 130, 89, 0.12);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  line-height: 1.35;
+  flex-shrink: 0;
+}
+
+/* Subtle inline XP label inside Save button */
+.log-btn-xp-inline {
+  font-size: 0.6rem;
+  font-weight: 700;
+  opacity: 0.7;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+}
+
+/* ── Badge Teaser ────────────────────────────────────────── */
+.badge-teaser-card {
+  /* inherits card-panel; just spacing context */
+}
+
+.badge-teaser-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.badge-teaser-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.badge-teaser-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: 'Sora', sans-serif;
+  color: var(--ink, #1e293b);
+  margin: 0 0 0.1rem;
+}
+
+.badge-teaser-condition {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.badge-teaser-progress-track {
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.badge-teaser-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand-600, #3aaa72), var(--brand-800, #1f6b46));
+  border-radius: 999px;
+  transition: width 500ms ease-out;
+}
+
+/* Target badge — glowing ring, full color */
+.badge-target {
+  --badge-pulse-low:  rgba(58, 170, 114, 0.18);
+  --badge-pulse-high: rgba(58, 170, 114, 0.28);
+  width: 4rem;
+  height: 4rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  background: var(--brand-50, #f0fdf4);
+  border: 2px solid var(--brand-600, #3aaa72);
+  box-shadow: 0 0 0 3px var(--badge-pulse-low);
+  animation: badge-target-pulse 2.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.badge-target--streak {
+  background: #fff7ed;
+  border-color: #f97316;
+  --badge-pulse-low:  rgba(249, 115, 22, 0.15);
+  --badge-pulse-high: rgba(249, 115, 22, 0.25);
+}
+
+.badge-target--budget {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  --badge-pulse-low:  rgba(59, 130, 246, 0.15);
+  --badge-pulse-high: rgba(59, 130, 246, 0.25);
+}
+
+.badge-target--misc {
+  background: #f5f3ff;
+  border-color: #8b5cf6;
+  --badge-pulse-low:  rgba(139, 92, 246, 0.15);
+  --badge-pulse-high: rgba(139, 92, 246, 0.25);
+}
+
+.badge-target--goals {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  --badge-pulse-low:  rgba(245, 158, 11, 0.15);
+  --badge-pulse-high: rgba(245, 158, 11, 0.25);
+}
+
+.badge-target--xp {
+  background: #fef2f2;
+  border-color: #ef4444;
+  --badge-pulse-low:  rgba(239, 68, 68, 0.15);
+  --badge-pulse-high: rgba(239, 68, 68, 0.25);
+}
+
+@keyframes badge-target-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--badge-pulse-low); }
+  50%       { box-shadow: 0 0 0 6px var(--badge-pulse-high); }
+}
+
+/* Locked badges row */
+.badge-locked-row {
+  display: flex;
+  gap: 0.5rem;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.65rem;
+}
+
+.badge-locked {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  background: #f1f5f9;
+  opacity: 0.45;
+  filter: grayscale(1);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.badge-journey-line {
+  font-size: 0.7rem;
+  color: var(--brand-700, #2b8259);
+  font-weight: 600;
+  font-family: 'Sora', sans-serif;
+  margin: 0 0 0.2rem;
+}
+
+.badge-claim-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, var(--brand-700, #2b8259), var(--brand-800, #1f6b46));
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 0.7rem;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(31, 107, 70, 0.25);
+  transition: box-shadow 200ms ease, transform 120ms ease;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.badge-claim-btn:hover {
+  box-shadow: 0 4px 16px rgba(31, 107, 70, 0.4);
+  transform: translateY(-1px);
+}
+
+.badge-teaser-more {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin: 0.65rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.badge-more-link-anchor {
+  color: var(--brand-700, #2b8259);
+  font-weight: 600;
+  text-decoration: none;
+}
+.badge-more-link-anchor:hover {
+  text-decoration: underline;
 }
 
 /* ── View Full Stats Link Card ───────────────────────────── */
@@ -1052,7 +1292,223 @@ body {
   transition: width 500ms ease-out;
 }
 
+/* ── Stats Block (Phase F) ───────────────────────────────── */
 
+/* Week challenge header — h2 + status pill side by side */
+.week-challenge-header {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+/* Status pill — Peloton leaderboard-position concept */
+/* One pill that answers "am I winning this week?" at a glance */
+.week-status-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: 'Sora', sans-serif;
+  border-radius: 999px;
+  padding: 0.22rem 0.65rem;
+  letter-spacing: 0.02em;
+  transition: background 300ms ease;
+}
+
+.week-status-pill--on-pace {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.week-status-pill--watch-out {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.week-status-pill--over-budget {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+/* vs-last-week delta — Strava PR framing, compete with your past self */
+.vs-last-week-row {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 0.85rem;
+  line-height: 1.4;
+}
+
+.vs-delta--better  { color: #15803d; }
+.vs-delta--worse   { color: #b91c1c; }
+.vs-delta--neutral { color: #64748b; }
+
+/* Daily spend bar chart */
+.daily-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.3rem;
+  height: 6.5rem;
+  padding-bottom: 1.2rem; /* room for day labels */
+  position: relative;
+}
+
+.daily-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  position: relative;
+  gap: 0.2rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 120ms ease;
+}
+
+.daily-bar-col--active {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.daily-bar {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, var(--brand-600, #3aaa72), var(--brand-800, #1f6b46));
+  transition: height 400ms ease-out;
+}
+
+/* Color grades — applied alongside .daily-bar */
+.daily-bar--good {
+  background: linear-gradient(180deg, var(--brand-600, #3aaa72), var(--brand-800, #1f6b46));
+}
+
+.daily-bar--warn {
+  background: linear-gradient(180deg, #fbbf24, #d97706);
+}
+
+.daily-bar--over {
+  background: linear-gradient(180deg, #fb923c, #ea580c);
+  box-shadow: 0 0 7px 2px rgba(234, 88, 12, 0.3);
+}
+
+/* Today: adds glow on top of whatever color grade is applied */
+.daily-bar--today {
+  box-shadow: 0 0 10px 3px rgba(59, 170, 114, 0.4);
+}
+
+.daily-bar--today.daily-bar--over {
+  box-shadow: 0 0 10px 4px rgba(234, 88, 12, 0.45);
+}
+
+.daily-bar--empty {
+  background: #e2e8f0;
+  min-height: 3px;
+  box-shadow: none;
+}
+
+/* Amount label above bar */
+.daily-bar-amount {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: #475569;
+  text-align: center;
+  line-height: 1;
+  white-space: nowrap;
+  margin-bottom: 0.1rem;
+  min-height: 0.7rem;
+}
+
+.daily-bar-amount--hidden {
+  visibility: hidden;
+}
+
+.daily-bar-amount--over {
+  color: #ea580c;
+}
+
+/* Budget reference line */
+.daily-bar-ref-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1.5px dashed rgba(100, 116, 139, 0.4);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.daily-bar-ref-label {
+  position: absolute;
+  right: 0;
+  top: -0.85rem;
+  font-size: 0.5rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.daily-bar-day {
+  position: absolute;
+  bottom: -1.15rem;
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.daily-bar-day--today {
+  color: var(--brand-700, #2b8259);
+}
+
+/* Top categories horizontal bars */
+.cat-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cat-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cat-bar-label {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #0f172a;
+  width: 4.2rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cat-bar-track {
+  flex: 1;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cat-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brand-600, #3aaa72), var(--brand-800, #1f6b46));
+  transition: width 500ms ease-out;
+}
+
+.cat-bar-value {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #0f172a;
+  width: 3.5rem;
+  text-align: right;
+  flex-shrink: 0;
+}
 
 /* ── XP Float Popup ──────────────────────────────────────── */
 @keyframes xp-float {
@@ -2180,6 +2636,135 @@ body.edit-mode .qa-add-new-btn {
 
 .qa-pulse {
   animation: qa-pulse-anim 420ms ease;
+}
+
+/* ── Quest Tiles (G-2) ─────────────────────────────────── */
+.quest-tile-wrap {
+  position: relative;
+}
+
+.quest-tile-btn {
+  border: none;
+  border-radius: var(--radius-lg, 1.1rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.18rem;
+  width: 100%;
+  padding: 0.9rem 0.45rem 0.75rem;
+  cursor: pointer;
+  box-shadow: 0 4px 0 0 rgba(0, 0, 0, 0.13);
+  transition: transform 80ms ease, box-shadow 80ms ease, filter 130ms ease;
+  min-height: 5.6rem;
+  text-align: center;
+}
+
+.quest-tile-btn:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+
+.quest-tile-btn:hover {
+  filter: brightness(0.97);
+}
+
+/* Dashed "Add" tile */
+.quest-tile-btn--add-new {
+  background: transparent !important;
+  border: 1.5px dashed var(--brand-600, #3aaa72) !important;
+  box-shadow: none !important;
+  min-height: 5.6rem;
+}
+
+.quest-tile-btn--add-new:active {
+  transform: translateY(2px);
+}
+
+.quest-tile-emoji {
+  font-size: 1.7rem;
+  line-height: 1;
+  margin-bottom: 0.08rem;
+  display: block;
+}
+
+.quest-tile-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.68);
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Sora', sans-serif;
+}
+
+.quest-tile-amount {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.42);
+  line-height: 1;
+}
+
+.quest-tile-xp {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--brand-800, #1f6b46);
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  padding: 0.14rem 0.42rem;
+  line-height: 1.35;
+  margin-top: 0.1rem;
+}
+
+.quest-tile-xp--bonus {
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--brand-700, #2b8259);
+  animation: quest-xp-pulse 2s ease infinite;
+}
+
+@keyframes quest-xp-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.65; }
+}
+
+/* ── Emoji Picker (G-3) ─────────────────────────────────── */
+.emoji-picker-wrap {
+  margin-bottom: 0.1rem;
+}
+
+.emoji-picker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  margin-top: 0.3rem;
+}
+
+.emoji-option {
+  border: none;
+  background: #f1f5f9;
+  border-radius: 0.45rem;
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.98rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 110ms ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.emoji-option:hover {
+  background: #e2e8f0;
+}
+
+.emoji-option--selected {
+  background: #dcfce7;
+  outline: 2px solid var(--brand-700, #2b8259);
+  outline-offset: 1px;
 }
 
 /* ── page greeting header (overridden by hero block above) ── */
