@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dark-mode.css" />
   <script>if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");</script>
 </head>
 <body data-page="settings" data-protected="true" class="bg-mist min-h-screen antialiased">
@@ -147,7 +148,15 @@
           <input id="compactExpenses" type="checkbox" class="sr-only peer" />
           <div class="relative w-10 h-6 bg-slate-200 rounded-full transition peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-4"></div>
         </label>
-      </div>
+          <!-- Dark mode toggle (settings-only UI) -->
+          <label class="flex items-center justify-between gap-3 cursor-pointer mt-3">
+            <div>
+              <p class="text-sm font-semibold text-ink">Dark mode</p>
+              <p class="text-xs text-slate-500">Enable dark theme for the app.</p>
+            </div>
+            <button id="darkModeToggle" type="button" class="dark-toggle-btn" aria-pressed="false" aria-label="Toggle dark mode"></button>
+          </label>
+        </div>
       <p id="displaySaveMsg" class="text-sm mt-3 hidden"></p>
     </section>
 
@@ -199,6 +208,7 @@
   <script src="js/firestore-service.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/dark-mode.js"></script>
   <script src="js/settings.js"></script>
 </body>
 </html>
