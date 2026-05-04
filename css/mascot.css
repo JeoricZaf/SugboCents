@@ -5,42 +5,54 @@
   bottom: calc(5rem + env(safe-area-inset-bottom));
   right: 1.1rem;
   z-index: 40;
-  width: 3.4rem;
-  height: 3.4rem;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #2b8259 0%, #1f6b46 100%);
-  box-shadow: 0 8px 20px rgba(31, 107, 70, 0.38);
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
   border: none;
-  cursor: grab;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  transition: box-shadow 200ms ease, transform 200ms ease;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.28));
+  transition: filter 200ms ease, transform 200ms ease;
   touch-action: none;
   user-select: none;
+  padding: 0;
 }
 
 .mascot-fab:active {
   cursor: grabbing;
-  box-shadow: 0 12px 28px rgba(31, 107, 70, 0.45);
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.35));
   transform: scale(1.06);
 }
 
-.mascot-fab.mascot-happy   { background: linear-gradient(135deg, #22c55e 0%, #1f6b46 100%); }
-.mascot-fab.mascot-neutral { background: linear-gradient(135deg, #2b8259 0%, #1f6b46 100%); }
-.mascot-fab.mascot-worried { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-.mascot-fab.mascot-alarmed { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); }
+.mascot-fab.mascot-happy,
+.mascot-fab.mascot-neutral,
+.mascot-fab.mascot-worried,
+.mascot-fab.mascot-alarmed { background: transparent; box-shadow: none; }
 
-/* pulse ring when mascot wants attention */
-.mascot-fab.mascot-alarmed::after {
-  content: "";
-  position: absolute;
-  inset: -0.35rem;
-  border-radius: 999px;
-  border: 2px solid #ef4444;
-  animation: mascot-pulse 1.2s ease-out infinite;
-  pointer-events: none;
+/* alarmed: intense pulsing drop-shadow + sonar ripples */
+.mascot-fab.mascot-alarmed {
+  animation: mascot-alarmed-glow 1.2s ease-in-out infinite, mascot-sonar 2s ease-out infinite;
+}
+
+@keyframes mascot-alarmed-glow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.5)) drop-shadow(0 4px 16px rgba(239, 68, 68, 0.3)); }
+  50%       { filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.9)) drop-shadow(0 8px 28px rgba(239, 68, 68, 0.7)); }
+}
+
+@keyframes mascot-sonar {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+  }
 }
 
 /* Styling for the image inside the floating widget */
@@ -313,91 +325,196 @@ img.mascot-avatar {
   background: #334155;
 }
 
+/* ── Typing indicator ─────────────────────────────────── */
+.mascot-bubble.mascot-typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.65rem 0.9rem;
+  min-width: 3rem;
+}
 
+.mascot-bubble.mascot-typing span {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #94a3b8;
+  animation: mascot-dot-bounce 1.2s infinite ease-in-out;
+}
+
+.mascot-bubble.mascot-typing span:nth-child(1) { animation-delay: 0s; }
+.mascot-bubble.mascot-typing span:nth-child(2) { animation-delay: 0.2s; }
+.mascot-bubble.mascot-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes mascot-dot-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+  40%           { transform: translateY(-5px); opacity: 1; }
+}
+
+/* ── Full chat link ───────────────────────────────────── */
+.mascot-chatbox-fullchat {
+  padding: 0.4rem 0.75rem 0.6rem;
+  border-top: 1px solid #f1f5f9;
+  text-align: center;
+}
+
+.mascot-fullchat-link {
+  font-size: 0.75rem;
+  color: #2b8259;
+  font-weight: 600;
+  text-decoration: none;
+  opacity: 0.85;
+  transition: opacity 150ms;
+}
+
+.mascot-fullchat-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.dark-mode .mascot-chatbox-fullchat {
+  border-top-color: rgba(255,255,255,0.08);
+}
+
+.dark-mode .mascot-fullchat-link {
+  color: #5da77f;
+}
 
 /* DASHBOARD ANIMATION */
 
 /* Container for the full-body mascot */
 .dashboard-mascot-wrapper {
   position: relative;
-  display: inline-block;
-  text-align: center;
-  
-  
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 /* The Mascot Image */
 #dashboardMascotImg {
-  height: 180px; /* Adjust this to make him bigger or smaller */
+  height: 100px;
   cursor: pointer;
-  transition: transform 0.2s ease-in-out;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
   user-select: none;
-  border: 5px solid rgb(42, 109, 20);
-  border-radius: 20px;
-  overflow:hidden;
-  padding: 5px;
+  filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.13));
+  background: #ffffff;
+  border: 1.5px solid rgba(31, 107, 70, 0.18);
+  border-radius: 18px;
+  padding: 6px;
+  display: block;
 }
 
 #dashboardMascotImg:hover {
-  transform: scale(1.05); /* Slight zoom when hovering to show he's clickable */
+  transform: scale(1.07) translateY(-3px);
 }
 
-/* The Speech Bubble - Moved to the RIGHT */
+/* Speech bubble — appears to the right of the mascot, arrow points left toward it */
 .mascot-speech-bubble {
   position: absolute;
-  top: 20%;             /* Vertically center relative to mascot */
-  left: 100%;           /* Place it directly to the right of the mascot */
-  transform: translateY(-50%) translateX(-10px); /* Start slightly left for slide-out effect */
-  margin-left: 15px;    /* Space so the bubble doesn't touch the image */
-  
-  background: white;
-  border: 2px solid #e0e0e0;
-  border-radius: 16px;
-  padding: 12px 20px;
-  font-size: 14px;
-  font-weight: bold;
-  color: #333;
-  
-  /* Use max-content so it hugs the text, but wrap to a new line if it gets too long */
+  left: calc(100% + 20px);
+  top: 0;
+  transform: translateY(-20%) scale(0.88) translateX(-4px);
+  transform-origin: left center;
+
+  background: #ffffff;
+  border: 1.5px solid rgba(31, 107, 70, 0.18);
+  border-radius: 14px;
+  padding: 8px 13px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.45;
+
   width: max-content;
-  max-width: 220px;     
-  
+  max-width: 180px;
+
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   z-index: 10;
+  white-space: normal;
+  text-align: left;
 }
 
-/* The inner white triangle pointing LEFT towards the mascot */
+/* Arrow pointing left toward the mascot */
 .mascot-speech-bubble::after {
   content: "";
   position: absolute;
-  top: 50%;
-  right: 100%;          /* Stick it to the left edge of the bubble */
-  margin-top: -8px;     /* Vertically center the 8px triangle */
-  border-width: 8px;
-  border-style: solid;
-  border-color: transparent white transparent transparent; /* Pointing Left */
+  left: -12px;
+  top: 45%;
+  transform: translateY(-50%);
+  border: 7px solid transparent;
+  border-right-color: #ffffff;
+  z-index: 1;
 }
 
-/* The outer grey border for the triangle */
+/* Border of the arrow */
 .mascot-speech-bubble::before {
   content: "";
   position: absolute;
-  top: 50%;
-  right: 100%;          
-  margin-top: -10px;    
-  border-width: 10px;
-  border-style: solid;
-  border-color: transparent #e0e0e0 transparent transparent; /* Pointing Left */
+  left: calc(-15px );
+  top: 45%;
+  transform: translateY(-50%);
+  border: 8px solid transparent;
+  /* border-right-color: rgba(31, 107, 70, 0.18); */
   z-index: -1;
 }
 
-/* The class added by JavaScript to show the bubble */
+/* Show state */
 .mascot-speech-bubble.show-bubble {
   opacity: 1;
   visibility: visible;
-  /* Slide gracefully into its final position */
-  transform: translateY(-50%) translateX(0); 
+  transform: scale(1) translateY(0);
+  
+}
+
+/* ── Mobile Override for Dashboard Mascot Speech Bubble (Top-Left) ── */
+@media (max-width: 768px) {
+  .mascot-speech-bubble {
+    /* Move to the left of the mascot */
+    left: auto;
+    right: calc(100% + 15px);
+    
+    /* Anchor to the top */
+    top: -20px;
+    bottom: auto;
+    
+    /* Update animation origin and starting position */
+    transform-origin: right top;
+    transform: translateY(-10px) scale(0.88);
+  }
+
+  /* Reset transform when shown on mobile */
+  .mascot-speech-bubble.show-bubble {
+    transform: scale(1) translateY(0);
+  }
+
+  /* Flip the arrow to point RIGHT (towards the mascot) */
+  .mascot-speech-bubble::after {
+    left: auto;
+    right: -13px; /* Stick out to the right */
+    top: 30px; /* Position near the top of the bubble */
+    bottom: auto;
+    transform: translateY(-50%);
+    
+    /* Clear the right border color and apply to the left */
+    border-color: transparent;
+    border-left-color: #ffffff;
+  }
+
+  /* Adjust the border/shadow layer of the arrow */
+  .mascot-speech-bubble::before {
+    left: auto;
+    right: -15px;
+    top: 30px;
+    bottom: auto;
+    transform: translateY(-50%);
+    border-color: transparent;
+    /* Uncomment below if you decide to use the border ring */
+    /* border-left-color: rgba(31, 107, 70, 0.18); */
+  }
 }

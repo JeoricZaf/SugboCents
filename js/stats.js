@@ -1,33 +1,11 @@
 (function () {
-  // ── Color palette ─────────────────────────────────────────
-  var CATEGORY_COLORS = {
-    "transport": "#d8efe2",
-    "food": "#ffedd5",
-    "groceries": "#d1fae5",
-    "education": "#f3e8ff",
-    "shopping": "#fce7f3",
-    "health": "#fee2e2",
-    "entertainment": "#fef3c7",
-    "utilities": "#dbeafe",
-    "personal_care": "#ede9fe",
-    "others": "#e2e8f0"
-  };
+  // Only run on the stats page
+  if (document.body.dataset.page !== "stats") { return; }
 
-  var DEFAULT_COLORS = [
-    "#d8efe2", "#ffedd5", "#d1fae5", "#f3e8ff",
-    "#fce7f3", "#fee2e2", "#fef3c7", "#dbeafe",
-    "#ede9fe", "#e2e8f0"
-  ];
+  // State
+  var activePeriod = "month"; // Default period
 
-  // ── helpers ─────────────────────────────────────────────
-  function formatPhp(amount) {
-    return new Intl.NumberFormat("en-PH", {
-      style: "currency",
-      currency: "PHP",
-      minimumFractionDigits: 2
-    }).format(Number(amount || 0));
-  }
-
+  // ── Helpers ───────────────────────────────────────────────
   function escapeHtml(str) {
     return String(str || "")
       .replace(/&/g, "&amp;")
@@ -36,406 +14,375 @@
       .replace(/"/g, "&quot;");
   }
 
-  function capitalizeFirstLetter(str) {
-    return String(str || "").charAt(0).toUpperCase() + String(str || "").slice(1);
-  }
-
-  function getWeekStartAndEnd() {
-    var now = new Date();
-    var day = now.getDay();
-    var startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - ((day + 6) % 7));
-    startOfWeek.setHours(0, 0, 0, 0);
-    var endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 7);
-    endOfWeek.setHours(0, 0, 0, 0);
-    return { start: startOfWeek, end: endOfWeek };
-  }
-
-  function getPreviousWeekStartAndEnd() {
-    var current = getWeekStartAndEnd();
-    var prevStart = new Date(current.start);
-    prevStart.setDate(prevStart.getDate() - 7);
-    var prevEnd = new Date(current.start);
-    prevEnd.setHours(0, 0, 0, 0);
-    return { start: prevStart, end: prevEnd };
-  }
-
-  function getDayName(index) {
-    var days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return days[index];
-  }
-
-  // ── Get expenses for a date range ─────────────────────────
-  function getExpensesForRange(startDate, endDate) {
-    if (!window.StorageAPI) {
-      return [];
-    }
-    var user = window.StorageAPI.getCurrentUser();
-    if (!user || !Array.isArray(user.expenses)) {
-      return [];
-    }
-    return user.expenses.filter(function (exp) {
-      var d = new Date(exp.timestamp);
-      return d >= startDate && d < endDate;
-    });
-  }
-
-  // ── Aggregate by category ────────────────────────────────
-  function aggregateByCategory(expenses) {
-    var agg = {};
-    expenses.forEach(function (exp) {
-      var cat = exp.category || "others";
-      if (!agg[cat]) {
-        agg[cat] = 0;
-      }
-      agg[cat] += Number(exp.amount) || 0;
-    });
-    return agg;
-  }
-
-  // ── Aggregate by day of week ─────────────────────────────
-  function aggregateByDay(expenses, weekStart) {
-    var dailyTotals = [0, 0, 0, 0, 0, 0, 0]; // Mon-Sun
-    expenses.forEach(function (exp) {
-      var d = new Date(exp.timestamp);
-      var daysFromStart = Math.floor((d - weekStart) / (1000 * 60 * 60 * 24));
-      if (daysFromStart >= 0 && daysFromStart < 7) {
-        dailyTotals[daysFromStart] += Number(exp.amount) || 0;
-      }
-    });
-    return dailyTotals;
-  }
-
-  // ── Render Summary Metrics ───────────────────────────────
-  function renderSummaryMetrics() {
-    var metricsContainer = document.getElementById("summaryMetricsContainer");
-    if (!metricsContainer) return;
-
-    if (!window.StorageAPI) {
-      metricsContainer.innerHTML = '<p>Loading...</p>';
-      return;
-    }
-
-    var weekRange = getWeekStartAndEnd();
-    var thisWeekExpenses = getExpensesForRange(weekRange.start, weekRange.end);
-    var budget = window.StorageAPI.getWeeklyBudget();
-    var totalSpent = thisWeekExpenses.reduce(function (sum, exp) {
-      return sum + (Number(exp.amount) || 0);
-    }, 0);
-    var remaining = budget - totalSpent;
-    var pctSpent = budget > 0 ? Math.round((totalSpent / budget) * 100) : 0;
-    
-    // Calculate days left in week
-    var now = new Date();
-    var endOfWeek = new Date(weekRange.end);
-    var daysLeft = Math.ceil((endOfWeek - now) / (1000 * 60 * 60 * 24));
-    daysLeft = Math.max(0, daysLeft);
-
-    var avgDaily = thisWeekExpenses.length > 0 ? totalSpent / 7 : 0;
-
-    var html = '<div class="metrics-grid">' +
-      '<div class="metric-card">' +
-      '<div class="metric-label">This Week Total</div>' +
-      '<div class="metric-value">' + formatPhp(totalSpent) + '</div>' +
-      '</div>' +
-      '<div class="metric-card">' +
-      '<div class="metric-label">Budget Remaining</div>' +
-      '<div class="metric-value ' + (remaining >= 0 ? 'positive' : 'negative') + '">' + formatPhp(Math.max(0, remaining)) + '</div>' +
-      '</div>' +
-      '<div class="metric-card">' +
-      '<div class="metric-label">Days Left</div>' +
-      '<div class="metric-value">' + daysLeft + ' days</div>' +
-      '</div>' +
-      '<div class="metric-card">' +
-      '<div class="metric-label">Daily Average</div>' +
-      '<div class="metric-value">' + formatPhp(avgDaily) + '</div>' +
-      '</div>' +
-      '</div>';
-
-    metricsContainer.innerHTML = html;
-  }
-
-  // ── Render Progress Donut Chart ──────────────────────────
-  function renderProgressDonut() {
-    var container = document.getElementById("progressDonutContainer");
-    if (!container) return;
-
-    if (!window.StorageAPI) {
-      container.innerHTML = '<p>Loading...</p>';
-      return;
-    }
-
-    var summary = window.StorageAPI.getBudgetSummary();
-    var pct = summary.percentageSpent || 0;
-    var budget = summary.weeklyBudget || 0;
-    var spent = summary.totalSpentThisWeek || 0;
-    var remaining = summary.remaining || 0;
-
-    // Determine color based on percentage
-    var fillColor = "#86efac"; // green
-    if (pct > 70 && pct <= 90) fillColor = "#fde68a"; // amber
-    if (pct > 90) fillColor = "#fca5a5"; // red
-
-    var radius = 45;
-    var circumference = 2 * Math.PI * radius;
-    var offset = circumference * (1 - pct / 100);
-
-    var html = '<div class="donut-wrapper">' +
-      '<svg viewBox="0 0 120 120" class="donut-svg">' +
-      '<circle cx="60" cy="60" r="45" fill="none" stroke="#e5e7eb" stroke-width="8" />' +
-      '<circle cx="60" cy="60" r="45" fill="none" stroke="' + fillColor + '" stroke-width="8" ' +
-      'stroke-dasharray="' + circumference + '" ' +
-      'stroke-dashoffset="' + offset + '" ' +
-      'stroke-linecap="round" style="transform: rotate(-90deg); transform-origin: 60px 60px; transition: stroke-dashoffset 0.5s ease;" />' +
-      '<text x="60" y="55" text-anchor="middle" font-size="18" font-weight="700" fill="#1f6b46">' + pct + '%</text>' +
-      '<text x="60" y="72" text-anchor="middle" font-size="11" fill="#64748b">Spent</text>' +
-      '</svg>' +
-      '<div class="donut-info">' +
-      '<div class="info-row">' +
-      '<span class="info-label">Spent:</span> <span class="info-value">' + formatPhp(spent) + '</span>' +
-      '</div>' +
-      '<div class="info-row">' +
-      '<span class="info-label">Remaining:</span> <span class="info-value ' + (remaining >= 0 ? 'positive' : 'negative') + '">' + formatPhp(Math.max(0, remaining)) + '</span>' +
-      '</div>' +
-      '<div class="info-row">' +
-      '<span class="info-label">Budget:</span> <span class="info-value">' + formatPhp(budget) + '</span>' +
-      '</div>' +
-      '</div>' +
-      '</div>';
-
-    container.innerHTML = html;
-  }
-
-  // ── Render Category Breakdown ────────────────────────────
-  function renderCategoryBreakdown() {
-    var container = document.getElementById("categoryBreakdownContainer");
-    if (!container) return;
-
-    if (!window.StorageAPI) {
-      container.innerHTML = '<p>Loading...</p>';
-      return;
-    }
-
-    var weekRange = getWeekStartAndEnd();
-    var expenses = getExpensesForRange(weekRange.start, weekRange.end);
-    var byCategory = aggregateByCategory(expenses);
-    var categories = Object.keys(byCategory).sort(function (a, b) {
-      return byCategory[b] - byCategory[a];
-    });
-
-    if (categories.length === 0) {
-      container.innerHTML = '<div class="empty-state"><span class="material-icons">pie_chart</span> No expenses this week</div>';
-      return;
-    }
-
-    var total = Object.keys(byCategory).reduce(function (sum, cat) {
-      return sum + byCategory[cat];
-    }, 0);
-
-    var budget = window.StorageAPI.getWeeklyBudget() || 0;
-
-    var html = '<div class="category-list">';
-    categories.forEach(function (cat) {
-      var amount = byCategory[cat];
-      var pctOfTotal = total > 0 ? Math.round((amount / total) * 100) : 0;
-      var pctOfBudget = budget > 0 ? Math.round((amount / budget) * 100) : 0;
-      var color = CATEGORY_COLORS[cat] || DEFAULT_COLORS[categories.indexOf(cat) % DEFAULT_COLORS.length];
-
-      html += '<div class="category-item">' +
-        '<div class="category-bar-wrapper">' +
-        '<div class="category-color-dot" style="background: ' + color + '"></div>' +
-        '<div class="category-info">' +
-        '<div class="category-name">' + escapeHtml(capitalizeFirstLetter(cat)) + '</div>' +
-        '<div class="category-breakdown">' +
-        '<span class="breakdown-amount">' + formatPhp(amount) + '</span>' +
-        '<span class="breakdown-pct">' + pctOfTotal + '% of spending</span>' +
-        '</div>' +
-        '</div>' +
-        '</div>' +
-        '<div class="category-bar">' +
-        '<div class="category-bar-fill" style="width: ' + pctOfTotal + '%; background: ' + color + '"></div>' +
-        '</div>' +
-        '</div>';
-    });
-    html += '</div>';
-
-    container.innerHTML = html;
-  }
-
-  // ── Render Daily Spending Trend ──────────────────────────
-  function renderDailyTrend() {
-    var container = document.getElementById("dailyTrendContainer");
-    if (!container) return;
-
-    if (!window.StorageAPI) {
-      container.innerHTML = '<p>Loading...</p>';
-      return;
-    }
-
-    var weekRange = getWeekStartAndEnd();
-    var expenses = getExpensesForRange(weekRange.start, weekRange.end);
-    var dailyTotals = aggregateByDay(expenses, weekRange.start);
-
-    var maxDaily = Math.max.apply(Math, dailyTotals);
-    maxDaily = Math.max(maxDaily, 1);
-
-    var avgDaily = dailyTotals.reduce(function (sum, val) {
-      return sum + val;
-    }, 0) / 7;
-
-    var highestDay = 0;
-    var highestAmount = 0;
-    dailyTotals.forEach(function (amount, idx) {
-      if (amount > highestAmount) {
-        highestAmount = amount;
-        highestDay = idx;
-      }
-    });
-
-    // Build sparkline bars
-    var svgHeight = 120;
-    var svgWidth = 280;
-    var barsHtml = '';
-
-    for (var i = 0; i < 7; i++) {
-      var pctHeight = (dailyTotals[i] / maxDaily) * 100;
-      var barHeight = Math.max(3, (pctHeight / 100) * 90);
-      var barY = 110 - barHeight;
-      var barX = 10 + (i * 38);
-      var barColor = i === highestDay ? "#1f6b46" : "#86efac";
-
-      barsHtml += '<rect x="' + barX + '" y="' + barY + '" width="30" height="' + barHeight + '" fill="' + barColor + '" rx="2" />' +
-        '<text x="' + (barX + 15) + '" y="' + (110 + 14) + '" text-anchor="middle" font-size="9" font-weight="600" fill="#64748b">' +
-        getDayName(i) + '</text>';
-    }
-
-    var html = '<div class="trend-wrapper">' +
-      '<svg viewBox="0 0 280 130" class="trend-svg" preserveAspectRatio="xMidYMid meet">' +
-      barsHtml +
-      '</svg>' +
-      '<div class="trend-stats">' +
-      '<div class="trend-stat">' +
-      '<span class="stat-label">Daily Average:</span>' +
-      '<span class="stat-value">' + formatPhp(avgDaily) + '</span>' +
-      '</div>' +
-      '<div class="trend-stat">' +
-      '<span class="stat-label">Highest Day:</span>' +
-      '<span class="stat-value">' + getDayName(highestDay) + ' (' + formatPhp(highestAmount) + ')</span>' +
-      '</div>' +
-      '</div>' +
-      '</div>';
-
-    container.innerHTML = html;
-  }
-
-  // ── Render Week-over-Week Comparison ─────────────────────
-  function renderWeekComparison() {
-    var container = document.getElementById("weekComparisonContainer");
-    if (!container) return;
-
-    if (!window.StorageAPI) {
-      container.innerHTML = '<p>Loading...</p>';
-      return;
-    }
-
-    var thisWeek = getWeekStartAndEnd();
-    var lastWeek = getPreviousWeekStartAndEnd();
-
-    var thisWeekExpenses = getExpensesForRange(thisWeek.start, thisWeek.end);
-    var lastWeekExpenses = getExpensesForRange(lastWeek.start, lastWeek.end);
-
-    var thisWeekTotal = thisWeekExpenses.reduce(function (sum, exp) {
-      return sum + (Number(exp.amount) || 0);
-    }, 0);
-
-    var lastWeekTotal = lastWeekExpenses.reduce(function (sum, exp) {
-      return sum + (Number(exp.amount) || 0);
-    }, 0);
-
-    var delta = thisWeekTotal - lastWeekTotal;
-    var deltaPct = lastWeekTotal > 0 ? Math.round((delta / lastWeekTotal) * 100) : 0;
-    var trendLabel = delta <= 0 ? "less" : "more";
-    var trendClass = delta <= 0 ? "positive" : "negative";
-    var trendColor = delta <= 0 ? "#10b981" : "#ef4444";
-    var trendIcon = delta <= 0 ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="' + trendColor + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>' : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="' + trendColor + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>';
-
-    // Calculate bar heights - max height will be for the larger amount
-    var maxAmount = Math.max(thisWeekTotal, lastWeekTotal) || 1;
-    var barHeight = 100;
-    var thisWeekHeight = (thisWeekTotal / maxAmount) * barHeight;
-    var lastWeekHeight = (lastWeekTotal / maxAmount) * barHeight;
-
-    // SVG dimensions with more headroom for text
-    var svgWidth = 280;
-    var svgHeight = 240;
-    var barWidth = 50;
-    var gap = 30;
-    var chartBottomY = 160;
-    var topPadding = 20;
-
-    // Calculate X positions for centered bars
-    var totalBarsWidth = (barWidth * 2) + gap;
-    var centerOffset = (svgWidth - totalBarsWidth) / 2;
-    var thisWeekX = centerOffset;
-    var lastWeekX = thisWeekX + barWidth + gap;
-
-    var html = '<div class="week-comparison-wrapper">' +
-      '<svg class="week-comparison-svg" viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '" preserveAspectRatio="xMidYMid meet">' +
-      '<rect x="' + thisWeekX + '" y="' + (chartBottomY - thisWeekHeight) + '" width="' + barWidth + '" height="' + thisWeekHeight + '" fill="#d1fae5" stroke="#10b981" stroke-width="1.5" rx="4" />' +
-      '<rect x="' + lastWeekX + '" y="' + (chartBottomY - lastWeekHeight) + '" width="' + barWidth + '" height="' + lastWeekHeight + '" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5" rx="4" />' +
-      '<text x="' + (thisWeekX + barWidth / 2) + '" y="' + (chartBottomY + 25) + '" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">This Week</text>' +
-      '<text x="' + (lastWeekX + barWidth / 2) + '" y="' + (chartBottomY + 25) + '" text-anchor="middle" font-size="11" font-weight="600" fill="#64748b">Last Week</text>' +
-      '<text x="' + (thisWeekX + barWidth / 2) + '" y="' + Math.max(topPadding + 14, chartBottomY - thisWeekHeight - 6) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#10b981">' + formatPhp(thisWeekTotal) + '</text>' +
-      '<text x="' + (lastWeekX + barWidth / 2) + '" y="' + Math.max(topPadding + 14, chartBottomY - lastWeekHeight - 6) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#ec4899">' + formatPhp(lastWeekTotal) + '</text>' +
-      '</svg>' +
-      '<div class="week-comparison-delta ' + trendClass + '">' +
-      '<div style="display: flex; align-items: center; gap: 0.5rem;">' +
-      '<div style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;">' + trendIcon + '</div>' +
-      '<div>' +
-      '<div class="delta-amount">' + (delta > 0 ? "+" : "") + formatPhp(Math.abs(delta)) + '</div>' +
-      '<div class="delta-percent">' + (deltaPct > 0 ? "+" : "") + deltaPct + '% ' + trendLabel + ' than last week</div>' +
-      '</div>' +
-      '</div>' +
-      '</div>' +
-      '</div>';
-
-    container.innerHTML = html;
-  }
-
-  // ── Public API ───────────────────────────────────────────
-  window.StatsPage = {
-    init: function () {
-      renderSummaryMetrics();
-      renderProgressDonut();
-      renderCategoryBreakdown();
-      renderDailyTrend();
-      renderWeekComparison();
-
-      // Listen for storage updates
-      window.addEventListener("sugbocents:synced", function () {
-        renderSummaryMetrics();
-        renderProgressDonut();
-        renderCategoryBreakdown();
-        renderDailyTrend();
-        renderWeekComparison();
-      });
-
-      window.addEventListener("sugbocents:expenseAdded", function () {
-        renderSummaryMetrics();
-        renderProgressDonut();
-        renderCategoryBreakdown();
-        renderDailyTrend();
-        renderWeekComparison();
-      });
-    }
+  // Fallback for formatPhp if it's not defined globally
+  var formatPhp = window.formatPhp || function (amt) {
+    return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(amt || 0);
   };
 
-  // ── Auto-init on DOMContentLoaded ──────────────────────
-  document.addEventListener("DOMContentLoaded", function () {
-    if (document.getElementById("summaryMetricsContainer")) {
-      window.StatsPage.init();
+  // ── Period & Filtering ────────────────────────────────────
+  function getPeriodStart(period) {
+    var now = new Date();
+    now.setHours(0, 0, 0, 0); // Normalize to start of day
+    
+    if (period === "week") {
+      var day = now.getDay();
+      var diff = (day + 6) % 7; // Monday start
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
     }
+    if (period === "month") {
+      return new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+    return null; // "all"
+  }
+
+  function filterByPeriod(expenses) {
+    var start = getPeriodStart(activePeriod);
+    if (!start) { return expenses; }
+    return expenses.filter(function (e) {
+      return new Date(e.timestamp) >= start;
+    });
+  }
+
+  function wirePeriodChips() {
+    var chips = document.querySelectorAll("[data-stats-period]");
+    chips.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        activePeriod = btn.getAttribute("data-stats-period");
+        chips.forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        renderAll();
+      });
+    });
+  }
+
+  // ── Stat Cards ────────────────────────────────────────────
+  function renderStatCards(expenses) {
+    var totalEl  = document.getElementById("statsTotal");
+    var countEl  = document.getElementById("statsCount");
+    var topCatEl = document.getElementById("statsTopCat");
+    
+    if (!totalEl || !countEl || !topCatEl) { return; }
+
+    var total = expenses.reduce(function (s, e) { return s + Number(e.amount || 0); }, 0);
+    totalEl.textContent = formatPhp(total);
+    countEl.textContent = String(expenses.length);
+
+    // Find top category by spend
+    var catTotals = {};
+    expenses.forEach(function (e) {
+      var key = e.category || "others";
+      catTotals[key] = (catTotals[key] || 0) + Number(e.amount || 0);
+    });
+
+    var topCat = null;
+    var topAmt = 0;
+    Object.keys(catTotals).forEach(function (k) {
+      if (catTotals[k] > topAmt) { 
+        topAmt = catTotals[k]; 
+        topCat = k; 
+      }
+    });
+
+    if (topCat) {
+      var cats = window.StorageAPI && window.StorageAPI.getExpenseCategories ? window.StorageAPI.getExpenseCategories() :[];
+      // Use fallback for older browsers that don't support .find
+      var meta = cats.filter(function (c) { return c.id === topCat; })[0];
+      topCatEl.textContent = meta ? (meta.emoji + " " + meta.label) : topCat;
+    } else {
+      topCatEl.textContent = "—";
+    }
+  }
+
+  // ── Category Breakdown ────────────────────────────────────
+  function renderCategoryBreakdown(expenses) {
+    var container = document.getElementById("categoryBreakdown");
+    if (!container) { return; }
+
+    if (!expenses.length) {
+      container.innerHTML = '<p class="p-4 text-sm text-slate-400">No data for this period.</p>';
+      return;
+    }
+
+    var cats = window.StorageAPI && window.StorageAPI.getExpenseCategories
+      ? window.StorageAPI.getExpenseCategories()
+      :[];
+      
+    var catMap = {};
+    cats.forEach(function (c) { catMap[c.id] = c; });
+
+    // Tally amounts per category key
+    var catTotals = {};
+    var catOrder  =[];
+    expenses.forEach(function (e) {
+      var key = e.category || "others";
+      if (!catTotals[key]) {
+        catTotals[key] = 0;
+        catOrder.push(key);
+      }
+      catTotals[key] += Number(e.amount || 0);
+    });
+
+    // Sort descending by amount
+    catOrder.sort(function (a, b) { return catTotals[b] - catTotals[a]; });
+    var grandTotal = Object.keys(catTotals).reduce(function (s, k) { return s + catTotals[k]; }, 0);
+
+    container.innerHTML = "";
+    catOrder.forEach(function (key) {
+      var meta = catMap[key] || { id: key, label: key, emoji: "", color: "#e2e8f0" };
+      var amt  = catTotals[key];
+      var pct  = grandTotal > 0 ? Math.round((amt / grandTotal) * 100) : 0;
+
+      var row = document.createElement("div");
+      row.className = "cat-breakdown-row";
+
+      var chip = document.createElement("span");
+      chip.className = "cat-breakdown-chip";
+      chip.style.background = meta.color || "#e2e8f0";
+      chip.textContent = meta.emoji || (meta.label || key).slice(0, 2).toUpperCase();
+
+      var info = document.createElement("div");
+      info.className = "cat-breakdown-info";
+
+      var labelRow = document.createElement("div");
+      labelRow.className = "cat-breakdown-label-row";
+      labelRow.innerHTML =
+        '<span class="cat-breakdown-label">' + escapeHtml(meta.label || key) + '</span>' +
+        '<span class="cat-breakdown-amount">' + escapeHtml(formatPhp(amt)) + '</span>';
+
+      var track = document.createElement("div");
+      track.className = "cat-breakdown-bar-track";
+      
+      var fill = document.createElement("div");
+      fill.className = "cat-breakdown-bar-fill";
+      fill.style.width = pct + "%";
+      fill.style.background = meta.color || "var(--brand-700)";
+      
+      track.appendChild(fill);
+      info.appendChild(labelRow);
+      info.appendChild(track);
+      row.appendChild(chip);
+      row.appendChild(info);
+      
+      container.appendChild(row);
+    });
+  }
+
+  // ── XP Widgets ────────────────────────────────────────────
+  function getStreakClass(streak) {
+    if (streak === 0) return "streak-chip--cold";
+    if (streak >= 7)  return "streak-chip--hot streak-chip--week";
+    if (streak >= 3)  return "streak-chip--hot";
+    return "streak-chip--warm";
+  }
+
+  function renderXpWidget() {
+    if (!window.StorageAPI || !window.StorageAPI.getXpInfo) { return; }
+    var info   = window.StorageAPI.getXpInfo();
+    var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
+    
+    var levelEl = document.getElementById("xpLevel");
+    var barEl   = document.getElementById("xpBar");
+    var trackEl = document.getElementById("xpBarTrack");
+    var valueEl = document.getElementById("xpValue");
+    var nextEl  = document.getElementById("xpNextLabel");
+    var chipEl  = document.getElementById("xpStreakChip");
+
+    if (levelEl) {
+      levelEl.innerHTML = '<i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i> Lv. ' + info.level + ' &mdash; ' + info.levelName;
+    }
+    if (barEl)   { barEl.style.width = info.progressPct + "%"; }
+    if (trackEl) { trackEl.setAttribute("aria-valuenow", info.progressPct); }
+    if (valueEl) { valueEl.textContent = info.xp + " XP"; }
+    if (nextEl) {
+      var remaining = info.xpForNext - info.xp;
+      nextEl.textContent = info.progressPct >= 100 ? "Max level!" : remaining + " XP to next level";
+    }
+    if (chipEl) {
+      chipEl.className = "streak-chip " + getStreakClass(streak);
+      chipEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + (streak === 0 ? "No streak yet" : streak + "-day streak");
+    }
+  }
+
+  function renderXpMiniBar() {
+    if (!window.StorageAPI || !window.StorageAPI.getXpInfo) { return; }
+    var info   = window.StorageAPI.getXpInfo();
+    var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
+    
+    var levelEl  = document.getElementById("xpMiniLevel");
+    var fillEl   = document.getElementById("xpMiniFill");
+    var trackEl  = document.getElementById("xpMiniTrack");
+    var streakEl = document.getElementById("xpMiniStreak");
+
+    if (levelEl) {
+      levelEl.innerHTML = '<i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i> Lv. ' + info.level + ' &mdash; ' + info.levelName;
+    }
+    if (fillEl)  { fillEl.style.width = info.progressPct + "%"; }
+    if (trackEl) { trackEl.setAttribute("aria-valuenow", info.progressPct); }
+    if (streakEl) {
+      var cls = "xp-mini-streak " + getStreakClass(streak).replace(/streak-chip/g, "xp-mini-streak");
+      streakEl.className = cls.trim();
+      streakEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + (streak === 0 ? "0" : streak);
+    }
+  }
+
+  // ── Badge Grid ────────────────────────────────────────────
+  var BADGE_CATEGORY_ORDER =["Logging", "Streak", "Budget", "Misc", "Goals", "XP"];
+
+  function badgeProgressLabel(badge) {
+    switch (badge.type) {
+      case "expense_count":
+      case "streak":
+      case "goal_count":
+      case "level":
+        return badge.progress + " / " + badge.target;
+      case "time_of_day":
+        return badge.id === "early-bird" ? "Log before 7 AM" : "Log after 10 PM";
+      case "budget_week":
+        return "Finish week under budget";
+      case "budget_frugal":
+        return "Spend \u226450% of budget";
+      default:
+        return "Locked";
+    }
+  }
+
+  function badgeProgressPct(badge) {
+    if (badge.target && badge.target > 0 &&["expense_count", "streak", "goal_count", "level"].indexOf(badge.type) !== -1) {
+      return Math.min(100, Math.round((badge.progress / badge.target) * 100));
+    }
+    return 0;
+  }
+
+  function renderBadgeGrid() {
+    var gridEl     = document.getElementById("badgeGrid");
+    var progressEl = document.getElementById("badgeProgress");
+    if (!gridEl || !window.StorageAPI) { return; }
+
+    var allBadges    = window.StorageAPI.getAchievements ? window.StorageAPI.getAchievements() :[];
+    var claimedCount = allBadges.filter(function (b) { return b.claimed; }).length;
+    
+    if (progressEl) {
+      progressEl.textContent = claimedCount + " / " + allBadges.length + " badges";
+    }
+
+    var grouped = {};
+    BADGE_CATEGORY_ORDER.forEach(function (cat) { grouped[cat] =[]; });
+    
+    allBadges.forEach(function (b) {
+      var cat = b.category || "Misc";
+      if (!grouped[cat]) { grouped[cat] = []; }
+      grouped[cat].push(b);
+    });
+
+    var html = "";
+    BADGE_CATEGORY_ORDER.forEach(function (cat) {
+      var group = grouped[cat];
+      if (!group || group.length === 0) { return; }
+      
+      html += '<div class="badge-category-group">' +
+              '<h3 class="badge-category-label">' + escapeHtml(cat) + '</h3>' +
+              '<div class="badge-grid">';
+
+      group.forEach(function (badge) {
+        if (badge.claimed) {
+          html += '<div class="badge-card badge-card--claimed">' +
+                    '<div class="badge-icon-wrap badge-icon-wrap--claimed">' +
+                      '<i class="bi ' + escapeHtml(badge.icon) + '" aria-hidden="true"></i>' +
+                    '</div>' +
+                    '<p class="badge-name">' + escapeHtml(badge.name) + '</p>' +
+                    '<p class="badge-desc">' + escapeHtml(badge.description) + '</p>' +
+                    '<p class="badge-status badge-status--claimed">' +
+                      '<i class="bi bi-check-circle-fill" aria-hidden="true"></i> Claimed' +
+                    '</p>' +
+                  '</div>';
+        } else if (badge.unlockable) {
+          html += '<div class="badge-card badge-card--unlockable">' +
+                    '<div class="badge-icon-wrap badge-icon-wrap--unlockable">' +
+                      '<i class="bi ' + escapeHtml(badge.icon) + '" aria-hidden="true"></i>' +
+                    '</div>' +
+                    '<p class="badge-name">' + escapeHtml(badge.name) + '</p>' +
+                    '<p class="badge-desc">' + escapeHtml(badge.description) + '</p>' +
+                    '<p class="badge-status badge-status--ready">' +
+                      '<i class="bi bi-stars" aria-hidden="true"></i> Ready to claim!' +
+                    '</p>' +
+                    '<button type="button" class="badge-claim-btn" data-badge-id="' + escapeHtml(badge.id) + '">' +
+                      'Claim +15 XP' +
+                    '</button>' +
+                  '</div>';
+        } else {
+          var pct    = badgeProgressPct(badge);
+          var label  = badgeProgressLabel(badge);
+          var hasBar = pct > 0;
+          
+          html += '<div class="badge-card badge-card--locked">' +
+                    '<div class="badge-icon-wrap badge-icon-wrap--locked">' +
+                      '<i class="bi bi-lock-fill" aria-hidden="true"></i>' +
+                    '</div>' +
+                    '<p class="badge-name badge-name--locked">' + escapeHtml(badge.name) + '</p>' +
+                    '<p class="badge-desc">' + escapeHtml(badge.description) + '</p>';
+          
+          if (hasBar) {
+            html += '<div class="badge-progress-track" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100" aria-label="' + escapeHtml(badge.name) + ' progress">' +
+                      '<div class="badge-progress-fill" style="width:' + pct + '%"></div>' +
+                    '</div>';
+          }
+          
+          html += '<p class="badge-status badge-status--locked">' + escapeHtml(label) + '</p>' +
+                  '</div>';
+        }
+      });
+
+      html += '</div></div>';
+    });
+
+    gridEl.innerHTML = html;
+
+    // Attach Claim Listeners
+    gridEl.querySelectorAll(".badge-claim-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-badge-id");
+        if (!id || !window.StorageAPI.claimAchievement) { return; }
+        
+        var result = window.StorageAPI.claimAchievement(id);
+        if (result.ok) {
+          renderBadgeGrid();
+          renderXpWidget();
+          renderXpMiniBar();
+        }
+      });
+    });
+  }
+
+  // ── Main Render & Wiring ──────────────────────────────────
+  function renderAll() {
+    if (!window.StorageAPI) { return; }
+    
+    // 1. Safely get all expenses (default to empty array if none exist)
+    var all = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() :[];
+    
+    // 2. Filter the expenses based on the active tab (e.g., week, month)
+    var filtered = filterByPeriod(all);
+    
+    // 3. Update the UI components with the filtered data
+    renderStatCards(filtered);
+    renderCategoryBreakdown(filtered);
+  }
+
+  // ── Init ──────────────────────────────────────────────────
+  document.addEventListener("DOMContentLoaded", function () {
+    wirePeriodChips();
+    renderAll();
+    renderXpWidget();
+    renderXpMiniBar();
+    renderBadgeGrid();
+
+    // Re-render everything if the app syncs/updates data in the background
+    window.addEventListener("sugbocents:synced", function () {
+      renderAll();
+      renderXpWidget();
+      renderXpMiniBar();
+      renderBadgeGrid();
+    });
   });
 
-})();
+})(); // <-- Closes the Immediately Invoked Function Expression (IIFE)

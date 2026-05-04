@@ -9,12 +9,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/spending-chart.css" />
   <link rel="stylesheet" href="css/stats.css" />
   <link rel="stylesheet" href="css/mascot.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
   <script>if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");</script>
 </head>
 <body data-page="dashboard" data-protected="true" class="bg-mist min-h-screen antialiased">
@@ -25,7 +26,7 @@
   <aside class="app-sidebar" aria-label="Sidebar navigation">
     <div class="sidebar-header">
       <a href="dashboard.html" class="sidebar-brand" tabindex="-1" aria-hidden="true">
-        <span class="sidebar-brand-mark" aria-hidden="true">SC</span>
+        <span class="sidebar-brand-mark" aria-hidden="true"><img src="assets/images/mascot/mascot-neutral.png" alt="" /></span>
         <span class="sidebar-brand-name">SugboCents</span>
       </a>
       <button id="sidebarToggle" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
@@ -41,13 +42,13 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         <span class="nav-link-label">Activity</span>
       </a>
-      <a href="stats.html" data-nav="stats" class="sidebar-nav-link" data-tooltip="Stats">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        <span class="nav-link-label">Stats</span>
+      <a href="stats.html" data-nav="stats" class="sidebar-nav-link" data-tooltip="Profile">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="nav-link-label">Profile</span>
       </a>
-      <a href="tigom.html" data-nav="tigom" class="sidebar-nav-link" data-tooltip="Tigom">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2z"/><path d="M2 9v1a2 2 0 0 0 2 2h1"/><circle cx="16" cy="11" r="0.5" fill="currentColor"/></svg>
-        <span class="nav-link-label">Tigom</span>
+      <a href="tigom.html" data-nav="tigom" class="sidebar-nav-link" data-tooltip="Goals">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        <span class="nav-link-label">Goals</span>
       </a>
     </nav>
     <a href="settings.html" class="sidebar-user" aria-label="Account settings">
@@ -61,7 +62,7 @@
   </aside>
 
   <div class="app-main">
-  <main class="pb-32 pt-6 px-4">
+  <main class="pb-32 pt-6 px-4 max-w-lg mx-auto">
 
     <!-- greeting header -->
     <header class="page-greeting">
@@ -104,28 +105,38 @@
     <section class="mt-6 grid grid-cols-3 gap-2" aria-label="Week summary">
       <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
         <p class="text-xs text-slate-500 font-medium">Spent</p>
-        <p id="dashQuickSpent" class="text-sm font-bold text-ink">₱0</p>
+        <p id="dashQuickSpent" class="text-sm font-bold text-ink">&#8369;0</p>
       </div>
       <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
         <p class="text-xs text-slate-500 font-medium">Avg Daily</p>
-        <p id="dashQuickAvg" class="text-sm font-bold text-ink">₱0</p>
+        <p id="dashQuickAvg" class="text-sm font-bold text-ink">&#8369;0</p>
       </div>
       <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-200">
         <p class="text-xs text-slate-500 font-medium">Remaining</p>
-        <p id="dashQuickRemaining" class="text-sm font-bold text-emerald-600">₱0</p>
+        <p id="dashQuickRemaining" class="text-sm font-bold text-emerald-600">&#8369;0</p>
       </div>
     </section>
 
-    <!-- save goals streak -->
-    <section class="streak-card card-panel mt-6" aria-label="Save goals streak">
-      <div class="streak-row">
-        <div class="streak-badge">🔥 <span id="streakCount">0</span></div>
-        <div>
-          <p class="text-lg text-ink font-bold">Save goals streak</p>
-          <p id="streakDescription" class="text-xs text-slate-500 mt-1">This will track completed save-goal milestones once enabled.</p>
+    <section class="xp-widget mt-5" aria-label="Progress">
+      <div class="xp-widget-inner">
+        <div class="xp-widget-top">
+          <span id="xpLevel" class="level-badge">
+            <i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i>
+            Lv. 1 — Rookie Saver
+          </span>
+          <span id="xpStreakChip" class="streak-chip streak-chip--cold">
+            <i class="bi bi-fire" aria-hidden="true"></i>
+            No streak yet
+          </span>
+        </div>
+        <div class="xp-bar-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="XP progress">
+          <div id="xpBar" class="xp-bar-fill" style="width:0%"></div>
+        </div>
+        <div class="xp-widget-bottom">
+          <span id="xpValue" class="xp-value-label">0 XP</span>
+          <a href="tigom.html" class="view-all-link">View details <i class="bi bi-arrow-right-short" aria-hidden="true"></i></a>
         </div>
       </div>
-      <p id="streakHint" class="mt-3 text-xs text-slate-500">Track how many times you've successfully reached a save goal in a row.</p>
     </section>
 
     <!-- quick add -->
@@ -153,10 +164,8 @@
         </div>
       </div>
       <div class="card-panel p-4 log-form">
-        <!-- Category picker (rendered by dashboard.js) -->
-        <div id="logCategoryPicker" class="log-category-picker" role="group" aria-label="Select category"></div>
-        <!-- Amount + note row -->
-        <div class="flex gap-2 mt-3">
+        <!-- Amount + note row FIRST -->
+        <div class="flex gap-2">
           <div class="relative flex-1">
             <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold pointer-events-none">₱</span>
             <input id="logExpenseAmount" type="number" min="1" step="1"
@@ -169,6 +178,8 @@
             Log
           </button>
         </div>
+        <!-- Category picker BELOW amount row -->
+        <div id="logCategoryPicker" class="log-category-picker mt-3" role="group" aria-label="Select category"></div>
         <p id="logExpenseError" class="field-error mt-2 hidden"></p>
       </div>
     </section>
@@ -183,7 +194,6 @@
       <p id="emptyExpenseState" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses yet. Log one above, or use Quick add for recurring costs.</p>
     </section>
 
-    <!-- STATS SECTION -->
     <!-- Summary Metrics -->
     <section class="mt-8">
       <div id="summaryMetricsContainer"></div>
@@ -219,8 +229,6 @@
 
       </div><!-- /stats-grid -->
     </section>
-
-
   </main>
   </div><!-- /app-main -->
   </div><!-- /app-layout -->
@@ -235,19 +243,32 @@
       <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <span class="nav-text">Activity</span>
     </a>
-    <a href="stats.html" data-nav="stats" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      <span class="nav-text">Stats</span>
-    </a>
     <a href="tigom.html" data-nav="tigom" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-      <span class="nav-text">Tigom</span>
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+      <span class="nav-text">Goals</span>
+    </a>
+    <a href="stats.html" data-nav="stats" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-text">Profile</span>
     </a>
     <a href="settings.html" data-nav="settings" class="nav-link">
       <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       <span class="nav-text">Settings</span>
     </a>
   </nav>
+
+  <!-- budget-gate modal -->
+  <div id="budgetGateModal" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="budgetGateTitle">
+    <div class="modal-sheet" style="text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:0.5rem" aria-hidden="true">💰</div>
+      <p class="modal-title" id="budgetGateTitle">Set a budget first</p>
+      <p class="text-sm text-slate-500 mt-1 mb-4">You need a weekly budget before you can log expenses.</p>
+      <div class="modal-actions">
+        <button type="button" id="budgetGateCancel" class="btn-outline">Maybe later</button>
+        <a href="settings.html" class="btn-primary">Go to Settings</a>
+      </div>
+    </div>
+  </div>
 
   <!-- quick-add edit/create modal -->
   <div id="qaModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="qaModalTitle">
@@ -258,6 +279,12 @@
         <label class="label" for="qaModalCategory">Name</label>
         <input class="input" type="text" id="qaModalCategory" maxlength="24" placeholder="e.g. Snack, Gym, Bus" />
         <p class="field-error" id="qaModalCategoryError"></p>
+      </div>
+      <div class="modal-field">
+        <label class="label" for="qaModalCategoryId">Category (for stats)</label>
+        <select class="input" id="qaModalCategoryId">
+          <option value="">— pick one —</option>
+        </select>
       </div>
       <div class="modal-field">
         <label class="label" for="qaModalAmount">Default amount (₱)</label>
@@ -272,19 +299,133 @@
     </div>
   </div>
 
+  <div id="dashboardAccountMenu" class="dashboard-account-menu hidden" role="menu" aria-label="Account menu">
+    <a href="settings.html" class="dashboard-account-menu-item" role="menuitem">Profile &amp; Settings</a>
+    <a href="settings.html" class="dashboard-account-menu-item" role="menuitem">Settings</a>
+  </div>
+
   <!-- Undo toast -->
   <div id="undoToast" class="undo-toast hidden" role="status" aria-live="polite">
     <span id="undoToastMsg">Expense removed</span>
     <button type="button" id="undoToastBtn" class="undo-btn">Undo</button>
   </div>
 
+  <!-- Pre-populate dashboard from localStorage to eliminate flash -->
+  <script>
+    (function() {
+      try {
+        var raw = localStorage.getItem("sugbocents.v1");
+        if (!raw) return;
+        var store = JSON.parse(raw);
+        if (!store.session || !store.users) return;
+        
+        var user = null;
+        for (var i = 0; i < store.users.length; i++) {
+          if (store.users[i].id === store.session.userId) {
+            user = store.users[i];
+            break;
+          }
+        }
+        if (!user) return;
+        
+        var greetingTitle = document.getElementById("greetingTitle");
+        if (greetingTitle && user.firstName) {
+          greetingTitle.textContent = "Welcome back, " + user.firstName + "!";
+        }
+        
+        var sidebarName = document.getElementById("sidebarName");
+        if (sidebarName && user.firstName) {
+          sidebarName.textContent = user.firstName + (user.lastName ? " " + user.lastName : "");
+        }
+        var sidebarAvatar = document.getElementById("sidebarAvatar");
+        if (sidebarAvatar) {
+          var initials = (user.firstName || "").charAt(0).toUpperCase() + (user.lastName || "").charAt(0).toUpperCase() || "U";
+          sidebarAvatar.textContent = initials;
+        }
+        
+        var weeklyBudget = user.weeklyBudget || 0;
+        var expenses = user.expenses || [];
+        var now = new Date();
+        var weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+        weekStart.setHours(0, 0, 0, 0);
+        var weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 7);
+        
+        var totalSpent = 0;
+        var avgDaily = 0;
+        if (Array.isArray(expenses)) {
+          var weekExpenses = [];
+          for (var j = 0; j < expenses.length; j++) {
+            var exp = expenses[j];
+            var expDate = new Date(exp.timestamp);
+            if (expDate >= weekStart && expDate < weekEnd) {
+              totalSpent += exp.amount || 0;
+              weekExpenses.push(exp);
+            }
+          }
+          avgDaily = weekExpenses.length > 0 ? totalSpent / 7 : 0;
+        }
+        
+        var remaining = weeklyBudget - totalSpent;
+        var pct = weeklyBudget > 0 ? Math.round((totalSpent / weeklyBudget) * 100) : 0;
+        
+        var formatPhp = function(amt) {
+          return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(amt || 0);
+        };
+        
+        var remainingEl = document.getElementById("remainingAmount");
+        if (remainingEl) remainingEl.textContent = formatPhp(remaining);
+        
+        var summaryEl = document.getElementById("budgetSummary");
+        if (summaryEl) {
+          summaryEl.textContent = weeklyBudget > 0 
+            ? formatPhp(totalSpent) + " of " + formatPhp(weeklyBudget) + " spent"
+            : "Set your weekly budget in Settings.";
+        }
+        
+        var progressEl = document.getElementById("budgetProgress");
+        if (progressEl) progressEl.style.width = Math.min(100, pct) + "%";
+        
+        var labelEl = document.getElementById("progressLabel");
+        if (labelEl) labelEl.textContent = pct + "% spent";
+        
+        var spentEl = document.getElementById("dashQuickSpent");
+        if (spentEl) spentEl.textContent = formatPhp(totalSpent);
+        
+        var avgEl = document.getElementById("dashQuickAvg");
+        if (avgEl) avgEl.textContent = formatPhp(avgDaily);
+        
+        var remainingStatEl = document.getElementById("dashQuickRemaining");
+        if (remainingStatEl) {
+          remainingStatEl.textContent = formatPhp(Math.max(0, remaining));
+          remainingStatEl.className = remaining >= 0 
+            ? "text-sm font-bold text-emerald-600"
+            : "text-sm font-bold text-red-600";
+        }
+      } catch (e) {
+        // Ignore prefill errors; full JS will repopulate.
+      } finally {
+        // Delay adding the class slightly so the browser registers 
+        // the initial opacity: 0 state and triggers the CSS transition.
+        setTimeout(function() {
+          document.body.classList.add("is-ready");
+        }, .001);
+      }
+    })();
+  </script>
+
   <script src="js/firebase-init.js"></script>
   <script src="js/firebase-auth-service.js"></script>
   <script src="js/firestore-service.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/notifications.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/gamification.js"></script>
+  <script src="js/dark-mode.js"></script>
   <script src="js/dashboard.js"></script>
-  <script src="js/stats.js"></script>
+  <script src="js/dashboard-stats.js"></script>
+  <script src="js/chat-ai.js"></script>
   <script src="js/mascot.js"></script>
 </body>
 </html>
