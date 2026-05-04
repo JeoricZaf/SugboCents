@@ -470,25 +470,19 @@ body[data-page="profile"].profile-ready .xp-widget {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
   width: 100%;
   min-height: 5rem;
   padding: 1.25rem 1.3rem;
   border-radius: 1.5rem;
-  background: linear-gradient(180deg, #fef2f2 0%, #fce7e7 100%);
-  color: #b42318;
+  background: radial-gradient(circle at top left, rgba(255, 221, 145, 0.65), rgba(220, 252, 231, 1));
+  color: #14532d;
   font-size: 1.25rem;
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.03em;
-  box-shadow: 0 0 0 6px rgba(252, 231, 231, 0.5),
-              0 0 24px rgba(180, 35, 24, 0.12);
-  border: 1px solid rgba(180, 35, 24, 0.1);
-}
-
-.streak-card .streak-badge i {
-  font-size: 1.8rem;
-  color: #dc2626;
+  box-shadow: 0 0 0 6px rgba(220, 252, 231, 0.24),
+              0 0 30px rgba(251, 146, 60, 0.22);
+  text-shadow: 0 0 10px rgba(251, 146, 60, 0.55);
 }
 
 .streak-card .streak-badge span {
