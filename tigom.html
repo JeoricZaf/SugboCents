@@ -67,13 +67,13 @@
       <div class="xp-mini-bar mt-3" aria-label="Your progress">
         <span class="xp-mini-level" id="xpMiniLevel">
           <i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i>
-          Lv. 1
+          Lv. 1 — Rookie Saver
         </span>
         <div class="xp-mini-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="XP progress" id="xpMiniTrack">
           <div class="xp-mini-fill" id="xpMiniFill" style="width:0%"></div>
         </div>
         <a href="stats.html" class="xp-mini-streak" id="xpMiniStreak" aria-label="View profile">
-          <i class="bi bi-trophy-fill" aria-hidden="true"></i> 0
+          <i class="bi bi-fire" aria-hidden="true"></i> 0
         </a>
       </div>
     </header>
@@ -87,7 +87,12 @@
         <p class="text-xs text-slate-500 mt-0.5">Completed</p>
       </div>
       <div class="card-panel p-3 text-center">
-        <p class="text-2xl font-extrabold text-ink" id="tigomStreakCount">0</p>
+        <div class="goals-streak-inline" aria-hidden="true">
+          <p class="text-2xl font-extrabold text-ink" id="tigomStreakCount">0</p>
+          <span class="goals-streak-icon" aria-hidden="true">
+            <i class="bi bi-trophy-fill" aria-hidden="true"></i>
+          </span>
+        </div>
         <p class="text-xs text-slate-500 mt-0.5">Goals completed streak</p>
       </div>
     </div>

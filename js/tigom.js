@@ -212,12 +212,10 @@
         closeProgressModal();
         renderGoals();
         updateSummaryStats();
+        renderXpMiniBar();
 
-        // increment streak if goal was just completed
-        if (result.goal && result.goal.completed) {
-          if (window.StorageAPI.incrementStreak) {
-            window.StorageAPI.incrementStreak();
-          }
+        if (result.xpAwarded > 0 && window.GamificationUI && window.GamificationUI.showXpPopup) {
+          window.GamificationUI.showXpPopup(result.xpAwarded, saveBtn);
         }
       });
     }
@@ -282,26 +280,21 @@
   }
 
   // ── XP Widget ─────────────────────────────────────────────
-  function renderXpWidget() {
+  function renderXpMiniBar() {
     if (!window.StorageAPI || !window.StorageAPI.getXpInfo) { return; }
-    var info   = window.StorageAPI.getXpInfo();
-    var goals  = window.StorageAPI.getGoals ? window.StorageAPI.getGoals() : [];
-    var streak = window.StorageAPI.getSaveGoalsStreak ? window.StorageAPI.getSaveGoalsStreak(goals) : 0;
-    var levelEl  = document.getElementById("xpLevel");
-    var barEl    = document.getElementById("xpBar");
-    var trackEl  = document.getElementById("xpBarTrack");
-    var valueEl  = document.getElementById("xpValue");
-    var chipEl   = document.getElementById("xpStreakChip");
-    if (levelEl) {
-      levelEl.innerHTML = '<i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i> Lv. ' + info.level + ' — ' + info.levelName;
-    }
-    if (barEl)    { barEl.style.width = info.progressPct + "%"; }
-    if (trackEl)  { trackEl.setAttribute("aria-valuenow", info.progressPct); }
-    if (valueEl)  { valueEl.textContent = info.xp + " XP"; }
-    if (chipEl) {
-      chipEl.className = "streak-chip" + (streak === 0 ? " streak-chip--cold" : streak >= 7 ? " streak-chip--hot streak-chip--week" : streak >= 3 ? " streak-chip--hot" : " streak-chip--warm");
-      chipEl.innerHTML = '<i class="bi bi-trophy-fill" aria-hidden="true"></i> ' + (streak === 0 ? 'No goal streak yet' : streak + '-day goal streak');
-    }
+    var levelEl = document.getElementById("xpMiniLevel");
+    var barEl = document.getElementById("xpMiniFill");
+    var trackEl = document.getElementById("xpMiniTrack");
+    var streakEl = document.getElementById("xpMiniStreak");
+    if (!levelEl || !streakEl || !barEl) { return; }
+    var info = window.StorageAPI.getXpInfo ? window.StorageAPI.getXpInfo() : { xp: 0, level: 1, levelName: "Rookie Saver", progressPct: 0 };
+    var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
+    levelEl.innerHTML = '<i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i> Lv. ' + info.level + ' — ' + info.levelName;
+    barEl.style.width = info.progressPct + "%";
+    if (trackEl) { trackEl.setAttribute("aria-valuenow", info.progressPct); }
+    var cls = "xp-mini-streak" + (streak >= 7 ? " xp-mini-streak--week" : streak >= 3 ? " xp-mini-streak--hot" : streak >= 1 ? " xp-mini-streak--warm" : "");
+    streakEl.className = cls;
+    streakEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + (streak === 0 ? '0' : streak);
   }
 
   // ── Badge Grid ────────────────────────────────────────────
@@ -352,7 +345,7 @@
         if (!id || !window.StorageAPI.claimAchievement) { return; }
         window.StorageAPI.claimAchievement(id);
         renderBadgeGrid();
-        renderXpWidget();
+        renderXpMiniBar();
         updateSummaryStats();
       });
     });

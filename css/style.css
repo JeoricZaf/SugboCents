@@ -483,6 +483,7 @@ body[data-page="profile"].profile-ready .xp-widget {
   box-shadow: 0 0 0 6px rgba(220, 252, 231, 0.24),
               0 0 30px rgba(251, 146, 60, 0.22);
   text-shadow: 0 0 10px rgba(251, 146, 60, 0.55);
+  gap: 0.5rem;
 }
 
 .streak-card .streak-badge span {
@@ -2583,6 +2584,20 @@ body.edit-mode .qa-add-new-btn {
   border-radius: 0.7rem;
 }
 
+.xp-mini-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-decoration: none;
+}
+
+.xp-mini-main:hover .xp-mini-level,
+.xp-mini-main:hover .xp-mini-track {
+  opacity: 0.9;
+}
+
 .xp-mini-level {
   font-size: 0.72rem;
   font-weight: 700;
@@ -2625,6 +2640,30 @@ body.edit-mode .qa-add-new-btn {
 .xp-mini-streak--warm { color: #d97706; }
 .xp-mini-streak--hot  { color: #f97316; }
 .xp-mini-streak--week { color: #ea580c; text-shadow: 0 0 6px rgba(249,115,22,0.4); }
+
+.goals-streak-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.goals-streak-icon i {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.goals-streak-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
 
 /* ═══════════════════════════════════════════════════════════════
    Log Expense — optional date row

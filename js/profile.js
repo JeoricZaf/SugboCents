@@ -16,16 +16,16 @@
       streakEl.classList.remove("streak-chip--cold", "streak-chip--warm", "streak-chip--hot", "streak-chip--week");
       if (streak <= 0) {
         streakEl.classList.add("streak-chip--cold");
-        streakEl.textContent = "🔥 No streak yet";
+        streakEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> No streak yet';
       } else if (streak < 3) {
         streakEl.classList.add("streak-chip--warm");
-        streakEl.textContent = "🔥 " + streak + "-day streak";
+        streakEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + streak + '-day streak';
       } else if (streak < 7) {
         streakEl.classList.add("streak-chip--hot");
-        streakEl.textContent = "🔥 " + streak + "-day streak";
+        streakEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + streak + '-day streak';
       } else {
         streakEl.classList.add("streak-chip--week");
-        streakEl.textContent = "🔥 " + streak + "-day streak";
+        streakEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + streak + '-day streak';
       }
     }
 

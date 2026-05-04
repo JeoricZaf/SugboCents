@@ -1293,6 +1293,8 @@
       deadline: data.deadline ? String(data.deadline) : "",
       createdAt: nowIso(),
       updatedAt: nowIso(),
+      completedAt: null,
+      completionXpAwarded: false,
       completed: false
     };
     if (!Array.isArray(user.goals)) {
@@ -1326,12 +1328,22 @@
     var wasCompleted = !!goal.completed;
     goal.savedAmount = Math.max(0, amount);
     goal.completed = goal.savedAmount >= goal.targetAmount;
+    var xpAwarded = 0;
     if (!wasCompleted && goal.completed) {
       goal.completedAt = nowIso();
+      if (!goal.completionXpAwarded) {
+        xpAwarded = addXpInternal(user, 15, "goal_completion");
+        goal.completionXpAwarded = true;
+      }
+    } else if (!goal.completed) {
+      goal.completedAt = null;
     }
     goal.updatedAt = nowIso();
     saveStore(store);
-    return { ok: true, goal: goal };
+    if (xpAwarded > 0) {
+      syncGamificationFields(store.session.userId, user);
+    }
+    return { ok: true, goal: goal, xpAwarded: xpAwarded };
   }
 
   function deleteGoal(goalId) {
