@@ -3,7 +3,7 @@ html.dark-mode {
   --brand-900: #2d9d70;
   --brand-800: #3bb881;
   --brand-700: #4ac992;
-  --ink-900: #e8e8e8;
+  --ink-900: #d6dcd6;
   --mist: #0d1117;
   --card: #161b22;
   --danger: #f85149;
@@ -12,7 +12,7 @@ html.dark-mode {
 
 html.dark-mode body {
   background-color: #0d1117;
-  color: #e8e8e8;
+  color: var(--ink-900);
 }
 
 html.dark-mode .bg-mist {
@@ -23,13 +23,13 @@ html.dark-mode .bg-white,
 html.dark-mode [class*="bg-slate-"],
 html.dark-mode [class*="bg-gray-"] {
   background-color: var(--card);
-  color: #e8e8e8;
+  color: var(--ink-900);
 }
 
 html.dark-mode .text-slate-900,
 html.dark-mode .text-gray-900,
 html.dark-mode .text-ink {
-  color: #e8e8e8;
+  color: var(--ink-900);
 }
 
 html.dark-mode .text-slate-600,
@@ -64,7 +64,7 @@ html.dark-mode .app-sidebar {
 }
 
 html.dark-mode .sidebar-brand {
-  color: #e8e8e8;
+  color: var(--ink-900);
   border-bottom-color: #262d37;
 }
 
@@ -79,7 +79,7 @@ html.dark-mode .sidebar-nav-link {
 
 html.dark-mode .sidebar-nav-link:hover {
   background-color: #262d37;
-  color: #e8e8e8;
+  color: var(--ink-900);
 }
 
 html.dark-mode .sidebar-nav-link.active {
@@ -89,7 +89,7 @@ html.dark-mode .sidebar-nav-link.active {
 }
 
 html.dark-mode .sidebar-user {
-  color: #e8e8e8;
+  color: var(--ink-900);
   border-top-color: #262d37;
 }
 
@@ -103,7 +103,7 @@ html.dark-mode .sidebar-user-avatar {
 }
 
 html.dark-mode .sidebar-user-name {
-  color: #e8e8e8;
+  color: var(--ink-900);
   font-weight: 500;
 }
 
@@ -118,7 +118,7 @@ html.dark-mode .quick-add-section {
 
 html.dark-mode .quick-add-input {
   background-color: #0d1117;
-  color: #e8e8e8;
+  color: var(--ink-900);
   border-color: #262d37;
 }
 
@@ -135,13 +135,13 @@ html.dark-mode .quick-add-input:focus {
 html.dark-mode .btn-secondary,
 html.dark-mode button:not(.btn-primary) {
   background-color: #262d37;
-  color: #e8e8e8;
+  color: var(--ink-900);
   border-color: #3a4050;
 }
 
 html.dark-mode .btn-secondary:hover {
   background-color: #3a4050;
-  color: #e8e8e8;
+  color: var(--ink-900);
 }
 
 html.dark-mode .budget-card,
@@ -155,6 +155,7 @@ html.dark-mode .card-panel {
   background-color: var(--card);
 }
 
+/* Ensure streak card text is light and readable in dark mode */
 html.dark-mode .streak-card p,
 html.dark-mode .streak-card span,
 html.dark-mode .streak-card div,
@@ -163,11 +164,11 @@ html.dark-mode .streak-card h3,
 html.dark-mode .streak-card h4,
 html.dark-mode .streak-card a,
 html.dark-mode .streak-card * {
-  color: #0f172a !important;
+  color: rgba(230,242,232,0.92) !important;
 }
 
 html.dark-mode #streakCount {
-  color: #0f172a !important;
+  color: rgba(230,242,232,0.98) !important;
   font-weight: 700;
 }
 
@@ -185,7 +186,7 @@ html.dark-mode .expense-row {
 }
 
 html.dark-mode .expense-title {
-  color: #e8e8e8;
+  color: var(--ink-900);
   font-weight: 500;
 }
 
@@ -267,7 +268,7 @@ html.dark-mode .nav-link:hover {
 }
 
 html.dark-mode .page-greeting-title {
-  color: #e8e8e8;
+  color: var(--ink-900);
 }
 
 html.dark-mode .page-greeting-sub {
@@ -383,6 +384,24 @@ html.dark-mode .eyebrow {
   color: var(--brand-700);
 }
 
+/* Keep the settings page dark-mode switch appearance consistent in dark mode.
+   This overrides the generic `button:not(.btn-primary)` dark-mode rule. */
+html.dark-mode .dark-toggle-btn {
+  background: #475569; /* muted slate when off */
+}
+html.dark-mode .dark-toggle-btn::after {
+  background: #ffffff; /* keep knob white */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+html.dark-mode .dark-toggle-btn.dark-on,
+html.dark-mode .dark-toggle-btn[aria-pressed="true"] {
+  background: linear-gradient(135deg, var(--brand-700), var(--brand-800));
+}
+html.dark-mode .dark-toggle-btn.dark-on::after,
+html.dark-mode .dark-toggle-btn[aria-pressed="true"]::after {
+  transform: translateX(1rem);
+}
+
 /* Quick-add button and category styling */
 html.dark-mode .quick-add {
   color: #0f172a !important;
@@ -394,6 +413,211 @@ html.dark-mode .quick-add * {
 
 html.dark-mode .quick-add .text-slate-500 {
   color: #1f2937 !important;
+}
+
+/* Toned color adjustments for dark mode: charts & quick-add */
+html.dark-mode .spending-chart-container {
+  background: var(--card);
+  border: 1px solid rgba(255,255,255,0.03);
+}
+html.dark-mode .spending-chart-canvas-wrapper {
+  background: transparent;
+  border-color: rgba(255,255,255,0.03);
+}
+html.dark-mode .legend-item {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.02);
+}
+html.dark-mode .legend-category {
+  color: #e2e8f0; /* light but muted */
+}
+html.dark-mode .legend-amount {
+  color: rgba(76, 175, 120, 0.75); /* toned green */
+}
+html.dark-mode .chart-bar {
+  background: linear-gradient(90deg, rgba(74,201,146,0.12), rgba(31,107,70,0.14));
+  border: 1px solid rgba(255,255,255,0.02);
+  box-shadow: none;
+}
+html.dark-mode .chart-bar:hover {
+  filter: brightness(1.06);
+}
+
+/* Quick-add button: mute background and reduce saturation of any colored chips */
+html.dark-mode .quick-add {
+  background: rgba(255,255,255,0.02);
+  color: var(--ink-900) !important;
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+}
+html.dark-mode .quick-add:hover {
+  filter: brightness(1.03);
+}
+html.dark-mode .qa-initial {
+  background: linear-gradient(135deg, rgba(43,130,89,0.12), rgba(43,130,89,0.06));
+  color: var(--ink-900);
+}
+
+/* Dim bright quick-add card backgrounds in dark mode without changing their assigned colors */
+html.dark-mode .quick-add {
+  position: relative;
+  overflow: hidden;
+}
+html.dark-mode .quick-add::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.22); /* darkening overlay */
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+html.dark-mode .quick-add > span,
+html.dark-mode .quick-add .qa-initial {
+  position: relative;
+  z-index: 1;
+}
+
+/* Also dim suggestion chips */
+html.dark-mode .qa-suggestion-chip {
+  position: relative;
+  overflow: hidden;
+}
+html.dark-mode .qa-suggestion-chip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.28);
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 0.5rem;
+}
+html.dark-mode .qa-suggestion-chip { color: var(--ink-900); }
+/* When qa-initial appears inside a quick-add card, ensure the abbreviation is dark
+   so it contrasts against the pale card background. */
+html.dark-mode .quick-add .qa-initial,
+html.dark-mode #quickAddGrid .qa-initial {
+  color: rgba(0,0,0,0.65) !important;
+}
+
+/* Expense chips / category chips: desaturate in dark mode */
+html.dark-mode .expense-chip,
+html.dark-mode .legend-color {
+  background: rgba(255,255,255,0.03) !important;
+  color: rgba(255,255,255,0.85) !important;
+}
+
+/* Make any small badges or highlights less saturated */
+html.dark-mode .edit-chip,
+html.dark-mode .streak-card .streak-badge {
+  background: linear-gradient(180deg, rgba(61,184,129,0.08), rgba(43,130,89,0.06));
+  color: #dff7e9;
+  box-shadow: none;
+}
+
+/* Option 2: Low-contrast elevated streak card with subtle inner glow */
+html.dark-mode .streak-card {
+  background: linear-gradient(180deg, #0f1418 0%, #0b1013 100%);
+  border: 1px solid rgba(255,255,255,0.035);
+  box-shadow: 0 12px 34px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+  border-radius: 1.1rem;
+  padding: 1.1rem 1.25rem;
+  transition: box-shadow 200ms ease, transform 160ms ease;
+}
+html.dark-mode .streak-card:hover {
+  box-shadow: 0 18px 46px rgba(0,0,0,0.64), inset 0 1px 0 rgba(255,255,255,0.025);
+  transform: translateY(-2px);
+}
+
+/* Muted, legible text inside streak card */
+html.dark-mode .streak-card .text-ink,
+html.dark-mode .streak-card h2,
+html.dark-mode .streak-card p {
+  color: rgba(230,242,232,0.92); /* slightly muted off-white */
+}
+
+/* Streak badge: tactile but not overpowering */
+html.dark-mode .streak-card .streak-badge {
+  background: linear-gradient(180deg, rgba(61,184,129,0.10), rgba(43,130,89,0.05));
+  color: #e8fbef;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+  border-radius: 1rem;
+}
+html.dark-mode .streak-card .streak-badge .material-icons,
+html.dark-mode .streak-card .streak-badge svg {
+  opacity: 0.98;
+}
+
+/* Make sure the inner description is readable but subdued */
+html.dark-mode .streak-card .streak-card-desc,
+html.dark-mode .streak-card .streak-card-meta {
+  color: rgba(230,242,232,0.65);
+}
+
+/* Slight spacing tweak to match other cards */
+html.dark-mode .streak-card + .streak-card {
+  margin-top: 0.75rem;
+}
+
+/* Remove bright white borders on stats/cards in dark mode */
+html.dark-mode .chart-card,
+html.dark-mode .metric-card,
+html.dark-mode .card-panel,
+html.dark-mode .card,
+html.dark-mode .budget-card {
+  border: none !important;
+  border-color: transparent !important;
+}
+
+/* If a subtle divider is still desired, use a very dark, low-contrast border */
+html.dark-mode .chart-card.subtle-border,
+html.dark-mode .metric-card.subtle-border {
+  border: 1px solid rgba(255,255,255,0.02) !important;
+}
+
+/* Reduce brightness of form inputs and card panels in dark mode */
+html.dark-mode .input,
+html.dark-mode input[type="text"],
+html.dark-mode input[type="number"],
+html.dark-mode textarea,
+html.dark-mode select {
+  background-color: rgba(255,255,255,0.02) !important;
+  border-color: rgba(255,255,255,0.04) !important;
+  color: var(--ink-900) !important;
+}
+html.dark-mode .input::placeholder,
+html.dark-mode input::placeholder,
+html.dark-mode textarea::placeholder {
+  color: rgba(232,232,232,0.45) !important;
+}
+
+/* Make card panels and streak card less bright */
+html.dark-mode .card-panel,
+html.dark-mode .streak-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.015)) !important;
+  border: 1px solid rgba(255,255,255,0.03) !important;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.55) !important;
+}
+
+/* Ensure streak badge doesn't overwhelm */
+html.dark-mode .streak-card .streak-badge {
+  background: linear-gradient(circle at top left, rgba(255,255,255,0.03), rgba(61,184,129,0.06));
+  color: rgba(255,255,255,0.92);
+}
+
+/* Slightly dim quick-add input fields specifically */
+html.dark-mode .quick-add .input,
+html.dark-mode .quick-add-input,
+html.dark-mode .quick-add .qa-initial {
+  background: rgba(255,255,255,0.02) !important;
+  color: var(--ink-900) !important;
+  border-color: rgba(255,255,255,0.03) !important;
+}
+
+/* Reduce saturation of any bright chip backgrounds inside dark mode */
+html.dark-mode .legend-color[style],
+html.dark-mode .expense-chip[style] {
+  filter: saturate(0.6) brightness(0.95);
 }
 
 html.dark-mode .quick-add .text-xs {
@@ -414,7 +638,7 @@ html.dark-mode .text-secondary {
 /* Expense item text styling */
 html.dark-mode .expense-item {
   border-color: #262d37;
-  color: #e8e8e8;
+  color: var(--ink-900);
 }
 
 html.dark-mode .expense-item .text-sm {
@@ -428,11 +652,15 @@ html.dark-mode .expense-item .text-xs {
 /* Modal and form inputs */
 html.dark-mode .modal-sheet {
   background-color: var(--card);
-  color: #e8e8e8;
+  color: var(--ink-900);
+}
+
+html.dark-mode .modal-title {
+  color: rgba(230,242,232,0.96) !important;
 }
 
 html.dark-mode .label {
-  color: #e8e8e8;
+  color: var(--ink-900);
   font-weight: 600;
 }
 
@@ -460,4 +688,85 @@ html.dark-mode .budget-card .budget-amount {
 
 html.dark-mode .budget-card .budget-progress-bar {
   background-color: rgba(61, 184, 129, 0.4);
+}
+
+html.dark-mode .ai-tip-kicker,
+html.dark-mode .ai-tip-heading,
+html.dark-mode .ai-tip-title {
+  color: var(--brand-800) !important;
+}
+
+html.dark-mode .ai-tip-kicker {
+  color: #64748b !important;
+}
+
+html.dark-mode .ai-tip-body,
+html.dark-mode .ai-tip-why-summary,
+html.dark-mode .ai-tip-why-label,
+html.dark-mode .ai-tip-why-list,
+html.dark-mode .ai-tip-why-list li {
+  color: rgba(230,242,232,0.92) !important;
+}
+
+html.dark-mode .ai-tip-why-label {
+  color: rgba(230,242,232,0.92) !important;
+}
+
+html.dark-mode .category-name,
+html.dark-mode .breakdown-pct {
+  color: rgba(230,242,232,0.92) !important;
+}
+
+html.dark-mode .breakdown-amount {
+  color: #4ac992 !important;
+}
+
+html.dark-mode .trend-stat {
+  background: var(--ink-900) !important;
+  color: #0b1013 !important;
+  border-radius: 8px;
+  padding: 0.75rem !important;
+}
+
+html.dark-mode .trend-stat .stat-label {
+  color: #0b1013 !important;
+  font-weight: 600;
+}
+
+html.dark-mode .trend-stat .stat-value {
+  color: var(--brand-800) !important;
+  font-weight: 700 !important;
+}
+
+html.dark-mode .week-comparison-svg rect:first-of-type {
+  fill: rgba(76,175,120,0.14) !important;
+  stroke: rgba(76,175,120,0.45) !important;
+}
+
+html.dark-mode .week-comparison-svg rect:nth-of-type(2) {
+  fill: rgba(236,72,153,0.12) !important;
+  stroke: rgba(236,72,153,0.40) !important;
+}
+
+html.dark-mode .week-comparison-svg text {
+  fill: #9ca3af !important;
+}
+
+html.dark-mode .week-comparison-delta {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+html.dark-mode .week-comparison-delta.positive {
+  background: rgba(76,175,120,0.06);
+  border-color: rgba(76,175,120,0.09);
+}
+
+html.dark-mode .week-comparison-delta.negative {
+  background: rgba(236,72,153,0.05);
+  border-color: rgba(236,72,153,0.08);
+}
+
+html.dark-mode .week-comparison-delta .delta-amount {
+  color: rgba(230,242,232,0.92) !important;
 }

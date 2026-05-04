@@ -171,6 +171,7 @@
 
   function saveStore(store) {
     localStorage.setItem(APP_KEY, JSON.stringify(store));
+    window.dispatchEvent(new CustomEvent("sugbocents:synced"));
   }
 
   function sanitizeEmail(email) {
@@ -448,7 +449,8 @@
         dailyXpLog: { dateKey: getLocalDateKey(), xpFromLogging: 0 },
         goals: [],
         preferences: {},
-        createdAt: nowIso()
+          lastRecommendationTip: null,
+          createdAt: nowIso()
       });
 
       if (window.FirestoreService) {
@@ -623,7 +625,8 @@
       dailyXpLog: { dateKey: getLocalDateKey(), xpFromLogging: 0 },
       goals: [],
       preferences: {},
-      createdAt: nowIso()
+        lastRecommendationTip: null,
+        createdAt: nowIso()
     };
 
     store.users.push(newUser);
@@ -985,6 +988,7 @@
     user.dailyXpLog = { dateKey: getLocalDateKey(), xpFromLogging: 0 };
     user.streakCount = 0;
     user.lastMilestone = null;
+      user.lastRecommendationTip = null;
     saveStore(store);
 
     if (window.FirestoreService) {
@@ -1045,6 +1049,35 @@
     notifyBudgetChange("remove");
 
     return { ok: true };
+  }
+
+  function restoreExpense(expense) {
+    if (!expense || !expense.id) {
+      return { ok: false, error: "Invalid expense." };
+    }
+
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { ok: false, error: "User not found." };
+    }
+
+    if (!Array.isArray(user.expenses)) {
+      user.expenses = [];
+    }
+
+    user.expenses.unshift(expense);
+    saveStore(store);
+
+    if (window.FirestoreService && window.FirestoreService.addExpenseDoc) {
+      window.FirestoreService.addExpenseDoc(store.session.userId, expense);
+    }
+
+    return { ok: true, expense: expense };
   }
 
   function getQuickAddItems() {
@@ -1149,6 +1182,48 @@
     for (var i = 0; i < keys.length; i++) {
       user.preferences[keys[i]] = prefs[keys[i]];
     }
+    saveStore(store);
+    return { ok: true };
+  }
+
+  // ── Sprint 3: AI recommendation tip cache ───────────────
+
+  function getLastRecommendationTip() {
+    var store = loadStore();
+    if (!store.session) {
+      return null;
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user || !user.lastRecommendationTip) {
+      return null;
+    }
+    try {
+      return JSON.parse(JSON.stringify(user.lastRecommendationTip));
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function saveLastRecommendationTip(tip) {
+    if (!tip || typeof tip !== "object") {
+      return { ok: false, error: "Tip must be an object." };
+    }
+
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { ok: false, error: "User not found." };
+    }
+
+    try {
+      user.lastRecommendationTip = JSON.parse(JSON.stringify(tip));
+    } catch (error) {
+      return { ok: false, error: "Unable to save tip." };
+    }
+
     saveStore(store);
     return { ok: true };
   }
@@ -1438,7 +1513,9 @@
     getChatHistory: getChatHistory,
     saveChatMessage: saveChatMessage,
     clearChatHistory: clearChatHistory,
-    seedDemoData: seedDemoData
+    seedDemoData: seedDemoData,
+    getLastRecommendationTip: getLastRecommendationTip,
+    saveLastRecommendationTip: saveLastRecommendationTip
   };
 })();
 

@@ -56,6 +56,521 @@
     window.StorageAPI.savePreferences({ notifPromptedSessionId: session.createdAt });
   }
 
+  // ── AI tip card ─────────────────────────────────────────
+  var currentTip = null;
+  var tipRefreshTimer = null;
+  var tipIsLoading = false;
+  var TIP_CACHE_MS = 6 * 60 * 60 * 1000;
+
+  var aiTipWhyModal = null;
+  var aiTipWhySummary = null;
+  var aiTipWhySignals = null;
+  var aiTipWhyClose = null;
+  var aiTipWhyBtn = null;
+
+  function getWeekWindow(now) {
+    var day = now.getDay();
+    var weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - ((day + 6) % 7));
+    weekStart.setHours(0, 0, 0, 0);
+    var weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+    weekEnd.setHours(0, 0, 0, 0);
+    return { start: weekStart, end: weekEnd };
+  }
+
+  function buildRecommendationStats() {
+    if (!window.StorageAPI) {
+      return null;
+    }
+
+    var summary = window.StorageAPI.getBudgetSummary();
+    var expenses = window.StorageAPI.getExpenses();
+    var now = new Date();
+    var weekWindow = getWeekWindow(now);
+
+    var weekExpenses = expenses.filter(function (expense) {
+      var d = new Date(expense.timestamp);
+      return d >= weekWindow.start && d < weekWindow.end;
+    });
+
+    var categories = window.StorageAPI.getExpenseCategories
+      ? window.StorageAPI.getExpenseCategories()
+      : [];
+    var categoryMap = {};
+    categories.forEach(function (cat) {
+      categoryMap[cat.id] = cat.label;
+    });
+
+    var totals = {};
+    weekExpenses.forEach(function (expense) {
+      var catId = expense.category || "others";
+      totals[catId] = (totals[catId] || 0) + (Number(expense.amount) || 0);
+    });
+
+    var topCategoryId = "";
+    var topCategoryAmount = 0;
+    Object.keys(totals).forEach(function (catId) {
+      if (totals[catId] > topCategoryAmount) {
+        topCategoryAmount = totals[catId];
+        topCategoryId = catId;
+      }
+    });
+
+    var dayMs = 24 * 60 * 60 * 1000;
+    var dayIndex = Math.floor((now - weekWindow.start) / dayMs);
+    if (!Number.isFinite(dayIndex) || dayIndex < 0) {
+      dayIndex = 0;
+    }
+    if (dayIndex > 6) {
+      dayIndex = 6;
+    }
+
+    var daysInWeek = dayIndex + 1;
+    var daysRemaining = 7 - daysInWeek;
+    var expectedDaily = summary.weeklyBudget > 0 ? summary.weeklyBudget / 7 : 0;
+    var avgDaily = daysInWeek > 0 ? summary.totalSpentThisWeek / daysInWeek : 0;
+
+    var dailyTotals = [0, 0, 0, 0, 0, 0, 0];
+    weekExpenses.forEach(function (expense) {
+      var d = new Date(expense.timestamp);
+      var idx = Math.floor((d - weekWindow.start) / dayMs);
+      if (idx >= 0 && idx < 7) {
+        dailyTotals[idx] += Number(expense.amount) || 0;
+      }
+    });
+
+    function sumRange(startIdx, endIdx) {
+      var sum = 0;
+      for (var i = startIdx; i <= endIdx; i++) {
+        sum += dailyTotals[i] || 0;
+      }
+      return sum;
+    }
+
+    var last3Start = Math.max(0, dayIndex - 2);
+    var last3Total = sumRange(last3Start, dayIndex);
+    var prevEnd = last3Start - 1;
+    var prevStart = Math.max(0, prevEnd - 2);
+    var prev3Total = prevEnd >= 0 ? sumRange(prevStart, prevEnd) : 0;
+
+    var trend = "steady";
+    if (prev3Total === 0 && last3Total > 0) {
+      trend = "up";
+    } else if (prev3Total > 0) {
+      var ratio = last3Total / prev3Total;
+      if (ratio >= 1.15) {
+        trend = "up";
+      } else if (ratio <= 0.85) {
+        trend = "down";
+      }
+    }
+
+    var topCategoryLabel = topCategoryId
+      ? (categoryMap[topCategoryId] || topCategoryId)
+      : "";
+    var topCategoryShare = summary.totalSpentThisWeek > 0
+      ? topCategoryAmount / summary.totalSpentThisWeek
+      : 0;
+
+    return {
+      weeklyBudget: summary.weeklyBudget || 0,
+      totalSpentThisWeek: summary.totalSpentThisWeek || 0,
+      remaining: summary.remaining || 0,
+      percentageSpent: summary.percentageSpent || 0,
+      avgDaily: avgDaily,
+      expectedDaily: expectedDaily,
+      daysInWeek: daysInWeek,
+      daysRemaining: daysRemaining,
+      topCategoryId: topCategoryId,
+      topCategoryLabel: topCategoryLabel,
+      topCategoryAmount: topCategoryAmount,
+      topCategoryShare: topCategoryShare,
+      trend: trend
+    };
+  }
+
+  function buildTipSignals(stats) {
+    if (!stats) {
+      return [];
+    }
+
+    var signals = [];
+
+    if (stats.weeklyBudget > 0) {
+      signals.push("Weekly budget: " + formatPhp(stats.weeklyBudget));
+    }
+    signals.push("Spent this week: " + formatPhp(stats.totalSpentThisWeek));
+
+    if (stats.topCategoryLabel) {
+      signals.push("Top category: " + stats.topCategoryLabel + " (" + formatPhp(stats.topCategoryAmount) + ")");
+    }
+    if (stats.avgDaily > 0) {
+      signals.push("Average daily spending: " + formatPhp(stats.avgDaily));
+    }
+    if (signals.length < 4) {
+      signals.push("Days left this week: " + stats.daysRemaining);
+    }
+
+    return signals.slice(0, 4);
+  }
+
+  function buildWhyFromStats(stats, mode) {
+    if (!stats) {
+      return {
+        summary: "We do not have enough data yet to personalize this tip.",
+        signals: []
+      };
+    }
+
+    var summary = "This tip uses your weekly budget and recent spending to keep your pace on track.";
+
+    switch (mode) {
+      case "budget_missing":
+        summary = "Weekly budget is not set yet, so this tip focuses on creating a baseline.";
+        break;
+      case "no_spend":
+        summary = "Your weekly budget is " + formatPhp(stats.weeklyBudget) +
+          " and spending this week is " + formatPhp(stats.totalSpentThisWeek) + ".";
+        break;
+      case "over_budget":
+        summary = "You have spent " + formatPhp(stats.totalSpentThisWeek) +
+          " against a " + formatPhp(stats.weeklyBudget) +
+          " budget, with " + (stats.topCategoryLabel || "your top category") + " leading.";
+        break;
+      case "early_high":
+        summary = "You have used " + stats.percentageSpent + "% of " +
+          formatPhp(stats.weeklyBudget) + " with " + stats.daysRemaining + " days left.";
+        break;
+      case "top_category":
+        summary = (stats.topCategoryLabel || "Your top category") + " is " +
+          formatPhp(stats.topCategoryAmount) + " of " +
+          formatPhp(stats.totalSpentThisWeek) + " this week.";
+        break;
+      case "avg_high":
+        summary = "Daily average is " + formatPhp(stats.avgDaily) +
+          " versus a target of " + formatPhp(stats.expectedDaily) + ".";
+        break;
+      case "trend_up":
+        summary = "Spending in the last few days is higher than earlier this week.";
+        break;
+      default:
+        summary = "You have " + formatPhp(stats.remaining) + " left with " +
+          stats.daysRemaining + " days to go.";
+        break;
+    }
+
+    return {
+      summary: summary,
+      signals: buildTipSignals(stats)
+    };
+  }
+
+  function buildFallbackTip(stats) {
+    var mode = "steady";
+    var title = "Keep a small buffer";
+    var body = "Set aside a small buffer for surprises and use the rest for planned needs.";
+
+    if (!stats) {
+      mode = "no_data";
+      title = "Start with a simple plan";
+      body = "Set a weekly budget and log a few expenses to unlock more personalized tips.";
+    } else if (stats.weeklyBudget <= 0) {
+      mode = "budget_missing";
+      title = "Set a weekly budget";
+      body = "Add a weekly budget so we can track your pace and keep spending in check.";
+    } else if (stats.totalSpentThisWeek <= 0) {
+      mode = "no_spend";
+      title = "Start with a daily cap";
+      body = "Try a daily cap of " + formatPhp(stats.expectedDaily) + " to stay on track once spending begins.";
+    } else if (stats.remaining < 0) {
+      mode = "over_budget";
+      title = stats.topCategoryLabel
+        ? "Pause on " + stats.topCategoryLabel
+        : "Pause on your top category";
+      body = "You are over budget this week. Cut back on " +
+        (stats.topCategoryLabel || "your top category") +
+        " for the rest of the week.";
+    } else if (stats.percentageSpent >= 80 && stats.daysInWeek <= 4) {
+      mode = "early_high";
+      title = "Slow down early";
+      body = "You have used " + stats.percentageSpent +
+        "% of your weekly budget with " + stats.daysRemaining +
+        " days left. Aim for " + formatPhp(stats.expectedDaily) + " per day.";
+    } else if (stats.topCategoryShare >= 0.45 && stats.topCategoryLabel) {
+      mode = "top_category";
+      title = "Cap " + stats.topCategoryLabel;
+      body = "That category is " + Math.round(stats.topCategoryShare * 100) +
+        "% of your week. Set a small cap there to free up room for essentials.";
+    } else if (stats.avgDaily > stats.expectedDaily * 1.1) {
+      mode = "avg_high";
+      title = "Lower the daily pace";
+      body = "Your daily average is " + formatPhp(stats.avgDaily) +
+        ". Aim for " + formatPhp(stats.expectedDaily) + " to stay within budget.";
+    } else if (stats.trend === "up") {
+      mode = "trend_up";
+      title = "Plan one low-cost day";
+      body = "Recent spending is higher than earlier this week. A low-cost day can reset your pace.";
+    } else {
+      mode = "steady";
+      var buffer = Math.max(0, stats.remaining * 0.2);
+      title = "Keep a small buffer";
+      body = "Set aside " + formatPhp(buffer) + " as a buffer and use the rest for planned needs.";
+    }
+
+    return {
+      id: "tip_" + Date.now(),
+      createdAt: new Date().toISOString(),
+      source: "fallback",
+      title: title,
+      body: body,
+      why: buildWhyFromStats(stats, mode)
+    };
+  }
+
+  function normalizeTip(tip, stats, sourceDefault) {
+    var data = tip && typeof tip === "object" ? tip : {};
+    var title = String(data.title || "").trim();
+    var body = String(data.body || "").trim();
+    var createdAt = data.createdAt || new Date().toISOString();
+    var source = data.source || sourceDefault || "ai";
+    var id = data.id || "tip_" + Date.now();
+
+    if (!title) {
+      title = "Weekly spending check-in";
+    }
+    if (!body) {
+      body = "Review your budget and plan a small buffer for the week.";
+    }
+
+    var why = data.why && typeof data.why === "object"
+      ? data.why
+      : buildWhyFromStats(stats, "steady");
+    if (!why.summary) {
+      why.summary = buildWhyFromStats(stats, "steady").summary;
+    }
+    if (!Array.isArray(why.signals)) {
+      why.signals = buildWhyFromStats(stats, "steady").signals;
+    }
+
+    return {
+      id: id,
+      createdAt: createdAt,
+      source: source,
+      title: title,
+      body: body,
+      why: {
+        summary: why.summary,
+        signals: why.signals
+      }
+    };
+  }
+
+  function setTipLoadingState() {
+    var titleEl = document.getElementById("aiTipTitle");
+    var bodyEl = document.getElementById("aiTipBody");
+    var sourceEl = document.getElementById("aiTipSource");
+
+    if (titleEl) {
+      titleEl.textContent = "Loading tip...";
+    }
+    if (bodyEl) {
+      bodyEl.textContent = "Checking your latest spending pattern.";
+    }
+    if (sourceEl) {
+      sourceEl.textContent = "Checking";
+      sourceEl.classList.remove("is-ai", "is-fallback");
+    }
+    if (aiTipWhyBtn) {
+      aiTipWhyBtn.disabled = true;
+    }
+  }
+
+  function renderTipCard(tip) {
+    var titleEl = document.getElementById("aiTipTitle");
+    var bodyEl = document.getElementById("aiTipBody");
+    var sourceEl = document.getElementById("aiTipSource");
+
+    if (titleEl) {
+      titleEl.textContent = tip && tip.title ? tip.title : "No tip available";
+    }
+    if (bodyEl) {
+      bodyEl.textContent = tip && tip.body ? tip.body : "Add a budget and log expenses to unlock tips.";
+    }
+    if (sourceEl) {
+      var isAi = tip && tip.source === "ai";
+      sourceEl.textContent = isAi ? "AI-generated" : "Fallback";
+      sourceEl.classList.remove("is-ai", "is-fallback");
+      sourceEl.classList.add(isAi ? "is-ai" : "is-fallback");
+    }
+    if (aiTipWhyBtn) {
+      aiTipWhyBtn.disabled = !(tip && tip.why);
+    }
+  }
+
+  function openWhyModal(tip) {
+    if (!aiTipWhyModal || !aiTipWhySummary || !aiTipWhySignals) {
+      return;
+    }
+    if (!tip || !tip.why) {
+      return;
+    }
+
+    aiTipWhySummary.textContent = tip.why.summary || "";
+    aiTipWhySignals.innerHTML = "";
+    (tip.why.signals || []).forEach(function (signal) {
+      var li = document.createElement("li");
+      li.textContent = signal;
+      aiTipWhySignals.appendChild(li);
+    });
+
+    aiTipWhyModal.classList.remove("hidden");
+    if (aiTipWhyClose) {
+      aiTipWhyClose.focus();
+    }
+  }
+
+  function closeWhyModal() {
+    if (!aiTipWhyModal) {
+      return;
+    }
+    aiTipWhyModal.classList.add("hidden");
+  }
+
+  function isTipFresh(tip) {
+    if (!tip || !tip.createdAt) {
+      return false;
+    }
+    var created = new Date(tip.createdAt).getTime();
+    if (!Number.isFinite(created)) {
+      return false;
+    }
+    return Date.now() - created < TIP_CACHE_MS;
+  }
+
+  function fetchAiTip(stats) {
+    if (!stats) {
+      return Promise.reject(new Error("No stats available."));
+    }
+    if (window.location.protocol === "file:") {
+      return Promise.reject(new Error("File mode."));
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return Promise.reject(new Error("Offline."));
+    }
+
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function () {
+      controller.abort();
+    }, 6000);
+
+    return fetch("/api/ai/recommendation", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ stats: stats }),
+      signal: controller.signal
+    }).then(function (response) {
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        throw new Error("AI request failed.");
+      }
+      return response.json();
+    }).then(function (data) {
+      var tip = data && (data.tip || data);
+      if (!tip || typeof tip !== "object") {
+        throw new Error("Invalid AI tip payload.");
+      }
+      return tip;
+    }).catch(function (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    });
+  }
+
+  function loadTip(options) {
+    if (!window.StorageAPI) {
+      renderTipCard(null);
+      return Promise.resolve(null);
+    }
+
+    var opts = options || {};
+    var cached = window.StorageAPI.getLastRecommendationTip
+      ? window.StorageAPI.getLastRecommendationTip()
+      : null;
+
+    if (!opts.forceRefresh && cached && isTipFresh(cached)) {
+      currentTip = cached;
+      renderTipCard(currentTip);
+      return Promise.resolve(currentTip);
+    }
+
+    if (tipIsLoading) {
+      return Promise.resolve(currentTip);
+    }
+
+    tipIsLoading = true;
+    setTipLoadingState();
+
+    var stats = buildRecommendationStats();
+
+    function finalizeTip(tip) {
+      currentTip = tip;
+      renderTipCard(currentTip);
+      if (window.StorageAPI.saveLastRecommendationTip) {
+        window.StorageAPI.saveLastRecommendationTip(currentTip);
+      }
+      tipIsLoading = false;
+      return currentTip;
+    }
+
+    return fetchAiTip(stats).then(function (aiTip) {
+      var normalized = normalizeTip(aiTip, stats, "ai");
+      return finalizeTip(normalized);
+    }).catch(function () {
+      var fallback = buildFallbackTip(stats);
+      return finalizeTip(fallback);
+    });
+  }
+
+  function scheduleTipRefresh() {
+    if (tipRefreshTimer) {
+      clearTimeout(tipRefreshTimer);
+    }
+    tipRefreshTimer = setTimeout(function () {
+      loadTip({ forceRefresh: true });
+    }, 200);
+  }
+
+  function initAiTip() {
+    aiTipWhyModal = document.getElementById("aiTipWhyModal");
+    aiTipWhySummary = document.getElementById("aiTipWhySummary");
+    aiTipWhySignals = document.getElementById("aiTipWhySignals");
+    aiTipWhyClose = document.getElementById("aiTipWhyClose");
+    aiTipWhyBtn = document.getElementById("aiTipWhyBtn");
+
+    if (aiTipWhyBtn) {
+      aiTipWhyBtn.addEventListener("click", function () {
+        openWhyModal(currentTip);
+      });
+    }
+
+    if (aiTipWhyClose) {
+      aiTipWhyClose.addEventListener("click", closeWhyModal);
+    }
+
+    if (aiTipWhyModal) {
+      aiTipWhyModal.addEventListener("click", function (event) {
+        if (event.target === aiTipWhyModal) {
+          closeWhyModal();
+        }
+      });
+    }
+
+    loadTip();
+  }
+
   // ── greeting ─────────────────────────────────────────────
   function renderGreeting() {
     var titleEl = document.getElementById("greetingTitle");
@@ -278,6 +793,7 @@
         renderRecentExpenses();
         renderDashboardStats();
         if (window.SpendingChart) { window.SpendingChart.update(); }
+        scheduleTipRefresh();
 
         // brief visual feedback: pulse the button
         button.classList.add("qa-pulse");
@@ -712,6 +1228,7 @@
       renderRecentExpenses();
       renderDashboardStats();
       if (window.SpendingChart) { window.SpendingChart.update(); }
+      scheduleTipRefresh();
 
       // brief visual confirmation on the button
       logBtn.textContent = "\u2713 Logged";
@@ -740,7 +1257,14 @@
       commitDelete();
     }
 
-    pendingDelete = { id: expense.id, data: expense };
+    pendingDelete = { id: expense.id, data: expense, removed: false };
+
+    try {
+      window.StorageAPI.removeExpense(expense.id);
+      pendingDelete.removed = true;
+    } catch (e) {
+      // Keep the toast visible even if the optimistic delete fails.
+    }
 
     // Optimistically hide from list
     updateBudgetCard();
@@ -769,7 +1293,9 @@
   function commitDelete() {
     if (!pendingDelete) { return; }
     clearTimeout(pendingDeleteTimer);
-    window.StorageAPI.removeExpense(pendingDelete.id);
+    if (!pendingDelete.removed) {
+      window.StorageAPI.removeExpense(pendingDelete.id);
+    }
     pendingDelete = null;
     pendingDeleteTimer = null;
     var toast = document.getElementById("undoToast");
@@ -778,11 +1304,17 @@
     updateQuickSummaryStats();
     renderRecentExpenses();
     if (window.SpendingChart) { window.SpendingChart.update(); }
+    scheduleTipRefresh();
   }
 
   function cancelDelete() {
     if (!pendingDelete) { return; }
     clearTimeout(pendingDeleteTimer);
+
+    if (pendingDelete.removed && pendingDelete.data) {
+      window.StorageAPI.restoreExpense(pendingDelete.data);
+    }
+
     pendingDelete = null;
     pendingDeleteTimer = null;
     var toast = document.getElementById("undoToast");
@@ -791,6 +1323,7 @@
     updateQuickSummaryStats();
     renderRecentExpenses();
     if (window.SpendingChart) { window.SpendingChart.update(); }
+    scheduleTipRefresh();
   }
 
   // ── streak card ─────────────────────────────────────────
@@ -1146,6 +1679,7 @@
           if (gate) { gate.classList.add("hidden"); }
         });
       }
+      initAiTip();
 
       window.addEventListener("sugbocents:synced", function () {
         renderGreeting();
@@ -1156,6 +1690,7 @@
         renderQuickAddButtons();
         renderCategoryStats();
         renderDashboardStats();
+        loadTip({ forceRefresh: true });
         if (window.SpendingChart) { window.SpendingChart.update(); }
       });
 

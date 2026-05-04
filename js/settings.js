@@ -368,5 +368,39 @@
       });
     }
 
+    initDarkToggleUI();
   });
+
+  // ── Dark toggle UI sync (keep visual state in sync with dark-mode.js)
+  function initDarkToggleUI() {
+    var btn = document.getElementById('darkModeToggle');
+    if (!btn) { return; }
+
+    function sync() {
+      var isDark = document.documentElement.classList.contains('dark-mode');
+      btn.classList.toggle('dark-on', isDark);
+      btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+    }
+
+    // Initial sync
+    sync();
+
+    // Keep in sync across storage events (dark-mode.js writes `darkModeEnabled` to localStorage)
+    window.addEventListener('storage', function (e) {
+      if (e.key === 'darkModeEnabled') { sync(); }
+    });
+
+    // Custom event from StorageAPI-backed preference saves
+    window.addEventListener('sugbocents:preferencesChanged', function (e) {
+      if (e && e.detail && e.detail.key === 'darkModeEnabled') { sync(); }
+    });
+
+    // Observe <html> class changes as another fallback
+    try {
+      var mo = new MutationObserver(function () { sync(); });
+      mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    } catch (err) {
+      // ignore in older browsers
+    }
+  }
 })();
