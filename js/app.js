@@ -74,16 +74,18 @@
       return;
     }
 
-    if (isLocalDevelopmentHost()) {
-      navigator.serviceWorker.getRegistrations().then(function (registrations) {
-        registrations.forEach(function (registration) {
-          registration.unregister();
-        });
-      }).catch(function () {
-        // Ignore unregister errors in local development.
-      });
-      return;
-    }
+    //Enable this again only if the sw cache is messing with the localhost display
+
+    // if (isLocalDevelopmentHost()) {
+    //   navigator.serviceWorker.getRegistrations().then(function (registrations) {
+    //     registrations.forEach(function (registration) {
+    //       registration.unregister();
+    //     });
+    //   }).catch(function () {
+    //     // Ignore unregister errors in local development.
+    //   });
+    //   return;
+    // }
 
     window.addEventListener("load", function () {
       navigator.serviceWorker.register("sw.js").catch(function () {

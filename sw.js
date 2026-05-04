@@ -1,4 +1,4 @@
-const CACHE_NAME = "sugbocents-shell-v54";
+const CACHE_NAME = "sugbocents-shell-v57";
 const SHELL_FILES = [
   "./",
   "index.html",
@@ -42,6 +42,7 @@ const SHELL_FILES = [
   "js/index-redirect.js",
   "js/chat-ai.js",
   "js/chat.js",
+  "js/notifications.js",
   "manifest.json",
   "assets/images/reviews/Savion_Review.png",
   "assets/images/reviews/Julian_Review.jpg",
@@ -56,14 +57,23 @@ const SHELL_FILES = [
   "assets/images/mascot/mascot-happy.png",
   "assets/images/mascot/mascot-neutral.png",
   "assets/images/mascot/mascot-shocked.png",
-  "assets/images/mascot/mastcot-sad.png",
+  "assets/images/mascot/mascot-sad.png",
   "icons/icon-192.png",
   "icons/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_FILES))
+    caches.open(CACHE_NAME).then((cache) => {
+      // Cache files individually so one failure doesn't block the whole install
+      return Promise.all(
+        SHELL_FILES.map((file) =>
+          cache.add(file).catch((error) => {
+            console.warn("[ServiceWorker] Failed to cache " + file + ":", error);
+          })
+        )
+      );
+    })
   );
   self.skipWaiting();
 });
@@ -86,6 +96,34 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  const url = new URL(event.request.url);
+  const isHttp = url.protocol === "http:" || url.protocol === "https:";
+  const isSameOrigin = url.origin === self.location.origin;
+  const canCache = isHttp && isSameOrigin;
+  const isDocument = event.request.mode === "navigate" || event.request.destination === "document";
+  const isScript = event.request.destination === "script" || /\/js\/.+\.js$/i.test(url.pathname);
+
+  function maybeCache(request, response) {
+    if (!canCache || !response || response.status !== 200) {
+      return;
+    }
+    const copy = response.clone();
+    caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
+  }
+
+  // Network-first for HTML and JS so app logic updates are not stuck on stale cache.
+  if (isDocument || isScript) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          maybeCache(event.request, response);
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) {
@@ -97,8 +135,7 @@ self.addEventListener("fetch", (event) => {
           return response;
         }
 
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        maybeCache(event.request, response);
         return response;
       });
     })
@@ -107,6 +144,34 @@ self.addEventListener("fetch", (event) => {
 
 
 //NOTIFICATIONS
+self.addEventListener("push", (event) => {
+  let payload = {
+    title: "SugboCents",
+    body: "You have a new budget update.",
+    icon: "icons/icon-192.png",
+    badge: "icons/icon-192.png",
+    url: "/dashboard.html"
+  };
+
+  if (event.data) {
+    try {
+      payload = Object.assign(payload, event.data.json());
+    } catch (error) {
+      payload.body = event.data.text();
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: payload.icon,
+      badge: payload.badge,
+      data: { url: payload.url },
+      vibrate: [200, 100, 200]
+    })
+  );
+});
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close(); // Close the notification
 
@@ -120,7 +185,8 @@ self.addEventListener("notificationclick", (event) => {
       }
       // Otherwise open a new window to the dashboard
       if (clients.openWindow) {
-        return clients.openWindow("/dashboard.html");
+        var targetUrl = event.notification.data && event.notification.data.url ? event.notification.data.url : "/dashboard.html";
+        return clients.openWindow(targetUrl);
       }
     })
   );

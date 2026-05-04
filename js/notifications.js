@@ -27,18 +27,34 @@
       }
     },
     {
-      id: "budget_warning_80",
-      frequency: "weekly", 
+      id: "budget_negative",
+      frequency: "state",
       check: function (now, storage) {
-        // Condition: User has spent 80% or more of their weekly budget
         var summary = storage.getBudgetSummary();
-        return (summary.percentageSpent >= 80 && summary.weeklyBudget > 0);
+        return summary.weeklyBudget > 0 && summary.remaining < 0;
       },
       getMessage: function (storage) {
         var summary = storage.getBudgetSummary();
+        var overspent = Math.abs(summary.remaining);
         return {
-          title: "Budget Alert! 🚨",
-          body: "You've spent " + summary.percentageSpent + "% of your weekly budget. Time to tighten the belt!"
+          title: "Budget exceeded! 💸",
+          body: "You are over budget by ₱" + overspent.toFixed(2) + " this week."
+        };
+      }
+    },
+    {
+      id: "budget_warning_80",
+      frequency: "state",
+      check: function (now, storage) {
+        var summary = storage.getBudgetSummary();
+        return (summary.percentageSpent >= 80 && summary.remaining >= 0 && summary.weeklyBudget > 0);
+      },
+      getMessage: function (storage) {
+        var summary = storage.getBudgetSummary();
+        var remaining = Math.max(0, summary.remaining);
+        return {
+          title: "Heads up! ⚠️",
+          body: "You've used " + summary.percentageSpent + "% of your weekly budget. You have ₱" + remaining.toFixed(2) + " left this week."
         };
       }
     },
@@ -61,6 +77,55 @@
 
 
   // ── 2. The Engine (Handles tracking & sending) ──────────────────────
+  var _notificationInitDone = false;
+  var BUDGET_STATE_KEY = "sc_budget_state";
+
+  function getBudgetState(summary) {
+    if (!summary || summary.weeklyBudget <= 0) {
+      return "normal";
+    }
+    if (summary.remaining < 0) {
+      return "negative";
+    }
+    if (summary.percentageSpent >= 80) {
+      return "warning";
+    }
+    return "normal";
+  }
+
+  function sendBudgetStateNotification(state, storage) {
+    var rule = null;
+    for (var i = 0; i < NOTIFICATION_RULES.length; i++) {
+      if (state === "warning" && NOTIFICATION_RULES[i].id === "budget_warning_80") {
+        rule = NOTIFICATION_RULES[i];
+        break;
+      }
+      if (state === "negative" && NOTIFICATION_RULES[i].id === "budget_negative") {
+        rule = NOTIFICATION_RULES[i];
+        break;
+      }
+    }
+
+    if (!rule) { return false; }
+
+    var msg = rule.getMessage(storage);
+    NotificationService.send(msg.title, { body: msg.body });
+    return true;
+  }
+
+  function storeBudgetState(summary) {
+    localStorage.setItem(BUDGET_STATE_KEY, getBudgetState(summary));
+  }
+
+  function syncBudgetState(summary, shouldNotify, skipIfRemove) {
+    var currentState = getBudgetState(summary);
+    if (shouldNotify && !skipIfRemove && (currentState === "warning" || currentState === "negative")) {
+      sendBudgetStateNotification(currentState, window.StorageAPI);
+    }
+
+    storeBudgetState(summary);
+  }
+
   var NotificationService = {
     
     requestPermission: function () {
@@ -91,7 +156,8 @@
     },
 
     checkRules: function () {
-      if (Notification.permission !== "granted" || !window.StorageAPI) return;
+      if (Notification.permission !== "granted") { return; }
+      if (!window.StorageAPI) { return; }
 
       var now = new Date();
       var todayStr = now.toDateString();
@@ -110,6 +176,7 @@
         if (rule.frequency === "daily" && lastSent !== todayStr) canFire = true;
         if (rule.frequency === "weekly" && lastSent !== weekStr) canFire = true;
         if (rule.frequency === "always") canFire = true;
+        if (rule.frequency === "state") return;
 
         // 2. Check Custom Condition
         if (canFire && rule.check(now, window.StorageAPI)) {
@@ -118,7 +185,7 @@
           NotificationService.send(msg.title, { body: msg.body });
           
           // 3. Update Log
-          sentLog[rule.id] = (rule.frequency === "weekly") ? weekStr : todayStr;
+          sentLog[rule.id] = (rule.frequency === "weekly") ? weekStr : (rule.frequency === "state" ? (rule.id === "budget_negative" ? "negative" : "warning") : todayStr);
           logChanged = true;
         }
       });
@@ -129,7 +196,22 @@
     },
 
     init: function () {
+      if (_notificationInitDone) { return; }
+      _notificationInitDone = true;
+      storeBudgetState(window.StorageAPI ? window.StorageAPI.getBudgetSummary() : null);
       this.checkRules(); // Check immediately on load
+      window.addEventListener("sugbocents:budget-changed", function (event) {
+        var skipIfRemove = !!(event && event.detail && event.detail.reason === "remove");
+        if (!window.StorageAPI || typeof window.StorageAPI.getBudgetSummary !== "function") { return; }
+        syncBudgetState(window.StorageAPI.getBudgetSummary(), true, skipIfRemove);
+        NotificationService.checkRules();
+      });
+      window.addEventListener("sugbocents:synced", function (event) {
+        var skipIfRemove = !!(event && event.detail && event.detail.reason === "remove");
+        if (!window.StorageAPI || typeof window.StorageAPI.getBudgetSummary !== "function") { return; }
+        syncBudgetState(window.StorageAPI.getBudgetSummary(), false, skipIfRemove);
+        NotificationService.checkRules();
+      });
       // Check every 2 minutes while app is open
       setInterval(this.checkRules.bind(this), 2 * 60 * 1000); 
     }
@@ -137,10 +219,18 @@
 
   window.NotificationService = NotificationService;
 
+  function maybeInitNotificationService() {
+    if (!window.StorageAPI || typeof window.StorageAPI.getCurrentUser !== "function") { return; }
+    if (!window.StorageAPI.getCurrentUser()) { return; }
+    NotificationService.init();
+  }
+
   document.addEventListener("DOMContentLoaded", function() {
-    if (window.StorageAPI && window.StorageAPI.getCurrentUser()) {
-      NotificationService.init();
-    }
+    // Try immediately, then retry after auth/session sync settles.
+    maybeInitNotificationService();
+    window.addEventListener("sugbocents:synced", maybeInitNotificationService);
+    setTimeout(maybeInitNotificationService, 800);
+    setTimeout(maybeInitNotificationService, 2500);
   });
 
 })();

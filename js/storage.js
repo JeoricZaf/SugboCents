@@ -190,16 +190,17 @@
     return new Date().toISOString();
   }
 
-  function dispatchStorageEvent(eventName) {
+  function dispatchStorageEvent(eventName, detail) {
     if (!window || typeof window.dispatchEvent !== "function") {
       return;
     }
-    window.dispatchEvent(new CustomEvent(eventName));
+    window.dispatchEvent(new CustomEvent(eventName, { detail: detail || {} }));
   }
 
-  function notifyBudgetChange() {
-    dispatchStorageEvent("sugbocents:budget-changed");
-    dispatchStorageEvent("sugbocents:synced");
+  function notifyBudgetChange(reason) {
+    var detail = { reason: reason || "update" };
+    dispatchStorageEvent("sugbocents:budget-changed", detail);
+    dispatchStorageEvent("sugbocents:synced", detail);
   }
 
   function getLocalDateKey(input) {
@@ -730,7 +731,7 @@
       window.FirestoreService.setUserDoc(store.session.userId, { weeklyBudget: user.weeklyBudget });
     }
 
-    notifyBudgetChange();
+    notifyBudgetChange("update");
 
     return { ok: true, weeklyBudget: user.weeklyBudget };
   }
@@ -799,7 +800,7 @@
       syncGamificationFields(store.session.userId, user);
     }
 
-    notifyBudgetChange();
+    notifyBudgetChange("add");
 
     return {
       ok: true,
@@ -1041,7 +1042,7 @@
       window.FirestoreService.deleteExpenseDoc(store.session.userId, expenseId);
     }
 
-    notifyBudgetChange();
+    notifyBudgetChange("remove");
 
     return { ok: true };
   }

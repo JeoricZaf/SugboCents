@@ -5,26 +5,6 @@
   var pendingDeleteTimer = null;
   var UNDO_DELAY_MS     = 4000;
 
-  // ── expense log rate limiter (localStorage) ──────────────
-  var EXP_RL_KEY       = "sc_exp_rl";
-  var EXP_RL_MAX       = 30;               // max expense logs per window
-  var EXP_RL_WINDOW_MS = 60 * 60 * 1000;  // 1 hour
-
-  function checkExpenseRateLimit() {
-    var now = Date.now();
-    var data;
-    try { data = JSON.parse(localStorage.getItem(EXP_RL_KEY)) || { timestamps: [] }; }
-    catch (_) { data = { timestamps: [] }; }
-    data.timestamps = data.timestamps.filter(function (t) { return now - t < EXP_RL_WINDOW_MS; });
-    if (data.timestamps.length >= EXP_RL_MAX) {
-      var resetMins = Math.ceil((EXP_RL_WINDOW_MS - (now - data.timestamps[0])) / 60000);
-      return { allowed: false, resetMins: resetMins };
-    }
-    data.timestamps.push(now);
-    try { localStorage.setItem(EXP_RL_KEY, JSON.stringify(data)); } catch (_) {}
-    return { allowed: true };
-  }
-
   // ── helpers ─────────────────────────────────────────────
   function formatPhp(amount) {
     return new Intl.NumberFormat("en-PH", {
@@ -273,14 +253,6 @@
         }
         var dlabel = item.label || item.category;
         var catId  = item.label ? item.category : (item.categoryId || "");
-
-        // Rate limit check for quick-add
-        var qaRl = checkExpenseRateLimit();
-        if (!qaRl.allowed) {
-          button.textContent = "Slow down!";
-          setTimeout(function () { button.textContent = dlabel; }, 2000);
-          return;
-        }
 
         var result = window.StorageAPI.addExpense({
           amount: item.amount,
@@ -704,14 +676,6 @@
         errEl.textContent = "A description is required for Others expenses.";
         errEl.classList.remove("hidden");
         if (noteInput) { noteInput.focus(); }
-        return;
-      }
-
-      // Rate limit check
-      var expRl = checkExpenseRateLimit();
-      if (!expRl.allowed) {
-        errEl.textContent = "Too many expenses logged. Try again in " + expRl.resetMins + " min.";
-        errEl.classList.remove("hidden");
         return;
       }
 
