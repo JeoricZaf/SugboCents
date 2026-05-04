@@ -67,6 +67,7 @@
 
   function saveStore(store) {
     localStorage.setItem(APP_KEY, JSON.stringify(store));
+    window.dispatchEvent(new CustomEvent("sugbocents:synced"));
   }
 
   function sanitizeEmail(email) {
@@ -616,6 +617,35 @@
     }
 
     return { ok: true };
+  }
+
+  function restoreExpense(expense) {
+    if (!expense || !expense.id) {
+      return { ok: false, error: "Invalid expense." };
+    }
+
+    var store = loadStore();
+    if (!store.session) {
+      return { ok: false, error: "No active session." };
+    }
+
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return { ok: false, error: "User not found." };
+    }
+
+    if (!Array.isArray(user.expenses)) {
+      user.expenses = [];
+    }
+
+    user.expenses.unshift(expense);
+    saveStore(store);
+
+    if (window.FirestoreService && window.FirestoreService.addExpenseDoc) {
+      window.FirestoreService.addExpenseDoc(store.session.userId, expense);
+    }
+
+    return { ok: true, expense: expense };
   }
 
   function getQuickAddItems() {
