@@ -7,7 +7,7 @@
   z-index: 40;
   width: 5rem;
   height: 5rem;
-  border-radius: 0;
+  border-radius: 50%;
   background: transparent;
   box-shadow: none;
   border: none;
@@ -33,14 +33,26 @@
 .mascot-fab.mascot-worried,
 .mascot-fab.mascot-alarmed { background: transparent; box-shadow: none; }
 
-/* alarmed: pulsing drop-shadow on the mascot image itself */
+/* alarmed: intense pulsing drop-shadow + sonar ripples */
 .mascot-fab.mascot-alarmed {
-  animation: mascot-alarmed-glow 1.4s ease-in-out infinite;
+  animation: mascot-alarmed-glow 1.2s ease-in-out infinite, mascot-sonar 2s ease-out infinite;
 }
 
 @keyframes mascot-alarmed-glow {
-  0%, 100% { filter: drop-shadow(0 4px 14px rgba(239, 68, 68, 0.25)); }
-  50%       { filter: drop-shadow(0 4px 20px rgba(239, 68, 68, 0.65)); }
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.5)) drop-shadow(0 4px 16px rgba(239, 68, 68, 0.3)); }
+  50%       { filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.9)) drop-shadow(0 8px 28px rgba(239, 68, 68, 0.7)); }
+}
+
+@keyframes mascot-sonar {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+  }
 }
 
 /* Styling for the image inside the floating widget */

@@ -45,13 +45,23 @@
   ];
 
   // ── Compute mascot state from budget data ────────────────
-  function getMascotState() {
+  function getBudgetSummaryForMascot() {
+    if (window.SugboCentsBudgetPreview) {
+      return window.SugboCentsBudgetPreview;
+    }
     if (!window.StorageAPI) {
+      return null;
+    }
+    return window.StorageAPI.getBudgetSummary();
+  }
+
+  function getMascotState() {
+    var summary = getBudgetSummaryForMascot();
+    if (!summary) {
       return "neutral";
     }
-    var summary = window.StorageAPI.getBudgetSummary();
+    if (summary.remaining < 0) { return "alarmed"; }
     var pct = summary.percentageSpent;
-    if (pct >= 90) { return "alarmed"; }
     if (pct >= 65) { return "worried"; }
     if (pct >= 30) { return "neutral"; }
     return "happy";
@@ -75,7 +85,7 @@
     return null;
   }
 
- // ── Build DOM ────────────────────────────────────────────
+  // ── Build DOM ────────────────────────────────────────────
   function buildWidget() {
     var state = getMascotState();
     var stateObj = STATES[state];
@@ -138,8 +148,8 @@
   }
 
   function getHealthPct() {
-    if (!window.StorageAPI) { return 100; }
-    var summary = window.StorageAPI.getBudgetSummary();
+    var summary = getBudgetSummaryForMascot();
+    if (!summary) { return 100; }
     return Math.max(0, 100 - summary.percentageSpent);
   }
 
@@ -543,7 +553,8 @@
       });
     }
 
-    // Re-run state update when expenses change
+    // Re-run state update when budget-related data changes
+    window.addEventListener("sugbocents:budget-changed", updateMascotState);
     window.addEventListener("sugbocents:synced", updateMascotState);
   }
 
@@ -553,6 +564,28 @@
 
   window.MascotWidget = {
     update: updateMascotState
+  };
+
+  function updateMascotDisplay() {
+    var state = getMascotState();
+    var stateObj = STATES[state];
+    var fab = document.getElementById("mascotFab");
+    if (fab) {
+      fab.className = "mascot-fab " + stateObj.cls;
+      var img = fab.querySelector(".mascot-fab-img");
+      if (img) {
+        img.src = stateObj.img;
+      }
+    }
+  }
+
+  // Public API
+  window.MascotAPI = {
+    buildWidget: buildWidget,
+    getMascotState: getMascotState,
+    updateMascotDisplay: updateMascotDisplay,
+    getRandomReply: getRandomReply,
+    getKeywordReply: getKeywordReply,
   };
 })();
 

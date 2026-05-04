@@ -1,6 +1,6 @@
 ﻿(function () {
   var APP_KEY = "sugbocents.v1";
-  var AUTH_DISABLED = true; // Set to true to bypass auth and use a built-in demo session.
+  var AUTH_DISABLED = false; // Set to true to bypass auth and use a built-in demo session.
   var DEMO_USER_ID = "demo_user";
   var DEMO_USER_EMAIL = "demo@sugbocents.local";
 
@@ -188,6 +188,18 @@
 
   function nowIso() {
     return new Date().toISOString();
+  }
+
+  function dispatchStorageEvent(eventName) {
+    if (!window || typeof window.dispatchEvent !== "function") {
+      return;
+    }
+    window.dispatchEvent(new CustomEvent(eventName));
+  }
+
+  function notifyBudgetChange() {
+    dispatchStorageEvent("sugbocents:budget-changed");
+    dispatchStorageEvent("sugbocents:synced");
   }
 
   function getLocalDateKey(input) {
@@ -718,6 +730,8 @@
       window.FirestoreService.setUserDoc(store.session.userId, { weeklyBudget: user.weeklyBudget });
     }
 
+    notifyBudgetChange();
+
     return { ok: true, weeklyBudget: user.weeklyBudget };
   }
 
@@ -784,6 +798,8 @@
       window.FirestoreService.addExpenseDoc(store.session.userId, entry);
       syncGamificationFields(store.session.userId, user);
     }
+
+    notifyBudgetChange();
 
     return {
       ok: true,
@@ -1024,6 +1040,8 @@
     if (window.FirestoreService && window.FirestoreService.deleteExpenseDoc) {
       window.FirestoreService.deleteExpenseDoc(store.session.userId, expenseId);
     }
+
+    notifyBudgetChange();
 
     return { ok: true };
   }
@@ -1379,7 +1397,7 @@
     ensureGamificationFields(user);
 
     saveStore(store);
-    window.dispatchEvent(new CustomEvent("sugbocents:synced"));
+    notifyBudgetChange();
     return { ok: true };
   }
 

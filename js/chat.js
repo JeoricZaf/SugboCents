@@ -6,14 +6,12 @@
     alarmed: "assets/images/mascot/mascot-shocked.png"
   };
 
+  // Uses the global MascotAPI for state
   function getMascotState() {
-    if (!window.StorageAPI) { return "neutral"; }
-    var summary = window.StorageAPI.getBudgetSummary();
-    var pct = summary.percentageSpent;
-    if (pct >= 90) { return "alarmed"; }
-    if (pct >= 65) { return "worried"; }
-    if (pct >= 30) { return "neutral"; }
-    return "happy";
+    if (window.MascotAPI && window.MascotAPI.getMascotState) {
+      return window.MascotAPI.getMascotState();
+    }
+    return "neutral"; // Fallback
   }
 
   function fmt(n) {

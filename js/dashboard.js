@@ -109,6 +109,8 @@
         ? Math.min(100, Math.round((summary.totalSpentThisWeek / summary.weeklyBudget) * 100))
         : 0;
     }
+
+    window.SugboCentsBudgetPreview = summary;
     var remainingEl   = document.getElementById("remainingAmount");
     var summaryEl     = document.getElementById("budgetSummary");
     var progressEl    = document.getElementById("budgetProgress");
@@ -150,6 +152,10 @@
       var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       weekLabelEl.textContent = months[startOfWeek.getMonth()] + " " + startOfWeek.getDate() + " \u2013 " +
         months[endOfWeek.getMonth()] + " " + endOfWeek.getDate();
+    }
+
+    if (window.MascotWidget && window.MascotWidget.update) {
+      window.MascotWidget.update();
     }
   }
 
