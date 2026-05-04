@@ -477,10 +477,10 @@ img.mascot-avatar {
   .mascot-speech-bubble {
     /* Move to the left of the mascot */
     left: auto;
-    right: calc(100% + 15px);
+    right: calc(100% + 10px);
     
     /* Anchor to the top */
-    top: -20px;
+    top: 60px;
     bottom: auto;
     
     /* Update animation origin and starting position */
@@ -496,8 +496,8 @@ img.mascot-avatar {
   /* Flip the arrow to point RIGHT (towards the mascot) */
   .mascot-speech-bubble::after {
     left: auto;
-    right: -13px; /* Stick out to the right */
-    top: 30px; /* Position near the top of the bubble */
+    right: -11px; /* Stick out to the right */
+    top: 15px; /* Position near the top of the bubble */
     bottom: auto;
     transform: translateY(-50%);
     

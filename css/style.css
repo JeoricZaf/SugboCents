@@ -1266,8 +1266,9 @@ body.edit-mode .edit-mode-bar {
   width: 40px;
   height: 24px;
   border-radius: 999px;
-  background: #e6eef3;
+  background: rgb(226 232 240 / var(--tw-bg-opacity, 1));
   border: 1px solid rgba(15,23,42,0.06);
+  
   position: relative;
   flex-shrink: 0;
   transition: background-color 180ms ease, box-shadow 180ms ease;
@@ -1278,19 +1279,19 @@ body.edit-mode .edit-mode-bar {
 .dark-toggle-btn::after {
   content: "";
   position: absolute;
-  left: 4px;
-  width: 16px;
-  height: 16px;
+  left: 0px;
+  width: 20px;
+  height: 20px;
   border-radius: 999px;
   background: #ffffff;
   box-shadow: 0 2px 6px rgba(15,23,42,0.12);
   transition: transform 180ms ease, left 180ms ease;
 }
 .dark-toggle-btn.dark-on {
-  background: #1f6b46;
+  background: rgb(226 232 240 / var(--tw-bg-opacity, 1));
 }
 .dark-toggle-btn.dark-on::after {
-  transform: translateX(16px);
+  transform: translateX(17px);
 }
 
 .modal-actions .btn-primary,
