@@ -48,6 +48,15 @@ const SHELL_FILES = [
   "assets/images/reviews/Oliver_Review.jpg",
   "assets/images/reviews/Jon_Review.jpg",
   "assets/images/reviews/Jeoric_Review.png",
+  "assets/images/mascot/fullbody-confused.gif",
+  "assets/images/mascot/fullbody-dance.gif",
+  "assets/images/mascot/fullbody-shocked.gif",
+  "assets/images/mascot/fullbody-sleepy.gif",
+  "assets/images/mascot/fullbody-wave.gif",
+  "assets/images/mascot/mascot-happy.png",
+  "assets/images/mascot/mascot-neutral.png",
+  "assets/images/mascot/mascot-shocked.png",
+  "assets/images/mascot/mastcot-sad.png",
   "icons/icon-192.png",
   "icons/icon-512.png"
 ];
