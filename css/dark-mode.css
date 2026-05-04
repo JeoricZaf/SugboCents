@@ -655,6 +655,10 @@ html.dark-mode .modal-sheet {
   color: var(--ink-900);
 }
 
+html.dark-mode .modal-title {
+  color: rgba(230,242,232,0.96) !important;
+}
+
 html.dark-mode .label {
   color: var(--ink-900);
   font-weight: 600;
@@ -684,4 +688,85 @@ html.dark-mode .budget-card .budget-amount {
 
 html.dark-mode .budget-card .budget-progress-bar {
   background-color: rgba(61, 184, 129, 0.4);
+}
+
+html.dark-mode .ai-tip-kicker,
+html.dark-mode .ai-tip-heading,
+html.dark-mode .ai-tip-title {
+  color: var(--brand-800) !important;
+}
+
+html.dark-mode .ai-tip-kicker {
+  color: #64748b !important;
+}
+
+html.dark-mode .ai-tip-body,
+html.dark-mode .ai-tip-why-summary,
+html.dark-mode .ai-tip-why-label,
+html.dark-mode .ai-tip-why-list,
+html.dark-mode .ai-tip-why-list li {
+  color: rgba(230,242,232,0.92) !important;
+}
+
+html.dark-mode .ai-tip-why-label {
+  color: rgba(230,242,232,0.92) !important;
+}
+
+html.dark-mode .category-name,
+html.dark-mode .breakdown-pct {
+  color: rgba(230,242,232,0.92) !important;
+}
+
+html.dark-mode .breakdown-amount {
+  color: #4ac992 !important;
+}
+
+html.dark-mode .trend-stat {
+  background: var(--ink-900) !important;
+  color: #0b1013 !important;
+  border-radius: 8px;
+  padding: 0.75rem !important;
+}
+
+html.dark-mode .trend-stat .stat-label {
+  color: #0b1013 !important;
+  font-weight: 600;
+}
+
+html.dark-mode .trend-stat .stat-value {
+  color: var(--brand-800) !important;
+  font-weight: 700 !important;
+}
+
+html.dark-mode .week-comparison-svg rect:first-of-type {
+  fill: rgba(76,175,120,0.14) !important;
+  stroke: rgba(76,175,120,0.45) !important;
+}
+
+html.dark-mode .week-comparison-svg rect:nth-of-type(2) {
+  fill: rgba(236,72,153,0.12) !important;
+  stroke: rgba(236,72,153,0.40) !important;
+}
+
+html.dark-mode .week-comparison-svg text {
+  fill: #9ca3af !important;
+}
+
+html.dark-mode .week-comparison-delta {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+html.dark-mode .week-comparison-delta.positive {
+  background: rgba(76,175,120,0.06);
+  border-color: rgba(76,175,120,0.09);
+}
+
+html.dark-mode .week-comparison-delta.negative {
+  background: rgba(236,72,153,0.05);
+  border-color: rgba(236,72,153,0.08);
+}
+
+html.dark-mode .week-comparison-delta .delta-amount {
+  color: rgba(230,242,232,0.92) !important;
 }

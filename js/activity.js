@@ -190,7 +190,14 @@
   function showUndoToast(expense) {
     if (pendingDelete) { commitDelete(); }
 
-    pendingDelete = { id: expense.id, data: expense };
+    pendingDelete = { id: expense.id, data: expense, removed: false };
+
+    try {
+      window.StorageAPI.removeExpense(expense.id);
+      pendingDelete.removed = true;
+    } catch (e) {
+      // Keep the toast visible even if the optimistic delete fails.
+    }
     renderList();
 
     var toast   = document.getElementById("undoToast");
@@ -204,7 +211,9 @@
   function commitDelete() {
     if (!pendingDelete) { return; }
     clearTimeout(pendingDeleteTimer);
-    window.StorageAPI.removeExpense(pendingDelete.id);
+    if (!pendingDelete.removed) {
+      window.StorageAPI.removeExpense(pendingDelete.id);
+    }
     allExpenses = allExpenses.filter(function (e) { return e.id !== pendingDelete.id; });
     pendingDelete      = null;
     pendingDeleteTimer = null;
@@ -217,6 +226,12 @@
   function cancelDelete() {
     if (!pendingDelete) { return; }
     clearTimeout(pendingDeleteTimer);
+
+    if (pendingDelete.removed && pendingDelete.data) {
+      window.StorageAPI.restoreExpense(pendingDelete.data);
+      allExpenses = window.StorageAPI.getExpenses();
+    }
+
     pendingDelete      = null;
     pendingDeleteTimer = null;
     var toast = document.getElementById("undoToast");
