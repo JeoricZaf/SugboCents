@@ -23,7 +23,7 @@
   <aside class="app-sidebar" aria-label="Sidebar navigation">
     <div class="sidebar-header">
       <a href="dashboard.html" class="sidebar-brand" tabindex="-1" aria-hidden="true">
-        <span class="sidebar-brand-mark" aria-hidden="true">SC</span>
+        <span class="sidebar-brand-mark" aria-hidden="true"><img src="assets/images/mascot/mascot-neutral.png" alt="" /></span>
         <span class="sidebar-brand-name">SugboCents</span>
       </a>
       <button id="sidebarToggle" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
@@ -115,12 +115,12 @@
       </form>
     </section>
 
-    <!-- Streak preferences -->
+   <!-- Streak preferences -->
     <section class="card-panel p-5 mt-4">
       <h2 class="text-base font-bold text-ink">Streak &amp; goals</h2>
       <p class="text-sm text-slate-600 mt-1">Control how streaks and goal tracking behave.</p>
       <div class="mt-4 space-y-4">
-        <label class="flex items-center justify-between gap-3 cursor-pointer">
+        <label class="relative flex items-center justify-between gap-3 cursor-pointer">
           <div>
             <p class="text-sm font-semibold text-ink">Enable streak tracking</p>
             <p class="text-xs text-slate-500">Count consecutive save-goal completions.</p>
@@ -128,7 +128,7 @@
           <input id="streakEnabled" type="checkbox" class="sr-only peer" />
           <div class="relative w-10 h-6 bg-slate-200 rounded-full transition peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-4"></div>
         </label>
-        <label class="flex items-center justify-between gap-3 cursor-pointer">
+        <label class="relative flex items-center justify-between gap-3 cursor-pointer">
           <div>
             <p class="text-sm font-semibold text-ink">Goal reminders</p>
             <p class="text-xs text-slate-500">Show a reminder banner when goals are close.</p>
@@ -136,7 +136,7 @@
           <input id="streakNotifications" type="checkbox" class="sr-only peer" />
           <div class="relative w-10 h-6 bg-slate-200 rounded-full transition peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-4"></div>
         </label>
-        <label class="flex items-center justify-between gap-3 cursor-pointer">
+        <label class="relative flex items-center justify-between gap-3 cursor-pointer">
           <div>
             <p class="text-sm font-semibold text-ink">Weekly summary</p>
             <p class="text-xs text-slate-500">Show a summary card on your dashboard each week.</p>
@@ -153,7 +153,7 @@
       <h2 class="text-base font-bold text-ink">Display</h2>
       <p class="text-sm text-slate-600 mt-1">Customize how information is shown.</p>
       <div class="mt-4">
-        <label class="flex items-center justify-between gap-3 cursor-pointer">
+        <label class="relative flex items-center justify-between gap-3 cursor-pointer">
           <div>
             <p class="text-sm font-semibold text-ink">Compact expense list</p>
             <p class="text-xs text-slate-500">Show expenses in a denser layout.</p>
@@ -161,6 +161,8 @@
           <input id="compactExpenses" type="checkbox" class="sr-only peer" />
           <div class="relative w-10 h-6 bg-slate-200 rounded-full transition peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-4"></div>
         </label>
+
+        
         <!-- Dark mode toggle (settings-only UI) -->
         <label class="flex items-center justify-between gap-3 cursor-pointer mt-3">
           <div>

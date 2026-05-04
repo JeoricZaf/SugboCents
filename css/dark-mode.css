@@ -395,11 +395,12 @@ html.dark-mode .dark-toggle-btn::after {
 }
 html.dark-mode .dark-toggle-btn.dark-on,
 html.dark-mode .dark-toggle-btn[aria-pressed="true"] {
-  background: linear-gradient(135deg, var(--brand-700), var(--brand-800));
+  background: rgb(5 150 105);
 }
 html.dark-mode .dark-toggle-btn.dark-on::after,
 html.dark-mode .dark-toggle-btn[aria-pressed="true"]::after {
-  transform: translateX(1rem);
+  /* transform: translateX(1rem); */
+  
 }
 
 /* Quick-add button and category styling */
@@ -736,6 +737,19 @@ html.dark-mode .trend-stat .stat-label {
 html.dark-mode .trend-stat .stat-value {
   color: var(--brand-800) !important;
   font-weight: 700 !important;
+}
+
+/* Keep the small "Disable notifications" link/button from getting a dark
+   background via the generic `button:not(.btn-primary)` rule. Make it
+   transparent and preserve the underline/text color in dark mode. */
+html.dark-mode .notif-disable-btn,
+html.dark-mode button.notif-disable-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  color: #c0c0c0 !important; /* matches text-slate-500 in dark mode */
+  text-decoration: underline !important;
 }
 
 html.dark-mode .week-comparison-svg rect:first-of-type {
