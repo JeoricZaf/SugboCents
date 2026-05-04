@@ -400,7 +400,6 @@ html.dark-mode .dark-toggle-btn[aria-pressed="true"] {
 html.dark-mode .dark-toggle-btn.dark-on::after,
 html.dark-mode .dark-toggle-btn[aria-pressed="true"]::after {
   /* transform: translateX(1rem); */
-  
 }
 
 /* Quick-add button and category styling */
