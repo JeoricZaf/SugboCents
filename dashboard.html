@@ -116,6 +116,24 @@
       </div>
     </section>
 
+    <!-- AI tip card -->
+    <section class="mt-6" aria-label="AI recommendation">
+      <div class="card-panel ai-tip-card p-4">
+        <div class="ai-tip-header">
+          <div>
+            <p class="ai-tip-kicker">Today's tip</p>
+            <h2 class="ai-tip-heading">Sugbo Tip</h2>
+          </div>
+          <span id="aiTipSource" class="ai-tip-source">Fallback</span>
+        </div>
+        <h3 id="aiTipTitle" class="ai-tip-title">Loading tip...</h3>
+        <p id="aiTipBody" class="ai-tip-body">Checking your latest spending pattern.</p>
+        <div class="ai-tip-actions">
+          <button id="aiTipWhyBtn" type="button" class="ai-tip-why-btn">Why this tip?</button>
+        </div>
+      </div>
+    </section>
+
     <!-- save goals streak -->
     <section class="streak-card card-panel mt-6" aria-label="Save goals streak">
       <div class="streak-row">
@@ -248,6 +266,19 @@
       <span class="nav-text">Settings</span>
     </a>
   </nav>
+
+  <!-- AI tip why modal -->
+  <div id="aiTipWhyModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="aiTipWhyTitle">
+    <div class="modal-sheet">
+      <p class="modal-title" id="aiTipWhyTitle">Why this tip?</p>
+      <p id="aiTipWhySummary" class="ai-tip-why-summary"></p>
+      <p class="ai-tip-why-label">Signals used</p>
+      <ul id="aiTipWhySignals" class="ai-tip-why-list"></ul>
+      <div class="modal-actions">
+        <button type="button" id="aiTipWhyClose" class="btn-outline">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- quick-add edit/create modal -->
   <div id="qaModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="qaModalTitle">
