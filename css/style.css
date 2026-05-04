@@ -470,25 +470,19 @@ body[data-page="profile"].profile-ready .xp-widget {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
   width: 100%;
   min-height: 5rem;
   padding: 1.25rem 1.3rem;
   border-radius: 1.5rem;
-  background: linear-gradient(180deg, #fef2f2 0%, #fce7e7 100%);
-  color: #b42318;
+  background: radial-gradient(circle at top left, rgba(255, 221, 145, 0.65), rgba(220, 252, 231, 1));
+  color: #14532d;
   font-size: 1.25rem;
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.03em;
-  box-shadow: 0 0 0 6px rgba(252, 231, 231, 0.5),
-              0 0 24px rgba(180, 35, 24, 0.12);
-  border: 1px solid rgba(180, 35, 24, 0.1);
-}
-
-.streak-card .streak-badge i {
-  font-size: 1.8rem;
-  color: #dc2626;
+  box-shadow: 0 0 0 6px rgba(220, 252, 231, 0.24),
+              0 0 30px rgba(251, 146, 60, 0.22);
+  text-shadow: 0 0 10px rgba(251, 146, 60, 0.55);
 }
 
 .streak-card .streak-badge span {
@@ -1272,8 +1266,9 @@ body.edit-mode .edit-mode-bar {
   width: 40px;
   height: 24px;
   border-radius: 999px;
-  background: #e6eef3;
+  background: rgb(226 232 240 / var(--tw-bg-opacity, 1));
   border: 1px solid rgba(15,23,42,0.06);
+  
   position: relative;
   flex-shrink: 0;
   transition: background-color 180ms ease, box-shadow 180ms ease;
@@ -1284,19 +1279,19 @@ body.edit-mode .edit-mode-bar {
 .dark-toggle-btn::after {
   content: "";
   position: absolute;
-  left: 4px;
-  width: 16px;
-  height: 16px;
+  left: 0px;
+  width: 20px;
+  height: 20px;
   border-radius: 999px;
   background: #ffffff;
   box-shadow: 0 2px 6px rgba(15,23,42,0.12);
   transition: transform 180ms ease, left 180ms ease;
 }
 .dark-toggle-btn.dark-on {
-  background: #1f6b46;
+  background: rgb(226 232 240 / var(--tw-bg-opacity, 1));
 }
 .dark-toggle-btn.dark-on::after {
-  transform: translateX(16px);
+  transform: translateX(17px);
 }
 
 .modal-actions .btn-primary,
