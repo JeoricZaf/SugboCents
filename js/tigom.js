@@ -273,8 +273,10 @@
     if (doneEl)  { doneEl.textContent  = completedGoals; }
     if (savedEl) { savedEl.textContent = formatPhp(totalSaved); }
 
-    // Streak
-    var streak = window.StorageAPI ? window.StorageAPI.getCurrentStreak() : 0;
+    // Goals completed streak
+    var streak = window.StorageAPI && window.StorageAPI.getSaveGoalsStreak
+      ? window.StorageAPI.getSaveGoalsStreak(goals)
+      : 0;
     var streakEl = document.getElementById("tigomStreakCount");
     if (streakEl) { streakEl.textContent = streak; }
   }
@@ -283,7 +285,8 @@
   function renderXpWidget() {
     if (!window.StorageAPI || !window.StorageAPI.getXpInfo) { return; }
     var info   = window.StorageAPI.getXpInfo();
-    var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
+    var goals  = window.StorageAPI.getGoals ? window.StorageAPI.getGoals() : [];
+    var streak = window.StorageAPI.getSaveGoalsStreak ? window.StorageAPI.getSaveGoalsStreak(goals) : 0;
     var levelEl  = document.getElementById("xpLevel");
     var barEl    = document.getElementById("xpBar");
     var trackEl  = document.getElementById("xpBarTrack");
@@ -297,7 +300,7 @@
     if (valueEl)  { valueEl.textContent = info.xp + " XP"; }
     if (chipEl) {
       chipEl.className = "streak-chip" + (streak === 0 ? " streak-chip--cold" : streak >= 7 ? " streak-chip--hot streak-chip--week" : streak >= 3 ? " streak-chip--hot" : " streak-chip--warm");
-      chipEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + (streak === 0 ? 'No streak yet' : streak + '-day streak');
+      chipEl.innerHTML = '<i class="bi bi-trophy-fill" aria-hidden="true"></i> ' + (streak === 0 ? 'No goal streak yet' : streak + '-day goal streak');
     }
   }
 

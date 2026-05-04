@@ -1048,15 +1048,15 @@
     streakCountEl.textContent = String(streak);
     
     if (streak === 0) {
-      streakDescEl.textContent = "Start contributing to a goal to build your streak.";
+      streakDescEl.textContent = "Start completing goal contributions to build your streak.";
     } else if (streak === 1) {
-      streakDescEl.textContent = "Great start! Keep contributing tomorrow.";
+      streakDescEl.textContent = "Great start! Keep completing goals tomorrow.";
     } else if (streak < 7) {
-      streakDescEl.textContent = streak + " consecutive days of goal contributions.";
+      streakDescEl.textContent = streak + " consecutive days of goal completions.";
     } else if (streak < 30) {
-      streakDescEl.textContent = streak + "-day streak! You're a saving champion.";
+      streakDescEl.textContent = streak + "-day goal streak! You're a saving champion.";
     } else {
-      streakDescEl.textContent = streak + "-day streak! Exceptional dedication to your goals.";
+      streakDescEl.textContent = streak + "-day goal streak! Exceptional dedication to your goals.";
     }
   }
 

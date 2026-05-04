@@ -2440,6 +2440,19 @@ body.edit-mode .qa-add-new-btn {
   text-shadow: 0 0 10px rgba(251, 146, 60, 0.55);
 }
 
+.streak-card .streak-badge i {
+  color: #f97316 !important;
+  filter: none;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .streak-card .streak-badge span {
   display: inline-flex;
   align-items: center;

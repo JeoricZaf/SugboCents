@@ -287,10 +287,8 @@
     
     var set = {};
     goals.forEach(function (goal) {
-      if (goal.updatedAt) {
-        set[getLocalDateKey(goal.updatedAt)] = true;
-      } else if (goal.lastContributionDate) {
-        set[getLocalDateKey(goal.lastContributionDate)] = true;
+      if (goal && goal.completed && goal.completedAt) {
+        set[getLocalDateKey(goal.completedAt)] = true;
       }
     });
     
@@ -1325,8 +1323,12 @@
     if (!goal) {
       return { ok: false, error: "Goal not found." };
     }
+    var wasCompleted = !!goal.completed;
     goal.savedAmount = Math.max(0, amount);
     goal.completed = goal.savedAmount >= goal.targetAmount;
+    if (!wasCompleted && goal.completed) {
+      goal.completedAt = nowIso();
+    }
     goal.updatedAt = nowIso();
     saveStore(store);
     return { ok: true, goal: goal };
