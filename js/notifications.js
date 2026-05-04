@@ -138,12 +138,18 @@
 
     send: function (title, options) {
       if (Notification.permission === "granted") {
+        var notificationOptions = Object.assign({
+          icon: "icons/icon-192.png",
+          badge: "icons/icon-192.png",
+          vibrate:[200, 100, 200],
+          tag: "sugbocents-app-notification", // The tag is what merges/replaces notifications
+          renotify: true // Ensures it vibrates/sounds again even if it just replaced an old one
+        }, options);
+
         navigator.serviceWorker.ready.then(function (registration) {
-          registration.showNotification(title, Object.assign({
-            icon: "icons/icon-192.png",
-            badge: "icons/icon-192.png",
-            vibrate:[200, 100, 200]
-          }, options));
+          // Simply show the new notification. 
+          // The OS will instantly replace the old one because the `tag` matches.
+          return registration.showNotification(title, notificationOptions);
         });
       }
     },

@@ -1,4 +1,4 @@
-const CACHE_NAME = "sugbocents-shell-v57";
+const CACHE_NAME = "sugbocents-shell-v58";
 const SHELL_FILES = [
   "./",
   "index.html",
@@ -144,12 +144,14 @@ self.addEventListener("fetch", (event) => {
 
 
 //NOTIFICATIONS
+//NOTIFICATIONS
 self.addEventListener("push", (event) => {
   let payload = {
     title: "SugboCents",
     body: "You have a new budget update.",
     icon: "icons/icon-192.png",
     badge: "icons/icon-192.png",
+    tag: "sugbocents-push",
     url: "/dashboard.html"
   };
 
@@ -161,11 +163,14 @@ self.addEventListener("push", (event) => {
     }
   }
 
+  // Just show it directly! The tag will handle instant replacement.
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: payload.icon,
       badge: payload.badge,
+      tag: payload.tag,
+      renotify: true,
       data: { url: payload.url },
       vibrate: [200, 100, 200]
     })
