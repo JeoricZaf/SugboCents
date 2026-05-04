@@ -388,6 +388,10 @@ img.mascot-avatar {
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
   user-select: none;
   filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.13));
+  background: #ffffff;
+  border: 1.5px solid rgba(31, 107, 70, 0.18);
+  border-radius: 18px;
+  padding: 6px;
   display: block;
 }
 
@@ -395,13 +399,13 @@ img.mascot-avatar {
   transform: scale(1.07) translateY(-3px);
 }
 
-/* Speech bubble — appears above the mascot, arrow points down toward it */
+/* Speech bubble — appears to the right of the mascot, arrow points left toward it */
 .mascot-speech-bubble {
   position: absolute;
-  bottom: calc(100% + 8px);
-  right: -4px;
-  transform: scale(0.88) translateY(6px);
-  transform-origin: bottom right;
+  left: calc(100% + 20px);
+  top: 0;
+  transform: translateY(-20%) scale(0.88) translateX(-4px);
+  transform-origin: left center;
 
   background: #ffffff;
   border: 1.5px solid rgba(31, 107, 70, 0.18);
@@ -424,24 +428,27 @@ img.mascot-avatar {
   text-align: left;
 }
 
-/* Arrow pointing down toward the mascot */
+/* Arrow pointing left toward the mascot */
 .mascot-speech-bubble::after {
   content: "";
   position: absolute;
-  top: 100%;
-  right: 18px;
+  left: -12px;
+  top: 45%;
+  transform: translateY(-50%);
   border: 7px solid transparent;
-  border-top-color: #ffffff;
+  border-right-color: #ffffff;
+  z-index: 1;
 }
 
 /* Border of the arrow */
 .mascot-speech-bubble::before {
   content: "";
   position: absolute;
-  top: calc(100% + 1.5px);
-  right: 17px;
+  left: calc(-15px );
+  top: 45%;
+  transform: translateY(-50%);
   border: 8px solid transparent;
-  border-top-color: rgba(31, 107, 70, 0.18);
+  /* border-right-color: rgba(31, 107, 70, 0.18); */
   z-index: -1;
 }
 
@@ -450,4 +457,52 @@ img.mascot-avatar {
   opacity: 1;
   visibility: visible;
   transform: scale(1) translateY(0);
+  
+}
+
+/* ── Mobile Override for Dashboard Mascot Speech Bubble (Top-Left) ── */
+@media (max-width: 768px) {
+  .mascot-speech-bubble {
+    /* Move to the left of the mascot */
+    left: auto;
+    right: calc(100% + 15px);
+    
+    /* Anchor to the top */
+    top: -20px;
+    bottom: auto;
+    
+    /* Update animation origin and starting position */
+    transform-origin: right top;
+    transform: translateY(-10px) scale(0.88);
+  }
+
+  /* Reset transform when shown on mobile */
+  .mascot-speech-bubble.show-bubble {
+    transform: scale(1) translateY(0);
+  }
+
+  /* Flip the arrow to point RIGHT (towards the mascot) */
+  .mascot-speech-bubble::after {
+    left: auto;
+    right: -13px; /* Stick out to the right */
+    top: 30px; /* Position near the top of the bubble */
+    bottom: auto;
+    transform: translateY(-50%);
+    
+    /* Clear the right border color and apply to the left */
+    border-color: transparent;
+    border-left-color: #ffffff;
+  }
+
+  /* Adjust the border/shadow layer of the arrow */
+  .mascot-speech-bubble::before {
+    left: auto;
+    right: -15px;
+    top: 30px;
+    bottom: auto;
+    transform: translateY(-50%);
+    border-color: transparent;
+    /* Uncomment below if you decide to use the border ring */
+    /* border-left-color: rgba(31, 107, 70, 0.18); */
+  }
 }

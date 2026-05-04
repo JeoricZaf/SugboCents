@@ -104,3 +104,24 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+
+//NOTIFICATIONS
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close(); // Close the notification
+
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      // If the dashboard is already open in a tab, focus it
+      for (const client of clientList) {
+        if (client.url.includes("dashboard.html") && "focus" in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise open a new window to the dashboard
+      if (clients.openWindow) {
+        return clients.openWindow("/dashboard.html");
+      }
+    })
+  );
+});

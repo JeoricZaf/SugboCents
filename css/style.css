@@ -1751,6 +1751,13 @@ body.edit-mode .qa-add-new-btn {
   color: var(--brand-700);
 }
 
+/* Notifications: align disable link to the right */
+.notif-disable-btn {
+  display: block;
+  width: 100%;
+  text-align: right;
+}
+
 /* ── activity page ── */
 .activity-date-group {
   margin-bottom: 1.25rem;
@@ -2617,3 +2624,4 @@ body.edit-mode .qa-add-new-btn {
 .badge-card--unlockable .badge-icon-wrap--unlockable {
   animation: ring-pulse 1.8s ease-out infinite;
 }
+

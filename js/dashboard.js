@@ -60,6 +60,22 @@
       .replace(/"/g, "&quot;");
   }
 
+  function maybePromptNotifications() {
+    if (!window.StorageAPI || !window.StorageAPI.getCurrentUser || !window.StorageAPI.getCurrentUser()) { return; }
+    if (!window.NotificationService || !("Notification" in window)) { return; }
+    if (Notification.permission !== "default") { return; }
+    if (!window.StorageAPI.getSession || !window.StorageAPI.getPreferences || !window.StorageAPI.savePreferences) { return; }
+
+    var session = window.StorageAPI.getSession();
+    if (!session || !session.createdAt) { return; }
+
+    var prefs = window.StorageAPI.getPreferences() || {};
+    if (prefs.notifPromptedSessionId === session.createdAt) { return; }
+
+    window.NotificationService.requestPermission();
+    window.StorageAPI.savePreferences({ notifPromptedSessionId: session.createdAt });
+  }
+
   // ── greeting ─────────────────────────────────────────────
   function renderGreeting() {
     var titleEl = document.getElementById("greetingTitle");
@@ -271,6 +287,8 @@
         if (!result.ok) {
           return;
         }
+
+        maybePromptNotifications();
 
         if (window.GamificationUI && result.xpAwarded > 0) {
           window.GamificationUI.showXpPopup(result.xpAwarded, button);
@@ -708,6 +726,8 @@
         errEl.classList.remove("hidden");
         return;
       }
+
+      maybePromptNotifications();
 
       if (window.GamificationUI && result.xpAwarded > 0) {
         window.GamificationUI.showXpPopup(result.xpAwarded, logBtn);

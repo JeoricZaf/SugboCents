@@ -102,7 +102,7 @@
         showMessage("streakSaveMsg", "Weekly summary preference saved.", false);
       });
     }
-  }
+  } // <--- ADDED CLOSING BRACKET HERE
 
   // ── Display preferences ──────────────────────────────────
   function initDisplaySection() {
@@ -118,6 +118,98 @@
         showMessage("displaySaveMsg", "Display preference saved.", false);
       });
     }
+  }
+// ── Notifications ───────────────────────────────────────
+  function initNotificationsSection() {
+    var btn = document.getElementById("enableNotificationsBtn");
+    var disableBtn = document.getElementById("disableNotificationsBtn");
+    var msg = document.getElementById("enableNotificationsMsg");
+    if (!btn || !disableBtn || !msg) { return; }
+
+    function setMessage(text, isError, persist) {
+      msg.textContent = text;
+      msg.className = "text-sm mt-3 font-semibold " + (isError ? "text-red-600" : "text-emerald-700");
+      msg.classList.remove("hidden");
+      if (persist) { return; }
+      setTimeout(function () { msg.classList.add("hidden"); }, 3200);
+    }
+
+    function updateState() {
+      if (!("Notification" in window)) {
+        btn.disabled = true;
+        btn.textContent = "Notifications not supported";
+        setMessage("This browser does not support notifications.", true);
+        return;
+      }
+      if (Notification.permission === "granted") {
+        btn.disabled = true;
+        btn.textContent = "Notifications enabled";
+        disableBtn.classList.remove("hidden");
+        // Only hide the message if it's not our "persist" instruction message
+        if (msg.textContent.indexOf("browser settings") === -1) {
+          msg.classList.add("hidden");
+        }
+        return;
+      }
+      if (Notification.permission === "denied") {
+        btn.disabled = true;
+        btn.textContent = "Notifications blocked";
+        setMessage("You blocked notifications in your browser settings.", true);
+        disableBtn.classList.add("hidden");
+        return;
+      }
+
+      btn.disabled = false;
+      btn.textContent = "Enable notifications";
+      disableBtn.classList.add("hidden");
+      if (msg.textContent.indexOf("browser settings") === -1) {
+        msg.classList.add("hidden");
+      }
+    }
+
+    updateState();
+
+    // 1. Fallback listeners for when user switches tabs/windows
+    function onVisibilityChange() {
+      if (!document.hidden) { updateState(); }
+    }
+    window.addEventListener("focus", updateState);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    // 2. NEW: Permissions API Listener (Triggers instantly when changed in browser)
+    if ('permissions' in navigator) {
+      navigator.permissions.query({ name: 'notifications' }).then(function(permissionStatus) {
+        permissionStatus.onchange = function() {
+          updateState();
+        };
+      }).catch(function() { 
+        // Ignore errors on older browsers that don't support this
+      });
+    }
+
+    // Button clicks
+    btn.addEventListener("click", function () {
+      if (!("Notification" in window)) {
+        setMessage("This browser does not support notifications.", true);
+        return;
+      }
+      if (!window.NotificationService) {
+        setMessage("Notification service is unavailable.", true);
+        return;
+      }
+      var req = window.NotificationService.requestPermission();
+      if (req && typeof req.then === "function") {
+        req.then(updateState).catch(function () {
+          setTimeout(updateState, 200);
+        });
+        return;
+      }
+      setTimeout(updateState, 200);
+    });
+
+    disableBtn.addEventListener("click", function () {
+      setMessage("To disable notifications, click the lock icon in your browser address bar and block notifications.", false, true);
+    });
   }
 
   function initBudgetAndAccountSection() {
@@ -248,6 +340,7 @@
     initProfileSection();
     initStreakSection();
     initDisplaySection();
+    initNotificationsSection();
     initBudgetAndAccountSection();
     renderXpMiniBar();
 
