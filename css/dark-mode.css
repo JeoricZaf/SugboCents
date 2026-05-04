@@ -284,7 +284,7 @@ html.dark-mode .eyebrow {
 }
 
 /* Sidebar brand wrapper with toggle button */
-.app-sidebar > div:first-child {
+/* .app-sidebar > div:first-child {
   display: flex !important;
   align-items: center;
   justify-content: space-between;
@@ -300,7 +300,7 @@ html.dark-mode .eyebrow {
   margin: 0 !important;
   flex: 1;
   min-width: 0;
-}
+} */
 
 .dark-mode-toggle {
   background: none;
