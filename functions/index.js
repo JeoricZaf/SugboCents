@@ -63,7 +63,7 @@ exports.chat = onRequest(
     var message = req.body.message;
     var history = Array.isArray(req.body.history) ? req.body.history : [];
     var systemPrompt = req.body.systemPrompt ||
-      "You are Tigom, a friendly savings mascot for SugboCents, a Filipino budgeting app. " +
+      "You are Sugbo, a friendly savings mascot for SugboCents, a Filipino budgeting app. " +
       "Keep replies SHORT (2-3 sentences), warm, and motivating. Currency is ₱ (PHP).";
 
     if (!message || typeof message !== "string") {

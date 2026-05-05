@@ -94,8 +94,8 @@
     var fab = document.createElement("button");
     fab.id = "mascotFab";
     fab.className = "mascot-fab " + stateObj.cls;
-    fab.setAttribute("aria-label", "Open Tigom assistant");
-    fab.setAttribute("title", "Chat with Tigom");
+    fab.setAttribute("aria-label", "Open Sugbo assistant");
+    fab.setAttribute("title", "Chat with Sugbo");
     
     // --> ADDED: Insert the image instead of textContent
     fab.innerHTML = '<img src="' + stateObj.img + '" class="mascot-fab-img" alt="Sugbo" draggable="false" />';
@@ -119,7 +119,7 @@
         // --> ADDED: Use an <img> tag for the chatbox avatar
         '<img class="mascot-avatar" id="mascotAvatarImg" src="' + stateObj.img + '" alt="Sugbo" draggable="false" />' +
         '<div>' +
-          '<div class="mascot-name">Tigom</div>' +
+          '<div class="mascot-name">Sugbo</div>' +
           '<div class="mascot-status" id="mascotStatusText">' + stateObj.label + '</div>' +
         '</div>' +
 

@@ -49,7 +49,7 @@
       var avatarState = getMascotState();
       var avatar = document.createElement("img");
       avatar.src = MASCOT_IMGS[avatarState] || MASCOT_IMGS.neutral;
-      avatar.alt = "Tigom";
+      avatar.alt = "Sugbo";
       avatar.className = "chat-msg-avatar";
       msg.appendChild(avatar);
     }
@@ -87,7 +87,7 @@
     var avatarState = getMascotState();
     var avatar = document.createElement("img");
     avatar.src = MASCOT_IMGS[avatarState] || MASCOT_IMGS.neutral;
-    avatar.alt = "Tigom";
+    avatar.alt = "Sugbo";
     avatar.className = "chat-msg-avatar";
     msg.appendChild(avatar);
 
@@ -123,7 +123,7 @@
     var history = window.StorageAPI.getChatHistory();
     if (!history || history.length === 0) {
       // First time — show a welcome greeting
-      appendMsg("bot", "Hey there! 👋 I'm Tigom, your budget buddy. Ask me anything about your spending, goals, or budget — I'm here to help!", new Date().toISOString(), false);
+      appendMsg("bot", "Hey there! 👋 I'm Sugbo, your budget buddy. Ask me anything about your spending, goals, or budget — I'm here to help!", new Date().toISOString(), false);
       return;
     }
 

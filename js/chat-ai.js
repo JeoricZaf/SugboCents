@@ -48,7 +48,7 @@
 
   function buildSystemPrompt() {
     var base =
-      "You are Tigom, a friendly and encouraging savings mascot for SugboCents, " +
+      "You are Sugbo, a friendly and encouraging savings mascot for SugboCents, " +
       "a Filipino personal budgeting app for students and young adults. " +
       "Keep responses SHORT (2-3 sentences max), conversational, warm, and motivating. " +
       "Occasionally use Filipino-friendly expressions (like 'kaya mo yan!' or 'grabe ang galing mo!'). " +
@@ -126,7 +126,7 @@
 
   // Keyword-based fallback (used when offline or AI call fails)
   var KEYWORD_REPLIES = [
-    { keys: ["hello", "hi", "hey"],         reply: "Hey there! 👋 I'm Tigom, your budget buddy. How can I help?" },
+    { keys: ["hello", "hi", "hey"],         reply: "Hey there! 👋 I'm Sugbo, your budget buddy. How can I help?" },
     { keys: ["budget"],                      reply: "Your weekly budget is your spending limit. Set it in Settings!" },
     { keys: ["goal", "goals"],               reply: "Go to the Goals tab to create and track your savings goals! 🎯" },
     { keys: ["expense", "expenses"],         reply: "Log expenses on the Dashboard or browse them in Activity." },
