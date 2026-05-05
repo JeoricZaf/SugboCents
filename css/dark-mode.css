@@ -279,6 +279,19 @@ html.dark-mode .budget-amount {
   color: #4ac992;
 }
 
+html.dark-mode .wrapped-access-card {
+  background-color: #1a2332;
+  border-color: rgba(61, 184, 129, 0.15);
+}
+
+html.dark-mode .wrapped-access-link {
+  transition: all 0.2s ease;
+}
+
+html.dark-mode .wrapped-access-link:hover {
+  opacity: 0.85;
+}
+
 html.dark-mode .eyebrow {
   background-color: rgba(61, 184, 129, 0.2);
 }

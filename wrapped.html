@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    // Force HTML and CSS cache invalidation
+    const CURRENT_VERSION = "67";
+    const STORED_VERSION = localStorage.getItem("wrapped-version");
+    
+    // If version changed, clear caches and reload
+    if (STORED_VERSION !== CURRENT_VERSION) {
+      localStorage.setItem("wrapped-version", CURRENT_VERSION);
+      if ("caches" in window) {
+        caches.keys().then(names => {
+          names.forEach(name => {
+            if (name.includes("sugbocents")) {
+              caches.delete(name);
+            }
+          });
+        });
+      }
+      // Force full page reload
+      if (STORED_VERSION !== null) {
+        window.location.reload(true);
+      }
+    }
+    
+    // Cache-bust stylesheets with timestamp
+    const originalSetAttribute = Element.prototype.setAttribute;
+    const timestamp = Date.now();
+    Element.prototype.setAttribute = function(name, value) {
+      if (name === "href" && value && value.includes("css/")) {
+        const basePath = value.split("?")[0];
+        value = basePath + "?t=" + timestamp;
+      }
+      return originalSetAttribute.call(this, name, value);
+    };
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1f6b46" />
+  <title>SugboCents - Weekly Wrapped</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <link rel="stylesheet" href="css/style.css?v=62" />
+  <link rel="stylesheet" href="css/wrapped.css?v=62" />
+  <link rel="stylesheet" href="css/dark-mode.css?v=62" />
+  <script>if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");</script>
+</head>
+<body data-page="wrapped" data-protected="true" class="bg-mist min-h-screen antialiased">
+
+  <div class="app-layout">
+
+    <!-- sidebar nav (desktop only) -->
+    <aside class="app-sidebar" aria-label="Sidebar navigation">
+      <div class="sidebar-header">
+        <a href="dashboard.html" class="sidebar-brand" tabindex="-1" aria-hidden="true">
+          <span class="sidebar-brand-mark" aria-hidden="true"><img src="assets/images/mascot/mascot-neutral.png" alt="" /></span>
+          <span class="sidebar-brand-name">SugboCents</span>
+        </a>
+        <button id="sidebarToggle" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="1.5" y="1.5" width="15" height="15" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 1.5v15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <nav class="sidebar-nav-section" aria-label="Main navigation">
+        <a href="dashboard.html" data-nav="dashboard" class="sidebar-nav-link" data-tooltip="Dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span class="nav-link-label">Dashboard</span>
+        </a>
+        <a href="activity.html" data-nav="activity" class="sidebar-nav-link" data-tooltip="Activity">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span class="nav-link-label">Activity</span>
+        </a>
+        <a href="stats.html" data-nav="stats" class="sidebar-nav-link" data-tooltip="Profile">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span class="nav-link-label">Profile</span>
+        </a>
+        <a href="tigom.html" data-nav="tigom" class="sidebar-nav-link" data-tooltip="Goals">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          <span class="nav-link-label">Goals</span>
+        </a>
+        <a href="wrapped.html" data-nav="wrapped" class="sidebar-nav-link" data-tooltip="Wrapped">
+          <span class="material-icons" aria-hidden="true" style="font-size: 18px;">card_giftcard</span>
+          <span class="nav-link-label">Wrapped</span>
+        </a>
+      </nav>
+      <a href="settings.html" class="sidebar-user" aria-label="Account settings">
+        <div id="sidebarAvatar" class="sidebar-user-avatar">U</div>
+        <div class="min-w-0 sidebar-user-info">
+          <div id="sidebarName" class="sidebar-user-name">Loading…</div>
+          <div class="sidebar-user-sub">Account settings</div>
+        </div>
+        <svg class="sidebar-user-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+      </a>
+    </aside>
+
+    <div class="app-main">
+      <main class="pb-32 pt-6 px-4 max-w-lg mx-auto">
+
+        <!-- wrapped header -->
+        <header class="wrapped-header">
+          <div class="wrapped-logo">
+            <span class="material-icons">card_giftcard</span>
+          </div>
+          <h1 class="wrapped-title">Your Week Wrapped</h1>
+          <p class="wrapped-subtitle" id="wrappedSubtitle">Mar 31 - Apr 7</p>
+        </header>
+
+        <!-- main wrapped container -->
+        <div class="wrapped-container">
+
+          <!-- 1. Stats Overview Card -->
+          <section class="wrapped-card wrapped-card--primary">
+            <h2 class="wrapped-card-title">Weekly Summary</h2>
+            <div class="wrapped-stats-grid">
+              <div class="wrapped-stat">
+                <p class="wrapped-stat-label">Total Spent</p>
+                <p class="wrapped-stat-value" id="totalSpent">₱0.00</p>
+              </div>
+              <div class="wrapped-stat">
+                <p class="wrapped-stat-label">Expenses Logged</p>
+                <p class="wrapped-stat-value" id="expenseCount">0</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 2. Top Spending Category -->
+          <section class="wrapped-card wrapped-card--accent">
+            <h2 class="wrapped-card-title">Top Category</h2>
+            <div class="wrapped-category-showcase">
+              <div class="category-icon">
+                <span class="material-icons" id="topCategoryIcon">shopping_cart</span>
+              </div>
+              <div class="category-info">
+                <p class="category-name" id="topCategoryName">Food & Drinks</p>
+                <p class="category-amount" id="topCategoryAmount">₱0.00</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. Patterns Section -->
+          <section class="wrapped-card">
+            <h2 class="wrapped-card-title">Your Patterns</h2>
+            <div class="wrapped-patterns">
+              <div class="pattern-item">
+                <div class="pattern-icon">
+                  <span class="material-icons">calendar_today</span>
+                </div>
+                <div class="pattern-info">
+                  <p class="pattern-label">Busiest Day</p>
+                  <p class="pattern-value" id="busiestDay">Monday</p>
+                </div>
+              </div>
+              <div class="pattern-item">
+                <div class="pattern-icon">
+                  <span class="material-icons">schedule</span>
+                </div>
+                <div class="pattern-info">
+                  <p class="pattern-label">Peak Time</p>
+                  <p class="pattern-value" id="peakTime">12:00 PM</p>
+                </div>
+              </div>
+              <div class="pattern-item">
+                <div class="pattern-icon">
+                  <span class="material-icons">trending_up</span>
+                </div>
+                <div class="pattern-info">
+                  <p class="pattern-label">Avg per Day</p>
+                  <p class="pattern-value" id="avgPerDay">₱0.00</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 4. Gamification Section - Streak & XP -->
+          <section class="wrapped-card wrapped-card--gamified">
+            <h2 class="wrapped-card-title">Your Achievements</h2>
+            <div class="gamified-grid">
+              <!-- Streak -->
+              <div class="gamified-item">
+                <div class="gamified-icon gamified-icon--fire">
+                  <span class="material-icons">local_fire_department</span>
+                </div>
+                <p class="gamified-label">Current Streak</p>
+                <p class="gamified-value" id="currentStreak">0 days</p>
+              </div>
+              <!-- XP Earned -->
+              <div class="gamified-item">
+                <div class="gamified-icon gamified-icon--xp">
+                  <span class="material-icons">flash_on</span>
+                </div>
+                <p class="gamified-label">XP This Week</p>
+                <p class="gamified-value" id="weeklyXp">0 XP</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 5. Level Progress -->
+          <section class="wrapped-card">
+            <h2 class="wrapped-card-title">Level Progress</h2>
+            <div class="level-showcase">
+              <div class="level-badge">
+                <div class="level-number" id="currentLevel">3</div>
+                <p class="level-name" id="levelName">Money Smart</p>
+              </div>
+              <div class="level-progress-section">
+                <div class="progress-bar-wrapper">
+                  <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="levelProgressFill" style="width: 46%"></div>
+                  </div>
+                </div>
+                <p class="progress-text" id="progressText">125 / 350 XP to next level</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 6. Badges Unlocked This Week -->
+          <section class="wrapped-card">
+            <h2 class="wrapped-card-title" id="badgesTitle">New Badges Unlocked</h2>
+            <div class="badges-container" id="badgesContainer">
+              <div class="empty-state">
+                <span class="material-icons" style="font-size: 28px; color: var(--brand-800); margin-bottom: 0.5rem; display: block;">emoji_events</span>
+                <p style="margin: 0; font-weight: 600; margin-bottom: 0.25rem;">No badges yet</p>
+                <p style="margin: 0; font-size: 0.7rem; color: #7a8a7e;">Keep logging expenses to unlock achievements!</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 7. Motivational Message -->
+          <section class="wrapped-card wrapped-card--motivational">
+            <div class="motivational-content">
+              <span class="material-icons motivational-icon">favorite</span>
+              <p class="motivational-text" id="motivationalText">You're doing great! Keep up the good work this week!</p>
+              <p class="motivational-subtext" id="motivationalSubtext">Every expense logged brings you closer to mastering your finances</p>
+            </div>
+          </section>
+
+          <!-- 8. Action Buttons -->
+          <section class="wrapped-actions">
+            <button id="shareBtn" class="btn-action btn-action--primary" aria-label="Share your wrapped">
+              <span class="material-icons">share</span>
+              Share My Wrapped
+            </button>
+            <button id="downloadBtn" class="btn-action btn-action--secondary" aria-label="Download as image">
+              <span class="material-icons">download</span>
+              Download
+            </button>
+            <a href="dashboard.html" class="btn-action btn-action--secondary wrapped-mobile-return" aria-label="Return to dashboard">
+              <span class="material-icons">arrow_back</span>
+              Return to Dashboard
+            </a>
+          </section>
+
+        </div>
+
+      </main>
+    </div>
+
+  </div>
+
+  <!-- 5-tab bottom nav -->
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <a href="dashboard.html" data-nav="dashboard" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-text">Dashboard</span>
+    </a>
+    <a href="activity.html" data-nav="activity" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="nav-text">Activity</span>
+    </a>
+    <a href="tigom.html" data-nav="tigom" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+      <span class="nav-text">Goals</span>
+    </a>
+    <a href="stats.html" data-nav="stats" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-text">Profile</span>
+    </a>
+    <a href="settings.html" data-nav="settings" class="nav-link">
+      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="nav-text">Settings</span>
+    </a>
+  </nav>
+
+  <!-- scripts -->
+  <script src="js/firebase-init.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Force service worker to check for updates
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.update().catch(() => {});
+      });
+    }
+  </script>
+  <script src="js/storage.js"></script>
+  <script src="js/dark-mode.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/wrapped.js?v=62"></script>
+
+</body>
+</html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "sugbocents-shell-v58";
+const CACHE_NAME = "sugbocents-shell-v67";
 const SHELL_FILES = [
   "./",
   "index.html",
@@ -16,6 +16,7 @@ const SHELL_FILES = [
   "css/style.css",
   "css/landing.css",
   "css/dark-mode.css",
+  "css/wrapped.css",
   "css/spending-chart.css",
   "css/stats.css",
   "css/mascot.css",
@@ -102,6 +103,7 @@ self.addEventListener("fetch", (event) => {
   const canCache = isHttp && isSameOrigin;
   const isDocument = event.request.mode === "navigate" || event.request.destination === "document";
   const isScript = event.request.destination === "script" || /\/js\/.+\.js$/i.test(url.pathname);
+  const isStylesheet = event.request.destination === "style" || /\/css\/.+\.css$/i.test(url.pathname);
 
   function maybeCache(request, response) {
     if (!canCache || !response || response.status !== 200) {
@@ -112,7 +114,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Network-first for HTML and JS so app logic updates are not stuck on stale cache.
-  if (isDocument || isScript) {
+  if (isDocument || isScript || isStylesheet) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
