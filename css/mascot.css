@@ -12,6 +12,7 @@
   box-shadow: none;
   border: none;
   cursor: pointer;
+  pointer-events: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -102,16 +103,20 @@ img.mascot-avatar {
   border-radius: 1.25rem;
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
   border: 1px solid rgba(31, 107, 70, 0.12);
-  z-index: 41;
+  z-index: 9001;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   transform-origin: bottom right;
-  animation: chatbox-open 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .mascot-chatbox.hidden {
   display: none;
+}
+
+.mascot-chatbox:not(.hidden) {
+  animation: chatbox-open 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes chatbox-open {

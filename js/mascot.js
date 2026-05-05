@@ -303,9 +303,14 @@
   }
 
   function openChat() {
+    console.log("[MASCOT] openChat() called");
     var chatbox = document.getElementById("mascotChatbox");
     var fab = document.getElementById("mascotFab");
-    if (!chatbox) { return; }
+    if (!chatbox) { 
+      console.error("[MASCOT] openChat: chatbox element not found!");
+      return; 
+    }
+    console.log("[MASCOT] Removing 'hidden' class from chatbox");
     chatbox.classList.remove("hidden");
     fab.classList.add("mascot-bounce");
     setTimeout(function () { fab.classList.remove("mascot-bounce"); }, 600);
@@ -377,6 +382,7 @@
     var moved = false;
 
     function onStart(clientX, clientY) {
+      console.log("[MASCOT] FAB: mousedown/touchstart detected");
       isDragging = true;
       moved = false;
       startX = clientX;
@@ -410,13 +416,17 @@
     function onEnd() {
       if (!isDragging) { return; } 
       isDragging = false;
+      console.log("[MASCOT] FAB: mouseup/touchend - moved:", moved);
       
       if (!moved) {
+        console.log("[MASCOT] FAB: Attempting to open/close chat");
         fab.style.transition = ""; 
         var chatbox = document.getElementById("mascotChatbox");
         if (chatbox && chatbox.classList.contains("hidden")) {
+          console.log("[MASCOT] Calling openChat()");
           openChat();
         } else {
+          console.log("[MASCOT] Calling closeChat()");
           closeChat();
         }
       } else {
@@ -477,6 +487,7 @@
 
         // Event Listeners
         fab.addEventListener("mousedown", function (e) {
+          console.log("[MASCOT] FAB mousedown event fired");
           e.preventDefault();
           onStart(e.clientX, e.clientY);
         });
@@ -486,13 +497,16 @@
         });
         
         document.addEventListener("mouseup", function () {
+          console.log("[MASCOT] Document mouseup event fired");
           onEnd();
         });
 
         fab.addEventListener("touchstart", function (e) {
+          console.log("[MASCOT] FAB touchstart event fired");
+          e.preventDefault(); // Prevents double-firing (synthetic mouse events) on mobile
           var t = e.touches[0];
           onStart(t.clientX, t.clientY);
-        }, { passive: true });
+        }, { passive: false });
         
         document.addEventListener("touchmove", function (e) {
           if (!isDragging) { return; }
@@ -502,6 +516,7 @@
         }, { passive: false });
         
         document.addEventListener("touchend", function () {
+          console.log("[MASCOT] Document touchend event fired");
           onEnd();
         });
       }
@@ -576,11 +591,12 @@
           onEnd();
         });
 
-        handle.addEventListener("touchstart", function (e) {
+      handle.addEventListener("touchstart", function (e) {
           if (e.target.closest('#mascotCloseBtn')) return;
+          e.preventDefault(); // Prevents double-firing when tapping/dragging the header
           var t = e.touches[0];
           onStart(t.clientX, t.clientY, e.target);
-        }, { passive: true });
+        }, { passive: false });
         
         document.addEventListener("touchmove", function (e) {
           if (!isDragging) { return; }
@@ -597,15 +613,22 @@
 
   // ── Init ─────────────────────────────────────────────────
   function init() {
+    console.log("[MASCOT] init() starting");
     buildWidget();
+    console.log("[MASCOT] buildWidget() completed");
 
     var fab = document.getElementById("mascotFab");
+    console.log("[MASCOT] FAB element found:", !!fab);
     var chatbox = document.getElementById("mascotChatbox"); // <-- ADD THIS
+    console.log("[MASCOT] Chatbox element found:", !!chatbox);
     var closeBtn = document.getElementById("mascotCloseBtn");
     var sendBtn = document.getElementById("mascotSendBtn");
     var input = document.getElementById("mascotInput");
 
-    if (fab) { makeDraggable(fab); }
+    if (fab) { 
+      console.log("[MASCOT] Calling makeDraggable(fab)");
+      makeDraggable(fab); 
+    }
 
     if (chatbox) { makeChatboxDraggable(chatbox); } // <-- ADD THIS
 
@@ -649,6 +672,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    console.log("[MASCOT] DOMContentLoaded fired, calling init()");
     init();
   });
 
