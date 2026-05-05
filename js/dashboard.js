@@ -596,7 +596,7 @@
 
     var summary = window.StorageAPI.getBudgetSummary();
     // Adjust for optimistic pending-delete
-    if (pendingDelete && pendingDelete.data) {
+    if (pendingDelete && pendingDelete.data && !pendingDelete.removed) {
       var adj = Number(pendingDelete.data.amount) || 0;
       summary.totalSpentThisWeek = Math.max(0, summary.totalSpentThisWeek - adj);
       summary.remaining = summary.weeklyBudget - summary.totalSpentThisWeek;
