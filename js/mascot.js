@@ -595,61 +595,177 @@
 document.addEventListener("DOMContentLoaded", function() {
   var mascotImg = document.getElementById("dashboardMascotImg");
   var speechBubble = document.getElementById("mascotSpeechBubble");
-  
-  if (!mascotImg || !speechBubble) return; // Exit if not on the dashboard
+  var mascotWrapper = mascotImg ? mascotImg.closest(".dashboard-mascot-wrapper") : null;
 
-  // 📝 Update these paths with your actual GIF files!
-  var fullBodyGifs = [
-    "assets/images/mascot/fullbody-wave.gif",
-    "assets/images/mascot/fullbody-sleepy.gif",
-    "assets/images/mascot/fullbody-shocked.gif",
-    "assets/images/mascot/fullbody-confused.gif",
-    "assets/images/mascot/fullbody-dance.gif"
-  ];
-  
-  // 💬 Random encouraging messages
-  var encouragingMessages =[
-    "You've got this! 💪",
-    "Every peso counts! Keep it up. ❤️",
-    "I'm so proud of your progress! 🌟",
-    "Let's crush those savings goals today! 🎯",
-    "Looking good! Keep making smart choices. 🧠",
-    "Your financial future is looking bright! ☀️",
-    "Small steps lead to big savings! 🚀"
+  if (!mascotImg || !speechBubble || !mascotWrapper) return; // Exit if not on the dashboard
+
+  var fullBodyGifs = {
+    wave: "assets/images/mascot/fullbody-wave.gif",
+    sleepy: "assets/images/mascot/fullbody-sleepy.gif",
+    shocked: "assets/images/mascot/fullbody-shocked.gif",
+    confused: "assets/images/mascot/fullbody-confused.gif",
+    dance: "assets/images/mascot/fullbody-dance.gif"
+  };
+
+  var encouragingMessages = [
+    "You've got this!",
+    "Every peso counts. Keep it up!",
+    "I'm proud of your progress.",
+    "Let's crush those savings goals today!",
+    "Keep making smart choices."
   ];
 
-  var bubbleTimeout;
+  var alarmMessage = "Budget exceeded. Stop spending for now and check your latest expenses.";
+  var bubbleTimeout = null;
+  var flashTimeout = null;
+  var lastBudgetState = null;
+  var alarmShown = false;
 
-  function interactWithMascot(isClick) {
-    // 1. Pick a random GIF
-    var randomGif = fullBodyGifs[Math.floor(Math.random() * fullBodyGifs.length)];
-    
-    // Force the GIF to restart its animation by adding a unique timestamp
-    mascotImg.src = randomGif + "?t=" + new Date().getTime();
-
-    // 2. show the speech bubble if the user clicked him or refresh
-    
-      var randomMsg = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
-      speechBubble.textContent = randomMsg;
-      
-      // Reset the animation so it pops up nicely even if clicked rapidly
-      speechBubble.classList.remove("show-bubble");
-      void speechBubble.offsetWidth; // Magic trick to trigger a DOM reflow
-      speechBubble.classList.add("show-bubble");
-
-      // Hide the bubble automatically after 4 seconds
-      clearTimeout(bubbleTimeout);
-      bubbleTimeout = setTimeout(function() {
-        speechBubble.classList.remove("show-bubble");
-      }, 4000);
-    
+  function getBudgetState() {
+    if (window.MascotAPI && typeof window.MascotAPI.getMascotState === "function") {
+      return window.MascotAPI.getMascotState();
+    }
+    if (window.StorageAPI && typeof window.StorageAPI.getBudgetSummary === "function") {
+      var summary = window.StorageAPI.getBudgetSummary();
+      if (summary && summary.remaining < 0) { return "alarmed"; }
+    }
+    return "neutral";
   }
 
-  // Play a random animation when the dashboard first loads (No speech bubble)
-  interactWithMascot();
+  function setMascotImage(src) {
+    mascotImg.src = src + "?t=" + new Date().getTime();
+  }
 
-  // Play a random animation AND show a speech bubble when clicked
+  function hideBubble() {
+    speechBubble.classList.remove("show-bubble", "mascot-alert-bubble");
+  }
+
+  function showBubble(message, isAlert) {
+    speechBubble.textContent = message;
+    speechBubble.classList.remove("show-bubble", "mascot-alert-bubble");
+    void speechBubble.offsetWidth;
+    if (isAlert) {
+      speechBubble.classList.add("mascot-alert-bubble");
+    }
+    speechBubble.classList.add("show-bubble");
+
+    clearTimeout(bubbleTimeout);
+    bubbleTimeout = setTimeout(function() {
+      hideBubble();
+    }, isAlert ? 4200 : 4000);
+  }
+
+  function getOrCreateAlarmOverlay() {
+    var overlay = document.getElementById("mascotAlarmOverlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "mascotAlarmOverlay";
+      overlay.className = "mascot-alarm-overlay";
+      overlay.innerHTML =
+        '<div class="mascot-alarm-card">' +
+          '<img src="' + fullBodyGifs.shocked + '" alt="Alert Mascot" draggable="false" />' +
+          '<h2>Budget Exceeded!</h2>' +
+          '<p>' + alarmMessage + '</p>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      overlay.addEventListener("click", function() {
+        hideAlarmOverlay();
+      });
+    }
+    return overlay;
+  }
+
+  function showAlarmOverlay() {
+    var overlay = getOrCreateAlarmOverlay();
+    overlay.classList.remove("hidden");
+    void overlay.offsetWidth; // force reflow
+    overlay.classList.add("show");
+
+    clearTimeout(flashTimeout);
+    flashTimeout = setTimeout(function() {
+      hideAlarmOverlay();
+    }, 4000);
+  }
+
+  function hideAlarmOverlay() {
+    var overlay = document.getElementById("mascotAlarmOverlay");
+    if (overlay) {
+      overlay.classList.remove("show");
+      setTimeout(function() {
+        if (!overlay.classList.contains("show")) {
+          overlay.classList.add("hidden");
+        }
+      }, 350);
+    }
+  }
+
+  function playRandomMascot() {
+    var choices = [fullBodyGifs.wave, fullBodyGifs.sleepy, fullBodyGifs.confused, fullBodyGifs.dance];
+    var randomGif = choices[Math.floor(Math.random() * choices.length)];
+    setMascotImage(randomGif);
+    mascotWrapper.classList.remove("dashboard-alert-active");
+    hideBubble();
+  }
+
+  function playAlertMascot(forceFlash) {
+    if (forceFlash !== false) {
+      showAlarmOverlay();
+    }
+    mascotWrapper.classList.add("dashboard-alert-active");
+    setMascotImage(fullBodyGifs.shocked);
+    showBubble(alarmMessage, true);
+    alarmShown = true;
+  }
+
+  function syncMascotToBudget(force) {
+    var state = getBudgetState();
+    var shouldFlash = force || lastBudgetState !== state;
+
+    if (state === "alarmed") {
+      mascotWrapper.classList.add("dashboard-alert-active");
+      setMascotImage(fullBodyGifs.shocked);
+      if (shouldFlash || !alarmShown) {
+        playAlertMascot(shouldFlash);
+      }
+    } else {
+      alarmShown = false;
+      mascotWrapper.classList.remove("dashboard-alert-active");
+      if (shouldFlash) {
+        playRandomMascot();
+      }
+    }
+
+    lastBudgetState = state;
+  }
+
+  function interactWithMascot(isClick) {
+    var state = getBudgetState();
+
+    if (state === "alarmed") {
+      playAlertMascot(isClick !== false);
+      return;
+    }
+
+    playRandomMascot();
+
+    if (isClick) {
+      var randomMsg = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
+      showBubble(randomMsg, false);
+    }
+  }
+
+  syncMascotToBudget(true);
+
   mascotImg.addEventListener("click", function() {
     interactWithMascot(true);
+  });
+
+  window.addEventListener("sugbocents:budget-changed", function() {
+    syncMascotToBudget(false);
+  });
+
+  window.addEventListener("sugbocents:synced", function() {
+    syncMascotToBudget(false);
   });
 });
