@@ -23,13 +23,11 @@ body {
 
 body[data-page="dashboard"] {
   opacity: 0;
-  transform: translateY(14px);
-  transition: opacity 10ms ease-out, transform 10ms ease-out;
+  transition: opacity 10ms ease-out;
 }
 
 body[data-page="dashboard"].is-ready {
   opacity: 1;
-  transform: translateY(0);
 }
 
 body[data-page="dashboard"]:not(.is-ready) {

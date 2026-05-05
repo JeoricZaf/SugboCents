@@ -1,4 +1,77 @@
 (function () {
+  var MASCOT_FAB_POS_KEY = "sugbocents:mascot-fab-pos";
+  var MASCOT_CHAT_POS_KEY = "sugbocents:mascot-chat-pos";
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function getBottomObstructionHeight() {
+    var nav = document.querySelector(".bottom-nav");
+    if (!nav) { return 0; }
+    var style = window.getComputedStyle(nav);
+    if (style.display === "none" || style.visibility === "hidden") { return 0; }
+    return nav.offsetHeight || 0;
+  }
+
+  function readSavedPos(key) {
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) { return null; }
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.right !== "number" || typeof parsed.bottom !== "number") {
+        return null;
+      }
+      return { right: parsed.right, bottom: parsed.bottom };
+    } catch (_err) {
+      return null;
+    }
+  }
+
+  function savePos(key, right, bottom) {
+    try {
+      localStorage.setItem(key, JSON.stringify({ right: right, bottom: bottom }));
+    } catch (_err) {
+      // Ignore storage errors silently.
+    }
+  }
+
+  function applySavedPos(el, key) {
+    if (!el) { return; }
+    var saved = readSavedPos(key);
+    if (!saved) { return; }
+
+    var minBottom = getBottomObstructionHeight();
+    var maxRight = Math.max(0, window.innerWidth - el.offsetWidth);
+    var maxBottom = Math.max(minBottom, window.innerHeight - el.offsetHeight);
+    var right = clamp(saved.right, 0, maxRight);
+    var bottom = clamp(saved.bottom, minBottom, maxBottom);
+
+    el.style.right = right + "px";
+    el.style.bottom = bottom + "px";
+  }
+
+  function persistCurrentPos(el, key) {
+    if (!el) { return; }
+    var rect = el.getBoundingClientRect();
+    var right = window.innerWidth - rect.right;
+    var bottom = window.innerHeight - rect.bottom;
+    savePos(key, Math.max(0, right), Math.max(0, bottom));
+  }
+
+  function keepInViewport(el, key) {
+    if (!el) { return; }
+    var rect = el.getBoundingClientRect();
+    var minBottom = getBottomObstructionHeight();
+    var maxRight = Math.max(0, window.innerWidth - rect.width);
+    var maxBottom = Math.max(minBottom, window.innerHeight - rect.height);
+    var right = clamp(window.innerWidth - rect.right, 0, maxRight);
+    var bottom = clamp(window.innerHeight - rect.bottom, minBottom, maxBottom);
+    el.style.right = right + "px";
+    el.style.bottom = bottom + "px";
+    savePos(key, right, bottom);
+  }
+
   // ── Mascot state definitions ─────────────────────────────
   var STATES = {
     happy:   { img: "assets/images/mascot/mascot-happy.png",   label: "Doing great!",  cls: "mascot-happy" },
@@ -325,9 +398,10 @@
       
       var newRight  = Math.max(0, origRight  - dx);
       var newBottom = Math.max(0, origBottom - dy); 
+      var minBottom = getBottomObstructionHeight();
       
       newRight  = Math.min(window.innerWidth  - fab.offsetWidth, newRight);
-      newBottom = Math.min(window.innerHeight - fab.offsetHeight, newBottom);
+      newBottom = clamp(newBottom, minBottom, window.innerHeight - fab.offsetHeight);
       
       fab.style.right  = newRight  + "px";
       fab.style.bottom = newBottom + "px";
@@ -374,12 +448,17 @@
           fab.style.transition = "right 0.3s ease-out, bottom 0.3s ease-out";
           
           var margin = 20; // 20px gap from the edge of the screen
+          var bottomObstruction = getBottomObstructionHeight();
           
           var targetRight = isLeftHalf ? (window.innerWidth - rect.width - margin) : margin;
-          var targetBottom = isTopHalf ? (window.innerHeight - rect.height - margin) : margin;
+          var targetBottom = isTopHalf
+            ? (window.innerHeight - rect.height - margin)
+            : (margin + bottomObstruction);
+          targetBottom = Math.max(bottomObstruction, targetBottom);
           
           fab.style.right = targetRight + "px";
           fab.style.bottom = targetBottom + "px";
+          savePos(MASCOT_FAB_POS_KEY, targetRight, targetBottom);
           
           // Clean up transition after animation completes
           setTimeout(function() {
@@ -389,6 +468,7 @@
         } else {
           // --> It's far from a corner: LEAVE IT THERE
           fab.style.transition = "";
+          persistCurrentPos(fab, MASCOT_FAB_POS_KEY);
         }
       }
     }
@@ -463,10 +543,11 @@
           
           var newRight  = Math.max(0, origRight  - dx);
           var newBottom = Math.max(0, origBottom - dy); 
+          var minBottom = getBottomObstructionHeight();
           
           // Keep the chatbox from being dragged completely off the screen
           newRight  = Math.min(window.innerWidth  - chatbox.offsetWidth, newRight);
-          newBottom = Math.min(window.innerHeight - chatbox.offsetHeight, newBottom);
+          newBottom = clamp(newBottom, minBottom, window.innerHeight - chatbox.offsetHeight);
           
           chatbox.style.right  = newRight  + "px";
           chatbox.style.bottom = newBottom + "px";
@@ -477,6 +558,7 @@
           isDragging = false;
           chatbox.style.transition = ""; 
           // No corner snapping here! It just stays exactly where dropped.
+          persistCurrentPos(chatbox, MASCOT_CHAT_POS_KEY);
         }
 
         // Event Listeners for the Header
@@ -526,6 +608,14 @@
     if (fab) { makeDraggable(fab); }
 
     if (chatbox) { makeChatboxDraggable(chatbox); } // <-- ADD THIS
+
+    applySavedPos(fab, MASCOT_FAB_POS_KEY);
+    applySavedPos(chatbox, MASCOT_CHAT_POS_KEY);
+
+    window.addEventListener("resize", function () {
+      keepInViewport(fab, MASCOT_FAB_POS_KEY);
+      keepInViewport(chatbox, MASCOT_CHAT_POS_KEY);
+    });
 
     if (closeBtn) {
       closeBtn.addEventListener("click", closeChat);
