@@ -1,71 +1,90 @@
-/* Dark Mode Color Scheme */
+/* ═══════════════════════════════════════════════════════════
+   SugboCents Dark Mode — v5
+   Design references: GitHub Dark, Linear, Duolingo Night, Candle app
+   Palette:
+     bg-base    #0d1117   bg-card    #161b22   bg-elevated  #1c2128
+     bg-surface #21262d   border     #30363d
+     text-pri   #e6edf3   text-sec   #8b949e   text-muted   #6e7681
+     brand      #4ac992   danger     #f85149
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── CSS Variables ──────────────────────────────────────── */
 html.dark-mode {
   --brand-900: #2d9d70;
   --brand-800: #3bb881;
   --brand-700: #4ac992;
-  --ink-900: #e8e8e8;
+  --ink-900: #e6edf3;
   --mist: #0d1117;
   --card: #161b22;
   --danger: #f85149;
-  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.65);
+  color-scheme: dark;
 }
 
+/* ── Base ────────────────────────────────────────────────── */
 html.dark-mode body {
   background-color: #0d1117;
-  color: #e8e8e8;
+  color: #e6edf3;
 }
 
 html.dark-mode .bg-mist {
-  background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d2818 100%);
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 60%, #0c1a10 100%);
 }
 
+/* ── Tailwind utility overrides ─────────────────────────── */
 html.dark-mode .bg-white,
 html.dark-mode [class*="bg-slate-"],
 html.dark-mode [class*="bg-gray-"] {
-  background-color: var(--card);
-  color: #e8e8e8;
+  background-color: #161b22;
+  color: #e6edf3;
 }
 
 html.dark-mode .text-slate-900,
 html.dark-mode .text-gray-900,
 html.dark-mode .text-ink {
-  color: #e8e8e8;
-}
-
-html.dark-mode .text-slate-600,
-html.dark-mode .text-gray-600 {
-  color: #b0b0b0 !important;
-}
-
-html.dark-mode .text-slate-500,
-html.dark-mode .text-gray-500 {
-  color: #c0c0c0 !important;
-}
-
-html.dark-mode .text-slate-400,
-html.dark-mode .text-gray-400 {
-  color: #d0d0d0 !important;
+  color: #e6edf3;
 }
 
 html.dark-mode .text-slate-700,
 html.dark-mode .text-gray-700 {
-  color: #9a9a9a !important;
+  color: #8b949e !important;
 }
 
-html.dark-mode .border-slate-200,
-html.dark-mode .border-gray-200,
-html.dark-mode [class*="border"] {
-  border-color: #262d37;
+html.dark-mode .text-slate-600,
+html.dark-mode .text-gray-600 {
+  color: #8b949e !important;
 }
 
+html.dark-mode .text-slate-500,
+html.dark-mode .text-gray-500 {
+  color: #8b949e !important;
+}
+
+html.dark-mode .text-slate-400,
+html.dark-mode .text-gray-400 {
+  color: #6e7681 !important;
+}
+
+/* Tailwind divide-y borders */
+html.dark-mode .divide-slate-100 > * + *,
+html.dark-mode .divide-y > * + * {
+  border-color: #21262d;
+}
+
+html.dark-mode [class*="border-slate-"],
+html.dark-mode [class*="border-gray-"] {
+  border-color: #30363d !important;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────── */
 html.dark-mode .app-sidebar {
   background-color: #0f1419;
-  border-right-color: #262d37;
+  border-right-color: #21262d;
 }
 
-html.dark-mode .sidebar-brand {
-  color: #e8e8e8;
-  border-bottom-color: #262d37;
+/* sidebar-header row — scoped to dark mode only, no layout override */
+html.dark-mode .sidebar-header {
+  border-bottom-color: #21262d;
 }
 
 html.dark-mode .sidebar-brand-mark {
@@ -73,28 +92,32 @@ html.dark-mode .sidebar-brand-mark {
   color: #ffffff;
 }
 
+html.dark-mode .sidebar-brand-name {
+  color: #e6edf3;
+}
+
 html.dark-mode .sidebar-nav-link {
-  color: #9ca3af;
+  color: #8b949e;
 }
 
 html.dark-mode .sidebar-nav-link:hover {
-  background-color: #262d37;
-  color: #e8e8e8;
+  background-color: #21262d;
+  color: #e6edf3;
 }
 
 html.dark-mode .sidebar-nav-link.active {
-  background-color: rgba(61, 184, 129, 0.15);
-  color: var(--brand-800);
-  border-left-color: var(--brand-800);
+  background-color: rgba(74, 201, 146, 0.12);
+  color: var(--brand-700);
+  border-left-color: var(--brand-700);
 }
 
 html.dark-mode .sidebar-user {
-  color: #e8e8e8;
-  border-top-color: #262d37;
+  color: #e6edf3;
+  border-top-color: #21262d;
 }
 
 html.dark-mode .sidebar-user:hover {
-  background-color: #1e2330;
+  background-color: #21262d;
 }
 
 html.dark-mode .sidebar-user-avatar {
@@ -103,134 +126,518 @@ html.dark-mode .sidebar-user-avatar {
 }
 
 html.dark-mode .sidebar-user-name {
-  color: #e8e8e8;
+  color: #e6edf3;
   font-weight: 500;
 }
 
 html.dark-mode .sidebar-user-sub {
-  color: #a0a0a0;
+  color: #8b949e;
 }
 
-html.dark-mode .quick-add-section {
-  background-color: var(--card);
-  border-color: #262d37;
+/* Sidebar toggle — stays transparent, NOT dark grey */
+html.dark-mode .sidebar-toggle-btn {
+  background: transparent !important;
+  color: #6e7681;
+  border: none;
 }
 
+html.dark-mode .sidebar-toggle-btn:hover {
+  background: #21262d !important;
+  color: #e6edf3;
+}
+
+/* ── Cards & Panels ──────────────────────────────────────── */
+html.dark-mode .card-panel {
+  background-color: #161b22;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 0 0 1px #21262d;
+}
+
+html.dark-mode .card {
+  background-color: #161b22;
+}
+
+/* ── XP / Level Widget ───────────────────────────────────── */
+html.dark-mode .xp-widget-inner {
+  background: #161b22;
+  border-color: #21262d;
+}
+
+html.dark-mode .level-badge {
+  background: rgba(74, 201, 146, 0.12);
+  color: var(--brand-700);
+}
+
+html.dark-mode .level-badge .bi {
+  color: var(--brand-700);
+}
+
+/* ── Budget Card (stays dark green — intentional) ─────────── */
+html.dark-mode .budget-amount {
+  color: #4ac992;
+}
+
+html.dark-mode .budget-card .text-sm {
+  color: #a3d9bc;
+}
+
+html.dark-mode .budget-card .budget-amount {
+  color: #4ac992;
+}
+
+/* ── Budget Health Pill ──────────────────────────────────── */
+html.dark-mode .budget-health-pill--ahead {
+  background: rgba(74, 201, 146, 0.12);
+  color: #4ac992;
+  border: 1px solid rgba(74, 201, 146, 0.2);
+}
+
+html.dark-mode .budget-health-pill--on-track {
+  background: rgba(74, 201, 146, 0.08);
+  color: #6ee7b7;
+  border: 1px solid rgba(74, 201, 146, 0.15);
+}
+
+html.dark-mode .budget-health-pill--warn {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+html.dark-mode .budget-health-pill--over {
+  background: rgba(248, 81, 73, 0.1);
+  color: #f85149;
+  border: 1px solid rgba(248, 81, 73, 0.2);
+}
+
+/* ── Streak Badge (hero button in dashboard) ────────────── */
+/*
+  .streak-badge is a <button>. Preserve the fire colour palette.
+  Generic button overrides must NOT apply here.
+*/
+html.dark-mode .streak-badge--cold {
+  background: transparent !important;
+  border-color: var(--brand-700) !important;
+}
+html.dark-mode .streak-badge--cold .streak-badge-icon { color: #6e7681; }
+html.dark-mode .streak-badge--cold .streak-badge-count { color: var(--brand-700); }
+
+html.dark-mode .streak-badge--amber {
+  background: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25), 0 0 18px rgba(245, 158, 11, 0.25) !important;
+}
+
+html.dark-mode .streak-badge--orange {
+  background: #ea580c !important;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.3), 0 0 18px rgba(234, 88, 12, 0.3) !important;
+}
+
+html.dark-mode .streak-badge--orange-glow {
+  background: #ea580c !important;
+  box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.35), 0 0 28px rgba(234, 88, 12, 0.45) !important;
+}
+
+html.dark-mode .streak-badge--crimson {
+  background: #dc2626 !important;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.35), 0 0 28px rgba(220, 38, 38, 0.5) !important;
+}
+
+html.dark-mode .streak-badge--at-risk {
+  background: rgba(217, 119, 6, 0.15) !important;
+  border-color: #d97706 !important;
+}
+html.dark-mode .streak-badge--at-risk .streak-badge-icon { color: #fbbf24 !important; }
+html.dark-mode .streak-badge--at-risk .streak-badge-count { color: #fbbf24 !important; }
+
+/* ── Streak Card (stats page full card) ─────────────────── */
+html.dark-mode .streak-card {
+  background: linear-gradient(160deg, #1a1500 0%, #1c1200 100%);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+/* Reset the overly-broad wildcard from old CSS — restore light text */
+html.dark-mode .streak-card p,
+html.dark-mode .streak-card span,
+html.dark-mode .streak-card div {
+  color: #e6edf3;
+}
+
+html.dark-mode .streak-card .streak-badge {
+  background: radial-gradient(circle at top left, rgba(245, 158, 11, 0.45), rgba(234, 88, 12, 0.25)) !important;
+  color: #fde68a !important;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15), 0 0 24px rgba(245, 158, 11, 0.2) !important;
+  text-shadow: 0 0 14px rgba(251, 146, 60, 0.8) !important;
+}
+
+html.dark-mode .streak-card .streak-badge span {
+  color: #fde68a !important;
+}
+
+html.dark-mode #streakCount {
+  color: #fde68a !important;
+  font-weight: 700;
+}
+
+html.dark-mode .streak-card #streakDescription {
+  color: #8b949e;
+}
+
+html.dark-mode .streak-card #streakHint {
+  color: #6e7681;
+}
+
+/* ── Today's Mission Card — all states ──────────────────── */
+html.dark-mode .today-mission-card--none {
+  background: #161b22;
+  border-color: #30363d;
+}
+html.dark-mode .today-mission-card--none .today-mission-title { color: #6e7681; }
+html.dark-mode .today-mission-card--none .today-mission-desc  { color: #8b949e; }
+html.dark-mode .today-mission-card--none .today-mission-badge { background: #21262d; color: #6e7681; }
+
+html.dark-mode .today-mission-card--in-progress {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(217, 119, 6, 0.05) 100%);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+html.dark-mode .today-mission-card--in-progress .today-mission-title { color: #fbbf24; }
+html.dark-mode .today-mission-card--in-progress .today-mission-desc  { color: #d4a017; }
+html.dark-mode .today-mission-card--in-progress .today-mission-badge { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+
+html.dark-mode .today-mission-card--at-risk {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(234, 88, 12, 0.06) 100%);
+  border-color: rgba(249, 115, 22, 0.3);
+  animation: mission-pulse-dark 2.4s ease-in-out infinite;
+}
+html.dark-mode .today-mission-card--at-risk .today-mission-title { color: #fb923c; }
+html.dark-mode .today-mission-card--at-risk .today-mission-desc  { color: #f97316; }
+html.dark-mode .today-mission-card--at-risk .today-mission-badge { background: rgba(249, 115, 22, 0.15); color: #fb923c; }
+
+@keyframes mission-pulse-dark {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+  50%       { box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15); }
+}
+
+html.dark-mode .today-mission-card--perfect {
+  background: linear-gradient(135deg, rgba(74, 201, 146, 0.1) 0%, rgba(61, 184, 129, 0.06) 100%);
+  border-color: rgba(74, 201, 146, 0.25);
+}
+html.dark-mode .today-mission-card--perfect .today-mission-title { color: #4ac992; }
+html.dark-mode .today-mission-card--perfect .today-mission-desc  { color: #3bb881; }
+html.dark-mode .today-mission-card--perfect .today-mission-badge { background: rgba(74, 201, 146, 0.15); color: #4ac992; }
+
+/* ── Quick-Add Shortcut Tiles ────────────────────────────── */
+/*
+  Tiles use inline style.background (pastel e.g. #ffedd5, #dbeafe).
+  !important is required to override inline styles.
+*/
+html.dark-mode .quest-tile-btn {
+  background: #1c2128 !important;
+  border: 1px solid #30363d !important;
+  box-shadow: none !important;
+  color: #e6edf3 !important;
+}
+
+html.dark-mode .quest-tile-btn:hover {
+  background: #21262d !important;
+  border-color: rgba(74, 201, 146, 0.3) !important;
+}
+
+html.dark-mode .quest-tile-label {
+  color: #e6edf3 !important;
+}
+
+html.dark-mode .quest-tile-amount {
+  color: #8b949e !important;
+}
+
+html.dark-mode .quest-tile-xp {
+  color: var(--brand-700) !important;
+  opacity: 1 !important;
+}
+
+html.dark-mode .quest-tile-btn--add-new {
+  background: transparent !important;
+  border: 1.5px dashed rgba(74, 201, 146, 0.35) !important;
+  color: #4ac992 !important;
+}
+
+html.dark-mode .quest-tile-btn--add-new:hover {
+  background: rgba(74, 201, 146, 0.06) !important;
+  border-color: rgba(74, 201, 146, 0.55) !important;
+}
+
+html.dark-mode .qa-suggestion-chip {
+  background: #1c2128 !important;
+  color: #e6edf3 !important;
+  border: 1px solid #30363d !important;
+}
+
+html.dark-mode .qa-suggestion-chip:hover {
+  background: #21262d !important;
+  border-color: rgba(74, 201, 146, 0.3) !important;
+}
+
+/* ── Log One-Time Expense Button ─────────────────────────── */
+html.dark-mode .log-one-time-btn {
+  background: #161b22 !important;
+  border-color: #30363d !important;
+  color: #e6edf3 !important;
+}
+
+html.dark-mode .log-one-time-btn:hover {
+  background: #1c2128 !important;
+  border-color: rgba(74, 201, 146, 0.3) !important;
+}
+
+html.dark-mode .log-btn-xp {
+  color: var(--brand-700) !important;
+}
+
+/* ── Buttons — only scope to secondary/outline classes ──── */
+/*
+  DELIBERATELY no `button:not(.btn-primary)` catch-all.
+  That selector was breaking .mascot-fab, .streak-badge,
+  .quest-tile-btn, .sidebar-toggle-btn, and more.
+*/
+html.dark-mode .btn-secondary,
+html.dark-mode .btn-outline {
+  background-color: #21262d;
+  color: #e6edf3;
+  border-color: #30363d;
+}
+
+html.dark-mode .btn-secondary:hover,
+html.dark-mode .btn-outline:hover {
+  background-color: #30363d;
+  color: #e6edf3;
+}
+
+html.dark-mode .btn-danger {
+  background-color: rgba(248, 81, 73, 0.12);
+  color: #f85149;
+  border-color: rgba(248, 81, 73, 0.28);
+}
+
+/* Generic unthemed buttons inside modal sheets only */
+html.dark-mode .modal-sheet button:not(.btn-primary):not(.btn-danger):not(.qa-save-btn) {
+  background-color: #21262d;
+  color: #e6edf3;
+  border-color: #30363d;
+}
+
+/* ── Eyebrow label ───────────────────────────────────────── */
+html.dark-mode .eyebrow {
+  background-color: rgba(74, 201, 146, 0.12);
+  color: var(--brand-700);
+}
+
+/* ── Form Inputs ─────────────────────────────────────────── */
+html.dark-mode .input {
+  background-color: #0d1117;
+  color: #e6edf3;
+  border-color: #30363d;
+}
+
+html.dark-mode .input::placeholder {
+  color: #6e7681;
+}
+
+html.dark-mode .input:focus {
+  background-color: #0d1117;
+  border-color: var(--brand-700);
+  box-shadow: 0 0 0 3px rgba(74, 201, 146, 0.12);
+}
+
+html.dark-mode .label {
+  color: #c9d1d9;
+  font-weight: 600;
+}
+
+html.dark-mode .field-error {
+  color: #fca5a5;
+}
+
+html.dark-mode select.input,
+html.dark-mode select {
+  background-color: #0d1117;
+  color: #e6edf3;
+  border-color: #30363d;
+}
+
+/* Quick-add inline input in modal */
 html.dark-mode .quick-add-input {
   background-color: #0d1117;
-  color: #e8e8e8;
-  border-color: #262d37;
+  color: #e6edf3;
+  border-color: #30363d;
 }
 
 html.dark-mode .quick-add-input::placeholder {
-  color: #5a6068;
+  color: #6e7681;
 }
 
 html.dark-mode .quick-add-input:focus {
   background-color: #0d1117;
-  border-color: var(--brand-800);
-  box-shadow: 0 0 0 3px rgba(61, 184, 129, 0.1);
+  border-color: var(--brand-700);
+  box-shadow: 0 0 0 3px rgba(74, 201, 146, 0.1);
 }
 
-html.dark-mode .btn-secondary,
-html.dark-mode button:not(.btn-primary) {
-  background-color: #262d37;
-  color: #e8e8e8;
-  border-color: #3a4050;
+/* ── Activity Page — Search & Filter Chips ───────────────── */
+html.dark-mode input[type="search"],
+html.dark-mode .activity-search-input {
+  background: #161b22 !important;
+  color: #e6edf3 !important;
+  border-color: #30363d !important;
 }
 
-html.dark-mode .btn-secondary:hover {
-  background-color: #3a4050;
-  color: #e8e8e8;
+html.dark-mode input[type="search"]::placeholder,
+html.dark-mode .activity-search-input::placeholder {
+  color: #6e7681;
 }
 
-html.dark-mode .budget-card,
-html.dark-mode .card,
-html.dark-mode [class*="rounded-lg"] {
-  background-color: var(--card);
+html.dark-mode .filter-chip {
+  background: #21262d;
+  color: #8b949e;
+  border-color: #30363d;
 }
 
-html.dark-mode .streak-card,
-html.dark-mode .card-panel {
-  background-color: var(--card);
+html.dark-mode .filter-chip.active,
+html.dark-mode .filter-chip:hover {
+  background: rgba(74, 201, 146, 0.12);
+  color: var(--brand-700);
+  border-color: rgba(74, 201, 146, 0.3);
 }
 
-html.dark-mode .streak-card p,
-html.dark-mode .streak-card span,
-html.dark-mode .streak-card div,
-html.dark-mode .streak-card h2,
-html.dark-mode .streak-card h3,
-html.dark-mode .streak-card h4,
-html.dark-mode .streak-card a,
-html.dark-mode .streak-card * {
-  color: #0f172a !important;
+/* ── Modal ───────────────────────────────────────────────── */
+html.dark-mode .modal-sheet {
+  background-color: #161b22;
+  color: #e6edf3;
+  border-color: #30363d;
 }
 
-html.dark-mode #streakCount {
-  color: #0f172a !important;
-  font-weight: 700;
+html.dark-mode .modal-title {
+  color: #e6edf3;
 }
 
+html.dark-mode .modal-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* ── Expense Items ───────────────────────────────────────── */
 html.dark-mode .expense-item {
-  border-color: #262d37;
+  border-color: #21262d;
+  color: #e6edf3;
 }
 
 html.dark-mode .expense-item:hover {
-  background-color: #1e2330;
+  background-color: #1c2128;
 }
 
-/* Expense row styling in dark mode */
 html.dark-mode .expense-row {
-  border-color: #262d37;
+  border-color: #21262d;
 }
 
 html.dark-mode .expense-title {
-  color: #e8e8e8;
+  color: #e6edf3;
   font-weight: 500;
 }
 
 html.dark-mode .expense-meta {
-  color: #b0b0b0;
+  color: #8b949e;
 }
 
 html.dark-mode .expense-amount {
-  color: #ff6b6b;
+  color: #f85149;
   font-weight: 600;
 }
 
 html.dark-mode .expense-delete-btn {
-  color: #9ca3af;
+  color: #6e7681;
 }
 
 html.dark-mode .expense-delete-btn:hover {
-  color: #ff6b6b;
+  color: #f85149;
 }
 
-html.dark-mode .eyebrow {
-  background-color: rgba(61, 184, 129, 0.2);
-  color: var(--brand-700);
+html.dark-mode .expense-item .text-sm { color: #8b949e; }
+html.dark-mode .expense-item .text-xs { color: #6e7681; }
+
+/* Expense icon avatars */
+html.dark-mode .expense-icon,
+html.dark-mode .expense-avatar {
+  background: #21262d !important;
+  border-color: #30363d;
 }
 
+/* ── Section Labels & Date Headers ───────────────────────── */
+html.dark-mode .action-zone-label,
+html.dark-mode .section-label {
+  color: #6e7681;
+}
+
+html.dark-mode .page-greeting-title {
+  color: #e6edf3;
+}
+
+html.dark-mode .page-greeting-sub {
+  color: #8b949e;
+}
+
+html.dark-mode .text-muted,
+html.dark-mode .text-secondary {
+  color: #8b949e !important;
+}
+
+/* ── Badge Teaser / Next Milestone ───────────────────────── */
+html.dark-mode .badge-teaser-card {
+  background: #161b22;
+  border-color: #21262d;
+}
+
+html.dark-mode .badge-teaser-name {
+  color: #e6edf3;
+}
+
+html.dark-mode .badge-teaser-condition {
+  color: #8b949e;
+}
+
+html.dark-mode .badge-journey-line {
+  color: #6e7681;
+}
+
+html.dark-mode .badge-teaser-progress-track {
+  background: #21262d;
+}
+
+html.dark-mode .badge-claim-btn {
+  background: var(--brand-700) !important;
+  color: #0d1117 !important;
+}
+
+html.dark-mode .badge-claim-btn:hover {
+  background: var(--brand-800) !important;
+}
+
+/* ── Charts ──────────────────────────────────────────────── */
 html.dark-mode .spending-chart-container {
-  background-color: var(--card);
+  background-color: #161b22;
   box-shadow: var(--shadow-soft);
 }
 
 html.dark-mode .spending-chart-canvas-wrapper {
-  background-color: #1a2332;
+  background-color: #1c2128;
   border-radius: var(--radius-lg);
 }
 
 html.dark-mode .spending-chart-period {
-  color: #9ca3af;
+  color: #8b949e;
 }
 
 html.dark-mode .spending-chart-legend {
-  border-top-color: #262d37;
+  border-top-color: #21262d;
 }
 
 html.dark-mode .legend-category {
-  color: #e8e8e8 !important;
+  color: #e6edf3 !important;
   font-weight: 600;
 }
 
@@ -240,7 +647,7 @@ html.dark-mode .legend-amount {
 }
 
 html.dark-mode .chart-bar-label {
-  color: #e8e8e8 !important;
+  color: #e6edf3 !important;
   font-weight: 600;
 }
 
@@ -249,76 +656,90 @@ html.dark-mode .chart-bar-amount {
   font-weight: 700;
 }
 
-html.dark-mode svg {
-  color: #9ca3af;
-}
-
+/* ── Bottom Nav (mobile) ─────────────────────────────────── */
 html.dark-mode .bottom-nav {
-  background-color: #161b22;
-  border-top-color: #262d37;
+  background-color: #0f1419;
+  border-top-color: #21262d;
 }
 
 html.dark-mode .nav-link {
-  color: #6b7280;
+  color: #6e7681;
 }
 
 html.dark-mode .nav-link:hover {
-  color: var(--brand-800);
+  color: var(--brand-700);
 }
 
-html.dark-mode .page-greeting-title {
-  color: #e8e8e8;
-}
-
-html.dark-mode .page-greeting-sub {
-  color: #9ca3af;
-}
-
-html.dark-mode .budget-amount {
-  color: #4ac992;
-}
-
-html.dark-mode .eyebrow {
-  background-color: rgba(61, 184, 129, 0.2);
-}
-
-/* Sidebar brand wrapper with toggle button */
-.app-sidebar > div:first-child {
-  display: flex !important;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 1rem 1rem 0;
-  border-bottom: 1px solid #f1f5f9;
-  margin-bottom: 0.6rem;
-}
-
-.app-sidebar > div:first-child .sidebar-brand {
-  padding: 0 !important;
+/* ── Mascot FAB & Chatbox ────────────────────────────────── */
+/*
+  .mascot-fab is a <button> — it MUST stay fully transparent.
+  Any generic button background override causes a coloured
+  square to appear behind the mascot PNG image.
+*/
+html.dark-mode .mascot-fab {
+  background: transparent !important;
+  box-shadow: none !important;
   border: none !important;
-  margin: 0 !important;
-  flex: 1;
-  min-width: 0;
 }
 
+html.dark-mode .mascot-fab-img {
+  /* deepen the drop-shadow so the mascot stands out on dark bg */
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.55));
+}
+
+html.dark-mode .mascot-chatbox {
+  background: #161b22 !important;
+  border-color: #30363d !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark-mode .mascot-chatbox-body {
+  background: #161b22;
+}
+
+html.dark-mode .mascot-msg-bot .mascot-bubble {
+  background: #21262d;
+  color: #e6edf3;
+  border: 1px solid #30363d;
+}
+
+html.dark-mode .mascot-msg-user .mascot-bubble {
+  background: rgba(74, 201, 146, 0.15);
+  color: #e6edf3;
+}
+
+html.dark-mode .mascot-chatbox-input-row {
+  background: #161b22;
+  border-top-color: #30363d;
+}
+
+html.dark-mode .mascot-chatbox-input {
+  background: #0d1117;
+  color: #e6edf3;
+  border-color: #30363d;
+}
+
+html.dark-mode .mascot-chatbox-input::placeholder {
+  color: #6e7681;
+}
+
+/* ── Dark Mode Toggle (Settings page) ───────────────────── */
 .dark-mode-toggle {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.5rem;
-  display: flex !important;
+  padding: 0.45rem;
+  display: flex;
   align-items: center;
   justify-content: center;
-  color: #1f6b46;
+  color: #64748b;
   transition: color 0.2s ease, background-color 0.2s ease;
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
   border-radius: 0.5rem;
+  flex-shrink: 0;
 }
 
 .dark-mode-toggle:hover {
-  color: #2b8259;
+  color: #1f6b46;
   background-color: #f1f5f9;
 }
 
@@ -326,6 +747,15 @@ html.dark-mode .eyebrow {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
+}
+
+html.dark-mode .dark-mode-toggle {
+  color: var(--brand-700);
+}
+
+html.dark-mode .dark-mode-toggle:hover {
+  color: var(--brand-800);
+  background-color: #21262d;
 }
 
 .dark-mode-toggle-mobile {
@@ -357,107 +787,127 @@ html.dark-mode .eyebrow {
   letter-spacing: 0.01em;
 }
 
-html.dark-mode .dark-mode-toggle {
-  color: var(--brand-800);
-}
-
-html.dark-mode .dark-mode-toggle:hover {
-  color: var(--brand-700);
-  background-color: #262d37;
-}
-
 html.dark-mode .dark-mode-toggle-mobile {
   color: #6b7280;
 }
 
 html.dark-mode .dark-mode-toggle-mobile:hover {
-  color: var(--brand-800);
-}
-
-html.dark-mode .app-sidebar > div:first-child {
-  border-bottom-color: #262d37;
-}
-
-html.dark-mode .eyebrow {
-  background-color: rgba(61, 184, 129, 0.2);
   color: var(--brand-700);
 }
 
-/* Quick-add button and category styling */
-html.dark-mode .quick-add {
-  color: #0f172a !important;
+/* ── Settings Page ───────────────────────────────────────── */
+html.dark-mode .settings-section-title {
+  color: #e6edf3;
 }
 
-html.dark-mode .quick-add * {
-  color: #0f172a !important;
+html.dark-mode .settings-divider,
+html.dark-mode hr {
+  border-color: #21262d;
 }
 
-html.dark-mode .quick-add .text-slate-500 {
-  color: #1f2937 !important;
+/* ── Stats / Tigom cards ─────────────────────────────────── */
+html.dark-mode .stat-card {
+  background: #161b22;
+  border-color: #21262d;
 }
 
-html.dark-mode .quick-add .text-xs {
-  color: #1f2937 !important;
+html.dark-mode .stat-value {
+  color: #e6edf3;
 }
 
-/* Timestamps and date labels */
-html.dark-mode .timestamp,
-html.dark-mode [class*="time"] {
-  color: #9ca3af !important;
+html.dark-mode .stat-label {
+  color: #8b949e;
 }
 
-html.dark-mode .text-muted,
-html.dark-mode .text-secondary {
-  color: #b0b0b0 !important;
+/* ── View-all / link buttons ─────────────────────────────── */
+html.dark-mode .view-all-link {
+  color: var(--brand-700);
 }
 
-/* Expense item text styling */
-html.dark-mode .expense-item {
-  border-color: #262d37;
-  color: #e8e8e8;
+html.dark-mode .view-all-link:hover {
+  color: var(--brand-800);
 }
 
-html.dark-mode .expense-item .text-sm {
-  color: #9ca3af;
+html.dark-mode .view-stats-link-card {
+  background: #161b22;
+  border-color: #21262d;
+  color: #e6edf3;
 }
 
-html.dark-mode .expense-item .text-xs {
-  color: #6b7280;
+/* ── Week challenge / daily bars ─────────────────────────── */
+html.dark-mode .week-status-pill {
+  background: rgba(74, 201, 146, 0.12);
+  color: var(--brand-700);
+  border-color: rgba(74, 201, 146, 0.2);
 }
 
-/* Modal and form inputs */
-html.dark-mode .modal-sheet {
-  background-color: var(--card);
-  color: #e8e8e8;
+html.dark-mode .daily-bar-chart .bar-bg,
+html.dark-mode .cat-bar-bg {
+  background: #21262d;
 }
 
-html.dark-mode .label {
-  color: #e8e8e8;
-  font-weight: 600;
+/* ── Badge Target (Next Milestone icon) ──────────────────── */
+/*
+  The badge-target variants use bright pastel backgrounds in light mode.
+  In dark mode reduce to low-opacity tints so they blend with #161b22.
+*/
+html.dark-mode .badge-target {
+  background: rgba(74, 201, 146, 0.08);
+  border-color: rgba(74, 201, 146, 0.35);
 }
 
-html.dark-mode .field-error {
-  color: #fca5a5;
-  font-size: 0.875rem;
+html.dark-mode .badge-target--streak {
+  background: rgba(249, 115, 22, 0.1);
+  border-color: rgba(249, 115, 22, 0.4);
+  --badge-pulse-low:  rgba(249, 115, 22, 0.12);
+  --badge-pulse-high: rgba(249, 115, 22, 0.22);
 }
 
-html.dark-mode .input::placeholder {
-  color: #5a6068;
+html.dark-mode .badge-target--budget {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.4);
+  --badge-pulse-low:  rgba(59, 130, 246, 0.12);
+  --badge-pulse-high: rgba(59, 130, 246, 0.22);
 }
 
-/* Budget card text */
-html.dark-mode .budget-card {
-  background: linear-gradient(135deg, rgba(61, 184, 129, 0.1), rgba(74, 201, 146, 0.05));
+html.dark-mode .badge-target--misc {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.4);
+  --badge-pulse-low:  rgba(139, 92, 246, 0.12);
+  --badge-pulse-high: rgba(139, 92, 246, 0.22);
 }
 
-html.dark-mode .budget-card .text-sm {
-  color: #a3d9bc;
+html.dark-mode .badge-target--goals {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.4);
+  --badge-pulse-low:  rgba(245, 158, 11, 0.12);
+  --badge-pulse-high: rgba(245, 158, 11, 0.22);
 }
 
-html.dark-mode .budget-card .budget-amount {
-  color: #4ac992;
+html.dark-mode .badge-target--xp {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+  --badge-pulse-low:  rgba(239, 68, 68, 0.12);
+  --badge-pulse-high: rgba(239, 68, 68, 0.22);
 }
 
-html.dark-mode .budget-card .budget-progress-bar {
-  background-color: rgba(61, 184, 129, 0.4);
+/* Locked badges divider and icons in teaser */
+html.dark-mode .badge-locked-row {
+  border-top-color: #21262d;
+}
+
+html.dark-mode .badge-locked {
+  background: #21262d !important;
+  border-color: #30363d !important;
+  opacity: 0.5;
+}
+
+/* "+ N more badges · View all →" footer line */
+html.dark-mode .badge-teaser-more {
+  color: #6e7681;
+}
+
+html.dark-mode .badge-teaser-more a,
+html.dark-mode .badge-teaser-more .view-all-link {
+  color: var(--brand-700);
 }

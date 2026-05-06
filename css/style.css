@@ -603,6 +603,25 @@ body {
 .streak-badge--crimson .streak-badge-icon,
 .streak-badge--crimson .streak-badge-count { color: #ffffff; }
 
+/* At-risk overlay — streak exists but not yet logged today after 17:00 */
+.streak-badge--at-risk {
+  background: #fef3c7 !important;
+  border: 2px solid #d97706 !important;
+  color: #92400e;
+  animation: streak-at-risk-pulse 1.6s ease-in-out infinite;
+}
+.streak-badge--at-risk .streak-badge-icon {
+  color: #b45309 !important;
+}
+.streak-badge--at-risk .streak-badge-count {
+  color: #92400e !important;
+}
+
+@keyframes streak-at-risk-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.4); }
+  50%       { box-shadow: 0 0 0 5px rgba(217, 119, 6, 0); }
+}
+
 /* Bounce animation on streak increase */
 .streak-badge.bouncing {
   animation: streak-bounce 300ms ease;
@@ -1512,32 +1531,31 @@ body {
 
 /* ── XP Float Popup ──────────────────────────────────────── */
 @keyframes xp-float {
-  0%   { opacity: 0; transform: translateY(0px) scale(0.8); }
-  20%  { opacity: 1; transform: translateY(-8px) scale(1); }
-  80%  { opacity: 1; transform: translateY(-24px) scale(1); }
-  100% { opacity: 0; transform: translateY(-36px) scale(0.95); }
+  0%   { opacity: 0; transform: translateX(-50%) translateY(0px)   scale(0.75); }
+  18%  { opacity: 1; transform: translateX(-50%) translateY(-18px) scale(1.12); }
+  70%  { opacity: 1; transform: translateX(-50%) translateY(-32px) scale(1);    }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-48px) scale(0.9);  }
 }
 
 .xp-float-popup {
-  position: absolute;
-  top: -0.5rem;
-  right: 0.5rem;
+  /* top, left, transform, position are set inline by JS — these are fallback values only */
+  position: fixed;
+  top: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%);
   pointer-events: none;
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: var(--brand-700, #2b8259);
-  background: #dcfce7;
-  border: 1px solid rgba(34, 197, 94, 0.35);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: #1c1c1e;
+  background: #fbbf24;
+  border: none;
   border-radius: 999px;
-  padding: 0.2rem 0.55rem;
+  padding: 0.3rem 0.8rem;
   white-space: nowrap;
-  animation: xp-float 1.2s ease-out forwards;
-  z-index: 50;
-}
-
-.xp-float-popup .bi {
-  font-size: 0.7rem;
-  color: #16a34a;
+  box-shadow: 0 4px 16px rgba(251, 191, 36, 0.55), 0 2px 4px rgba(0,0,0,0.18);
+  animation: xp-float 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  z-index: 9999;
 }
 
 /* ── Celebration Modal ───────────────────────────────────── */
@@ -1737,12 +1755,36 @@ body {
 .budget-gear-btn .material-icons { font-size: 1.1rem !important; }
 
 /* Budget health line */
-.budget-health-line {
-  margin-top: 0.35rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.75);
-  font-style: italic;
+/* Budget health pill — Duolingo-style status strip below the card */
+.budget-health-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.3;
+  transition: background 300ms ease, color 300ms ease;
+}
+.budget-health-pill.hidden { display: none; }
+
+.budget-health-pill--ahead {
+  background: #dcfce7;
+  color: #166534;
+}
+.budget-health-pill--on-track {
+  background: #f0fdf4;
+  color: #15803d;
+}
+.budget-health-pill--warn {
+  background: #fef9c3;
+  color: #92400e;
+}
+.budget-health-pill--over {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 /* Budget card state-based backgrounds */
@@ -2038,6 +2080,8 @@ body.edit-mode .edit-mode-bar {
   border-radius: 1.4rem;
   padding: 1.5rem 1.25rem 1.25rem;
   width: min(480px, 100%);
+  max-height: calc(100dvh - 2.5rem);
+  overflow-y: auto;
   box-shadow: 0 8px 40px rgba(15, 23, 42, 0.2);
 }
 
@@ -2545,8 +2589,8 @@ body.edit-mode .qa-add-new-btn {
   backdrop-filter: blur(4px);
 }
 
-.quick-add-wrap:hover .qa-option-btn,
-.quick-add-wrap:focus-within .qa-option-btn {
+.quest-tile-wrap:hover .qa-option-btn,
+.quest-tile-wrap:focus-within .qa-option-btn {
   opacity: 1;
 }
 
@@ -2708,18 +2752,18 @@ body.edit-mode .qa-add-new-btn {
 }
 
 .quest-tile-xp {
-  font-size: 0.58rem;
+  font-size: 0.6rem;
   font-weight: 700;
   color: var(--brand-800, #1f6b46);
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(43, 130, 89, 0.12);
   border-radius: 999px;
-  padding: 0.14rem 0.42rem;
+  padding: 0.2rem 0.55rem;
   line-height: 1.35;
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
 }
 
 .quest-tile-xp--bonus {
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(43, 130, 89, 0.18);
   color: var(--brand-700, #2b8259);
   animation: quest-xp-pulse 2s ease infinite;
 }
@@ -2727,6 +2771,243 @@ body.edit-mode .qa-add-new-btn {
 @keyframes quest-xp-pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.65; }
+}
+
+/* ── QA Modal: header, amount, category chips, save footer ── */
+.qa-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.qa-modal-close-btn {
+  background: none;
+  border: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 120ms ease, color 120ms ease;
+  flex-shrink: 0;
+}
+.qa-modal-close-btn:hover { background: #f1f5f9; color: #334155; }
+
+.qa-amount-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1.5px solid #e2e8f0;
+  border-left: 3px solid var(--brand-700, #2b8259);
+  border-radius: 0.6rem;
+  padding: 0.4rem 0.65rem;
+  margin: 0.35rem 0 0;
+  background: #f8fafc;
+  transition: border-color 150ms ease;
+}
+.qa-amount-row:focus-within {
+  border-color: var(--brand-700, #2b8259);
+  background: #f0fdf4;
+}
+
+.qa-amount-prefix {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #94a3b8;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.qa-amount-input {
+  border: none;
+  background: transparent;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  width: 100%;
+  outline: none;
+  padding: 0;
+  line-height: 1;
+}
+.qa-amount-input::placeholder { color: #cbd5e1; font-weight: 400; }
+
+.qa-cat-chips-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin: 1rem 0 0.45rem;
+}
+
+.qa-cat-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.qa-category-chip {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #fff;
+  cursor: pointer;
+  color: #475569;
+  transition: all 120ms ease;
+  white-space: nowrap;
+}
+.qa-category-chip:hover {
+  border-color: var(--brand-700, #2b8259);
+  color: var(--brand-700, #2b8259);
+}
+.qa-category-chip--active {
+  background: var(--brand-700, #2b8259) !important;
+  border-color: var(--brand-700, #2b8259) !important;
+  color: #fff !important;
+}
+
+.qa-modal-footer {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.qa-save-btn {
+  width: 100%;
+  background: var(--brand-700, #2b8259);
+  color: #fff;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.875rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms ease, transform 80ms ease;
+}
+.qa-save-btn:hover  { background: var(--brand-800, #1f6b46); }
+.qa-save-btn:active { transform: scale(0.98); }
+
+.qa-delete-btn {
+  width: 100%;
+  justify-content: center;
+  border-radius: 0.75rem !important;
+}
+
+/* Brief purple ring on emoji btn after AI auto-pick */
+.qa-emoji-btn--ai {
+  box-shadow: 0 0 0 3px rgba(43, 130, 89, 0.4) !important;
+  border-color: var(--brand-700, #2b8259) !important;
+}
+
+/* Pulsing state while AI is thinking */
+.qa-emoji-btn--loading {
+  animation: qa-emoji-pulse 0.9s ease-in-out infinite;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+@keyframes qa-emoji-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.6; }
+  50%       { transform: scale(0.92); opacity: 0.35; }
+}
+
+/* ── QA Modal: name suggestion chips ────────────────────── */
+.qa-name-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0.1rem;
+  min-height: 0;
+}
+
+.qa-suggestion-chip-sm {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 0.22rem 0.62rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #334155;
+  transition: background 120ms ease, border-color 120ms ease;
+  white-space: nowrap;
+}
+.qa-suggestion-chip-sm:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+/* ── QA Modal Identity Row (Phase H) ─────────────────────── */
+.qa-identity-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.qa-emoji-btn {
+  width: 3.2rem;
+  height: 3.2rem;
+  min-width: 3.2rem;
+  border-radius: 50%;
+  border: 2px solid var(--brand-700, #2b8259);
+  background: #f0fdf4;
+  font-size: 1.45rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 150ms ease, border-color 150ms ease, transform 100ms ease;
+  line-height: 0;
+  flex-shrink: 0;
+  padding: 0;
+}
+.qa-emoji-btn:hover {
+  background: #dcfce7;
+  border-color: var(--brand-600, #3aaa72);
+}
+.qa-emoji-btn:active {
+  transform: scale(0.94);
+}
+.qa-emoji-btn[aria-expanded="true"] {
+  background: #dcfce7;
+  border-color: var(--brand-700, #2b8259);
+  box-shadow: 0 0 0 3px rgba(43, 130, 89, 0.18);
+}
+
+.qa-identity-name-wrap {
+  flex: 1;
+  min-width: 0;
+}
+.qa-identity-name-wrap .input {
+  width: 100%;
+}
+
+/* Inline expandable picker panel */
+.qa-picker-panel {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 220ms ease, opacity 180ms ease, margin 180ms ease;
+  margin-top: 0;
+}
+.qa-picker-panel--open {
+  max-height: 12rem;
+  opacity: 1;
+  margin-top: 0.6rem;
+}
+
+.qa-modal-divider {
+  margin: 0.85rem 0 0;
+  border-top: 1px solid #f1f5f9;
 }
 
 /* ── Emoji Picker (G-3) ─────────────────────────────────── */

@@ -16,7 +16,8 @@
   <link rel="stylesheet" href="css/stats.css" />
   <link rel="stylesheet" href="css/mascot.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-  <script>if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");</script>
+  <link rel="stylesheet" href="css/dark-mode.css" />
+  <script>(function(){var c=document.documentElement.classList;if(localStorage.getItem("sidebarCollapsed")==="true")c.add("sidebar-collapsed");if(localStorage.getItem("darkModeEnabled")==="true")c.add("dark-mode");}());</script>
 </head>
 <body data-page="dashboard" data-protected="true" class="bg-mist min-h-screen antialiased">
 
@@ -100,7 +101,6 @@
           <p class="text-sm font-medium text-emerald-200" style="letter-spacing:0.02em">Remaining this week</p>
           <p id="remainingAmount" class="budget-amount">₱0.00</p>
           <p id="budgetSummary" class="mt-2 text-sm text-emerald-100/80">Set your weekly budget in Settings.</p>
-          <p id="budgetHealthLine" class="budget-health-line"></p>
         </div>
         <a href="settings.html" class="budget-gear-btn shrink-0" aria-label="Edit budget">
           <span class="material-icons" aria-hidden="true">settings</span>
@@ -116,6 +116,9 @@
         </div>
       </div>
     </section>
+
+    <!-- Pace pill — Duolingo-style status strip outside the budget card -->
+    <div id="budgetHealthLine" class="budget-health-pill hidden" aria-live="polite"></div>
 
 
     <!-- action zone: mission + shortcuts + one-time log -->
@@ -244,34 +247,56 @@
   <!-- quick-add edit/create modal -->
   <div id="qaModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="qaModalTitle">
     <div class="modal-sheet">
-      <p class="modal-title" id="qaModalTitle">Edit shortcut</p>
+
+      <!-- Header: title + × close button -->
+      <div class="qa-modal-header">
+        <p class="modal-title" id="qaModalTitle">New shortcut</p>
+        <button type="button" id="qaModalClose" class="qa-modal-close-btn" aria-label="Close">&times;</button>
+      </div>
+
       <input type="hidden" id="qaModalItemId" />
       <input type="hidden" id="qaModalEmoji" value="&#x1F354;" />
-      <div class="modal-field emoji-picker-wrap">
-        <label class="label">Pick an icon</label>
+
+      <!-- Identity row: emoji circle + name input -->
+      <div class="qa-identity-row">
+        <button type="button" id="qaModalEmojiBtn" class="qa-emoji-btn" aria-label="Pick an icon" aria-expanded="false">&#x1F354;</button>
+        <div class="qa-identity-name-wrap">
+          <input class="input" type="text" id="qaModalCategory" maxlength="24" placeholder="What&#x2019;s this for?" autocomplete="off" />
+          <p class="field-error" id="qaModalCategoryError"></p>
+        </div>
+      </div>
+
+      <!-- Suggestion chips strip -->
+      <div id="qaNameSuggestions" class="qa-name-suggestions" aria-live="polite"></div>
+
+      <!-- Emoji picker panel (collapsed by default) -->
+      <div id="qaPickerPanel" class="qa-picker-panel" aria-hidden="true">
         <div class="emoji-picker-grid" id="qaModalEmojiGrid" role="group" aria-label="Select an emoji icon"></div>
       </div>
-      <div class="modal-field">
-        <label class="label" for="qaModalCategory">Name</label>
-        <input class="input" type="text" id="qaModalCategory" maxlength="24" placeholder="e.g. Snack, Gym, Bus" />
-        <p class="field-error" id="qaModalCategoryError"></p>
+
+      <!-- Amount row with ₱ prefix and large number input -->
+      <p class="qa-cat-chips-label">Amount</p>
+      <div class="qa-amount-row">
+        <span class="qa-amount-prefix">&#8369;</span>
+        <input class="qa-amount-input" type="number" id="qaModalAmount" min="1" step="1" placeholder="0" inputmode="decimal" />
       </div>
-      <div class="modal-field">
-        <label class="label" for="qaModalCategoryId">Category (for stats)</label>
-        <select class="input" id="qaModalCategoryId">
-          <option value="">&#8213; pick one &#8213;</option>
-        </select>
+      <p class="field-error" id="qaModalAmountError"></p>
+
+      <!-- Category chips (visual selection) -->
+      <p class="qa-cat-chips-label">Category</p>
+      <div id="qaModalCategoryChips" class="qa-cat-chips-row" role="group" aria-label="Select a category"></div>
+
+      <!-- Hidden select kept for saveModal() data binding — do not remove -->
+      <select id="qaModalCategoryId" style="display:none" aria-hidden="true" tabindex="-1">
+        <option value=""></option>
+      </select>
+
+      <!-- Footer: Delete (hidden by default) + full-width Save -->
+      <div class="qa-modal-footer">
+        <button type="button" id="qaModalDelete" class="btn-danger qa-delete-btn" style="display:none" aria-label="Delete this shortcut">Delete</button>
+        <button type="button" id="qaModalSave" class="qa-save-btn">Save Shortcut</button>
       </div>
-      <div class="modal-field">
-        <label class="label" for="qaModalAmount">Default amount (&#8369;)</label>
-        <input class="input" type="number" id="qaModalAmount" min="1" step="1" placeholder="0" />
-        <p class="field-error" id="qaModalAmountError"></p>
-      </div>
-      <div class="modal-actions">
-        <button type="button" id="qaModalDelete" class="btn-danger" style="display:none" aria-label="Delete this shortcut">Delete</button>
-        <button type="button" id="qaModalCancel" class="btn-outline">Cancel</button>
-        <button type="button" id="qaModalSave" class="btn-primary">Save</button>
-      </div>
+
     </div>
   </div>
 
@@ -279,27 +304,41 @@
   <!-- log a one-time expense modal -->
   <div id="customLogModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="customLogTitle">
     <div class="modal-sheet">
-      <p class="modal-title" id="customLogTitle">Log a one-time expense</p>
+
+      <!-- Header: title + × close -->
+      <div class="qa-modal-header">
+        <p class="modal-title" id="customLogTitle">Log a one-time expense</p>
+        <button type="button" id="customLogClose" class="qa-modal-close-btn" aria-label="Close">&times;</button>
+      </div>
+
+      <!-- Note FIRST — mandatory, drives AI category suggestion -->
       <div class="modal-field">
-        <label class="label" for="customLogAmount">Amount (&#8369;)</label>
-        <input class="input" type="number" id="customLogAmount" min="1" step="1" placeholder="0" />
-        <p class="field-error" id="customLogAmountError"></p>
+        <label class="label" for="customLogNote">What did you spend on?</label>
+        <input class="input" type="text" id="customLogNote" maxlength="80" placeholder="e.g. Jollibee, Textbook, Grab" autocomplete="off" />
+        <p class="field-error" id="customLogNoteError"></p>
       </div>
-      <div class="modal-field">
-        <label class="label" for="customLogCategory">Category</label>
-        <select class="input" id="customLogCategory">
-          <option value="">&#8212; pick one &#8212;</option>
-        </select>
-        <p class="field-error" id="customLogCategoryError"></p>
+
+      <!-- Amount with ₱ prefix -->
+      <p class="qa-cat-chips-label">Amount</p>
+      <div class="qa-amount-row">
+        <span class="qa-amount-prefix">&#8369;</span>
+        <input class="qa-amount-input" type="number" id="customLogAmount" min="1" step="1" placeholder="0" inputmode="decimal" />
       </div>
-      <div class="modal-field">
-        <label class="label" for="customLogNote">Note <span class="text-slate-400 font-normal">(optional)</span></label>
-        <input class="input" type="text" id="customLogNote" maxlength="80" placeholder="e.g. Textbook, Birthday gift" />
+      <p class="field-error" id="customLogAmountError"></p>
+
+      <!-- Category chips (visual) + hidden select for data binding -->
+      <p class="qa-cat-chips-label">Category</p>
+      <div id="customLogCategoryChips" class="qa-cat-chips-row" role="group" aria-label="Select a category"></div>
+      <select id="customLogCategory" style="display:none" aria-hidden="true" tabindex="-1">
+        <option value=""></option>
+      </select>
+      <p class="field-error" id="customLogCategoryError"></p>
+
+      <!-- Full-width save button -->
+      <div class="qa-modal-footer">
+        <button type="button" id="customLogSave" class="qa-save-btn">Log Expense <span class="log-btn-xp-inline">&#9889; +5 XP</span></button>
       </div>
-      <div class="modal-actions">
-        <button type="button" id="customLogCancel" class="btn-outline">Cancel</button>
-        <button type="button" id="customLogSave" class="btn-primary">Log Expense <span class="log-btn-xp-inline">&#9889; +5 XP</span></button>
-      </div>
+
     </div>
   </div>
   <div id="dashboardAccountMenu" class="dashboard-account-menu hidden" role="menu" aria-label="Account menu">
@@ -322,5 +361,6 @@
   <script src="js/dark-mode.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/mascot.js"></script>
+  <script src="js/dev-tools.js"></script>
 </body>
 </html>

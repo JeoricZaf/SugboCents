@@ -12,8 +12,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/mascot.css" />
   <link rel="stylesheet" href="css/dark-mode.css" />
-  <script>if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");</script>
+  <script>(function(){var c=document.documentElement.classList;if(localStorage.getItem("sidebarCollapsed")==="true")c.add("sidebar-collapsed");if(localStorage.getItem("darkModeEnabled")==="true")c.add("dark-mode");}());</script>
   <style>
     .chat-shell {
       display: flex;
@@ -577,20 +578,37 @@
     body.chat-embedded .chat-page-wrap { height: 100%; }
     body.chat-embedded .chat-page-header { display: none !important; }
 
-    /* Dark mode */
-    .dark-mode .chat-page-wrap { background: #0f172a; }
-    .dark-mode .chat-footer { border-top-color: rgba(255,255,255,0.08); }
-    .dark-mode .chat-footer-input { background: #1e293b; border-color: #334155; color: #e2e8f0; }
-    .dark-mode .chat-msg--bot .chat-bubble { background: #1e293b; color: #e2e8f0; }
-    .dark-mode .chat-sidebar { background: #0b1220; border-right-color: #1f2a3a; }
-    .dark-mode .chat-sidebar-title { color: #a7b5c2; }
-    .dark-mode .chat-thread-row { background: #111827; color: #e2e8f0; }
-    .dark-mode .chat-thread-title { color: #e2e8f0; }
-    .dark-mode .chat-thread-meta { color: #94a3b8; }
-    .dark-mode .chat-thread-delete { background: #0f172a; color: #94a3b8; }
-    .dark-mode .chat-new-thread-btn { background: rgba(31, 107, 70, 0.25); color: #a7f3d0; }
-    .dark-mode .chat-new-thread-btn:hover { background: rgba(31, 107, 70, 0.4); }
-    .dark-mode .chat-connection-card { background: #0f172a; border-color: #1f2a3a; }
+    /* ── Dark Mode ──────────────────────────────────────────── */
+    .dark-mode .chat-shell { background: #0d1117; }
+    .dark-mode .chat-page-wrap { background: #0d1117; }
+    .dark-mode .chat-messages { background: #0d1117; }
+    .dark-mode .chat-footer { background: #0f1419; border-top-color: #21262d; }
+    .dark-mode .chat-footer-input { background: #161b22; border-color: #30363d; color: #e6edf3; }
+    .dark-mode .chat-footer-input::placeholder { color: #6e7681; }
+    .dark-mode .chat-footer-input:focus { border-color: #4ac992; box-shadow: 0 0 0 3px rgba(74,201,146,0.12); }
+    .dark-mode .chat-attribution { color: #6e7681; }
+    .dark-mode .chat-msg--bot .chat-bubble { background: #1c2128; color: #e6edf3; border: 1px solid #30363d; }
+    .dark-mode .chat-msg-avatar { background: #21262d; }
+    .dark-mode .chat-bubble-time { color: #6e7681; }
+    .dark-mode .chat-msg--user .chat-bubble-time { color: rgba(255,255,255,0.5); }
+    .dark-mode .chat-suggestion-btn { background: #1c2128; border-color: #30363d; color: #4ac992; }
+    .dark-mode .chat-suggestion-btn:hover { border-color: rgba(74,201,146,0.4); background: #21262d; }
+    .dark-mode .chat-sidebar { background: #0f1419; border-right-color: #21262d; }
+    .dark-mode .chat-sidebar-title { color: #8b949e; }
+    .dark-mode .chat-thread-row { background: #161b22; color: #e6edf3; border-color: #21262d; }
+    .dark-mode .chat-thread-row.is-active { border-color: rgba(74,201,146,0.35); box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+    .dark-mode .chat-thread-title { color: #e6edf3; }
+    .dark-mode .chat-thread-meta { color: #8b949e; }
+    .dark-mode .chat-thread-delete { background: #21262d; color: #6e7681; }
+    .dark-mode .chat-thread-delete:hover { background: rgba(248,81,73,0.12); color: #f85149; }
+    .dark-mode .chat-history-empty { color: #6e7681; }
+    .dark-mode .chat-new-thread-btn { background: rgba(74,201,146,0.12); color: #4ac992; }
+    .dark-mode .chat-new-thread-btn:hover { background: rgba(74,201,146,0.2); }
+    .dark-mode .chat-sidebar-close { background: #21262d; color: #8b949e; }
+    .dark-mode .chat-connection-card { background: #161b22; border-color: #30363d; }
+    .dark-mode .chat-connection-title { color: #e6edf3; }
+    .dark-mode .chat-connection-sub { color: #8b949e; }
+    .dark-mode .chat-connection-spinner { border-color: #30363d; border-top-color: #4ac992; }
   </style>
 </head>
 <body data-page="chat" data-protected="true" class="bg-mist min-h-screen antialiased">
