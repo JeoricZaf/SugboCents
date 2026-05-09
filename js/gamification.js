@@ -5,16 +5,31 @@
  */
 (function () {
   // ── XP Float Popup ─────────────────────────────────────────────────────────
+  // Pops up above the center of the tapped button.
+  // Uses position:fixed + getBoundingClientRect so it always escapes overflow clipping.
   function showXpPopup(amount, anchorEl) {
     var xp = Math.max(0, Math.floor(Number(amount) || 0));
-    if (!xp || !anchorEl) { return; }
-    var parent = anchorEl.parentElement || document.body;
-    var computed = window.getComputedStyle(parent);
-    if (computed.position === "static") { parent.style.position = "relative"; }
+    if (!xp) { return; }
     var popup = document.createElement("span");
     popup.className = "xp-float-popup";
-    popup.innerHTML = "+" + xp + " XP <i class=\"bi bi-lightning-charge-fill\" aria-hidden=\"true\"></i>";
-    parent.appendChild(popup);
+    popup.textContent = "+" + xp + " XP ⚡";
+    // Set all three positioning properties inline — this wins over any CSS rule or cache state.
+    popup.style.position = "fixed";
+    if (anchorEl) {
+      // anchorEl may be a DOM element OR a pre-computed DOMRect-like object.
+      // We accept both so callers can snapshot getBoundingClientRect() before any
+      // re-render (e.g. triggered by sugbocents:dataChanged) detaches the element.
+      var rect = typeof anchorEl.getBoundingClientRect === "function"
+        ? anchorEl.getBoundingClientRect()
+        : anchorEl;
+      popup.style.left = Math.round(rect.left + rect.width / 2) + "px";
+      popup.style.top  = Math.round(rect.top - 8) + "px";
+    } else {
+      popup.style.left = "50%";
+      popup.style.top  = "4.5rem";
+    }
+    popup.style.transform = "translateX(-50%)";
+    document.body.appendChild(popup);
     popup.addEventListener("animationend", function () {
       if (popup.parentNode) { popup.parentNode.removeChild(popup); }
     });
@@ -213,8 +228,28 @@
     });
   }
 
+  function showSentimosPopup(amount) {
+    if (!amount || amount <= 0) { return; }
+    var anchor = document.getElementById("sentimosChip");
+    var popup = document.createElement("div");
+    popup.className = "sentimos-float-popup";
+    popup.textContent = "+" + amount + " \u20B5";
+    document.body.appendChild(popup);
+    var rect = anchor ? anchor.getBoundingClientRect() : { left: window.innerWidth / 2, top: 80, width: 0 };
+    popup.style.left = (rect.left + rect.width / 2 - 30) + "px";
+    popup.style.top  = (rect.top + window.scrollY - 10) + "px";
+    requestAnimationFrame(function () {
+      popup.classList.add("is-visible");
+      setTimeout(function () {
+        popup.classList.remove("is-visible");
+        setTimeout(function () { popup.remove(); }, 300);
+      }, 1400);
+    });
+  }
+
   window.GamificationUI = {
     showXpPopup: showXpPopup,
+    showSentimosPopup: showSentimosPopup,
     maybeNotifyNewAchievements: maybeNotifyNewAchievements,
     notifyLevelUp: notifyLevelUp,
     queueModal: queueModal

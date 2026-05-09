@@ -91,7 +91,7 @@ getAiContext()
   → returns:
       { weeklyBudget, percentageSpent, totalSpent, categoryTotals: { [category]: amount },
         daysIntoWeek, savingsTotal }
-  → used by Sprint 3 AI module only (safe to add now, just not called yet)
+  → used by the AI emoji suggestion feature and future AI recommendation features
 
 checkNewAchievements()
   → READ-ONLY — MUST NOT WRITE TO STORAGE

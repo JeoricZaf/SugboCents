@@ -153,7 +153,7 @@ XP is **cumulative and permanent** — no XP decay, no resets.
 2. **Build incrementally** — complete one function at a time, verify logic against this spec, then move on.
 3. Use the **todo tool** to track progress across multi-function implementations.
 4. **After each file edit**, state which spec rule it satisfies.
-5. If the user asks about Sprint 3 AI features (AI recommendations, AI Wrapped email), tell them that is out of scope until Sprint 3.
+5. AI features (emoji suggestion, AI recommendations, AI Wrapped email) may use the Cloud Functions backend in `functions/index.js`. Groq (free tier) is already configured there.
 
 ## What You Build (in order)
 

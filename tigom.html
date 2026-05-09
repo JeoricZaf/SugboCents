@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -8,182 +8,273 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/tigom.css" />
-  <link rel="stylesheet" href="css/mascot.css" />
   <link rel="stylesheet" href="css/dark-mode.css" />
-  <script>(function(){var c=document.documentElement.classList;if(localStorage.getItem("sidebarCollapsed")==="true")c.add("sidebar-collapsed");if(localStorage.getItem("darkModeEnabled")==="true")c.add("dark-mode");}());</script>
+  <script>(function(){if(localStorage.getItem("darkModeEnabled")==="true")document.documentElement.classList.add("dark-mode");}());</script>
+  <style>
+    @keyframes float {
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-6px)}
+    }
+    .animate-float{animation:float 3s ease-in-out infinite}
+    .font-display{font-family:'Sora',ui-sans-serif,system-ui,sans-serif}
+    .sidebar-new-link{display:flex;align-items:center;gap:0.625rem;padding:0.625rem 0.875rem;border-radius:0.875rem;font-size:0.9rem;font-weight:700;color:#617063;text-decoration:none;transition:background 0.15s,color 0.15s}
+    .sidebar-new-link:hover{background:#fff;color:#102b1d}
+    .sidebar-new-link--active{background:#164f33!important;color:#fff!important}
+    .sidebar-new-link__icon{font-size:1.1rem;width:1.25rem;text-align:center}
+    .bottom-nav-new{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(247,243,232,0.95);backdrop-filter:blur(16px);border-top:1px solid rgba(216,209,189,0.8);display:flex;justify-content:space-around;padding:0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom))}
+    .bottom-nav-new a{display:flex;flex-direction:column;align-items:center;gap:0.25rem;padding:0.4rem 0.75rem;border-radius:0.875rem;font-size:0.65rem;font-weight:700;color:#617063;text-decoration:none;transition:color 0.15s}
+    .bottom-nav-new a.active{color:#164f33}
+    .bottom-nav-new a svg{display:block}
+    .goal-card{background:#fff;border-radius:2rem;padding:1.25rem;outline:1px solid #ded7c6;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+    .progress-bar-track{position:relative;overflow:hidden;border-radius:9999px;background:#e7e0cf;height:0.75rem}
+    .progress-bar-fill{height:100%;border-radius:9999px;background:#2b8259;transition:width 0.7s}
+    .badge-pill{display:inline-flex;align-items:center;gap:0.25rem;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.75rem;font-weight:900;background:#edf7ef;color:#164f33}
+  </style>
 </head>
-<body data-page="tigom" data-protected="true" class="bg-mist min-h-screen antialiased">
+<body data-page="tigom" data-protected="true" class="antialiased"
+  style="background:#f7f3e8;font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;color:#102b1d;min-height:100vh">
 
-  <div class="app-layout">
+  <div style="min-height:100vh;background:#f7f3e8">
+    <div class="lg:flex">
 
-  <!-- sidebar nav (desktop only) -->
-  <aside class="app-sidebar" aria-label="Sidebar navigation">
-    <div class="sidebar-header">
-      <a href="dashboard.html" class="sidebar-brand" tabindex="-1" aria-hidden="true">
-        <span class="sidebar-brand-mark" aria-hidden="true">SC</span>
-        <span class="sidebar-brand-name">SugboCents</span>
-      </a>
-      <button id="sidebarToggle" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="1.5" y="1.5" width="15" height="15" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 1.5v15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      </button>
-    </div>
-    <nav class="sidebar-nav-section" aria-label="Main navigation">
-      <a href="dashboard.html" data-nav="dashboard" class="sidebar-nav-link" data-tooltip="Dashboard">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        <span class="nav-link-label">Dashboard</span>
-      </a>
-      <a href="activity.html" data-nav="activity" class="sidebar-nav-link" data-tooltip="Activity">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        <span class="nav-link-label">Activity</span>
-      </a>
-      <a href="stats.html" data-nav="stats" class="sidebar-nav-link" data-tooltip="Profile">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span class="nav-link-label">Profile</span>
-      </a>
-      <a href="tigom.html" data-nav="tigom" class="sidebar-nav-link" data-tooltip="Goals">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-        <span class="nav-link-label">Goals</span>
-      </a>
-      <a href="chat.html" data-nav="chat" class="sidebar-nav-link" data-tooltip="Sugbo AI">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <span class="nav-link-label">Sugbo AI</span>
-      </a>
-    </nav>
-    <a href="settings.html" class="sidebar-user" aria-label="Account settings">
-      <div id="sidebarAvatar" class="sidebar-user-avatar">U</div>
-      <div class="min-w-0 sidebar-user-info">
-        <div id="sidebarName" class="sidebar-user-name">Loading�</div>
-        <div class="sidebar-user-sub">Account settings</div>
-      </div>
-      <svg class="sidebar-user-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-    </a>
-  </aside>
-
-  <div class="app-main">
-  <main class="pb-32 pt-6 px-4 max-w-lg mx-auto">
-    <header class="mb-6">
-      <p class="eyebrow">Savings</p>
-      <h1 class="mt-1 text-2xl font-extrabold text-ink">Goals</h1>
-      <div class="xp-mini-bar mt-3" aria-label="Your progress">
-        <span class="xp-mini-level" id="xpMiniLevel">
-          <i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i>
-          Lv. 1
-        </span>
-        <div class="xp-mini-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="XP progress" id="xpMiniTrack">
-          <div class="xp-mini-fill" id="xpMiniFill" style="width:0%"></div>
+      <!-- DESKTOP SIDEBAR -->
+      <aside class="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-y-auto lg:flex"
+        style="background:#f7f3e8;padding:1.25rem;border-right:1px solid rgba(216,209,189,0.8)"
+        aria-label="Sidebar navigation">
+        <div class="rounded-[2rem] p-5 text-white" style="background:#164f33">
+          <div class="flex items-center gap-3">
+            <div class="relative h-12 w-12 shrink-0 animate-float" aria-hidden="true">
+              <div class="absolute left-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+              <div class="absolute right-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+              <div class="absolute inset-1 rounded-[38%_38%_44%_44%]" style="background:#2b8259;box-shadow:inset 0 -10px 0 rgba(22,79,51,0.26)"></div>
+              <div class="absolute left-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
+              <div class="absolute right-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
+              <div class="absolute left-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
+              <div class="absolute right-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
+              <div class="absolute bottom-[26%] left-1/2 h-4 w-8 rounded-b-full" style="border-bottom:4px solid #102b1d;transform:translateX(-50%)"></div>
+              <div class="absolute -bottom-1 left-1/2 flex h-6 w-8 items-center justify-center rounded-full text-xs font-black" style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+            </div>
+            <div>
+              <p class="font-display text-2xl font-black">SugboCents</p>
+              <p class="text-xs font-bold" style="color:rgba(255,255,255,0.65)">Budgeting that feels alive</p>
+            </div>
+          </div>
         </div>
-        <a href="stats.html" class="xp-mini-streak" id="xpMiniStreak" aria-label="View profile">
-          <i class="bi bi-fire" aria-hidden="true"></i> 0
+        <nav class="mt-6 flex-1 space-y-2" aria-label="Main navigation">
+          <a href="dashboard.html" data-nav="dashboard" class="sidebar-new-link"><span class="sidebar-new-link__icon">&#x2302;</span> Home</a>
+          <a href="quests.html" data-nav="quests" class="sidebar-new-link"><span class="sidebar-new-link__icon">&#9671;</span> Quests</a>
+          <a href="leaderboard.html" data-nav="leaderboard" class="sidebar-new-link"><span class="sidebar-new-link__icon">&#9819;</span> League</a>
+          <a href="profile.html" data-nav="profile" class="sidebar-new-link"><span class="sidebar-new-link__icon">&#9689;</span> Profile</a>
+          <a href="activity.html" data-nav="activity" class="sidebar-new-link"><span class="sidebar-new-link__icon">&#8776;</span> Activity</a>
+          <a href="tigom.html" data-nav="goals" class="sidebar-new-link sidebar-new-link--active"><span class="sidebar-new-link__icon">&#9678;</span> Goals</a>
+          <a href="chat.html" data-nav="chat" class="sidebar-new-link"><span class="sidebar-new-link__icon">&#10022;</span> AI Chat</a>
+          <a href="settings.html" data-nav="settings" class="sidebar-new-link"><span class="sidebar-new-link__icon">&#9776;</span> Settings</a>
+        </nav>
+        <a href="settings.html" class="mt-4 flex items-center gap-3 rounded-2xl px-3 py-3 transition hover:bg-white" style="text-decoration:none">
+          <div id="sidebarAvatar" class="grid h-10 w-10 shrink-0 place-items-center rounded-full font-display text-sm font-black text-white" style="background:#84919a">U</div>
+          <div class="min-w-0 flex-1">
+            <p id="sidebarName" class="truncate text-sm font-extrabold" style="color:#102b1d">Loading&hellip;</p>
+            <p class="text-xs font-semibold" style="color:#617063">Account settings</p>
+          </div>
+          <span style="color:#164f33">&#8594;</span>
         </a>
-      </div>
-    </header>
-    <div class="grid grid-cols-3 gap-3 mb-6">
-      <div class="card-panel p-3 text-center">
-        <p class="text-2xl font-extrabold text-ink" id="statTotalGoals">0</p>
-        <p class="text-xs text-slate-500 mt-0.5">Goals</p>
-      </div>
-      <div class="card-panel p-3 text-center">
-        <p class="text-2xl font-extrabold text-emerald-700" id="statCompletedGoals">0</p>
-        <p class="text-xs text-slate-500 mt-0.5">Completed</p>
-      </div>
-      <div class="card-panel p-3 text-center">
-        <p class="text-2xl font-extrabold text-ink" id="tigomStreakCount">0</p>
-        <p class="text-xs text-slate-500 mt-0.5">&#x1F525; Streak</p>
-      </div>
-    </div>
+      </aside>
 
-    <!-- Total saved stat -->
-    <div class="card-panel p-4 mb-6 flex items-center gap-3">
-      <div class="text-2xl">&#x1F4B0;</div>
-      <div>
-        <p class="text-xs text-slate-500 font-semibold">Total saved across all goals</p>
-        <p class="text-xl font-extrabold text-emerald-700" id="statTotalSaved">&#x20B1;0.00</p>
-      </div>
-    </div>
+      <!-- MAIN CONTENT -->
+      <main class="min-w-0 flex-1 pb-28 lg:pb-8">
 
-    <!-- Create goal form -->
-    <section class="goal-create-section card-panel p-5">
-      <h2 class="text-base font-bold text-ink mb-0.5">Create a goal</h2>
-      <p class="text-xs text-slate-500 mb-4">Set a savings target and track your progress.</p>
-
-      <form id="createGoalForm" class="goal-create-form" novalidate>
-        <div>
-          <label class="label" for="goalName">Goal name</label>
-          <input id="goalName" type="text" class="input" maxlength="60" placeholder="e.g. New phone, Trip fund&#x2026;" required />
-        </div>
-        <div class="goal-create-row">
-          <div>
-            <label class="label" for="goalTarget">Target amount (&#x20B1;)</label>
-            <input id="goalTarget" type="number" class="input" min="1" step="0.01" placeholder="e.g. 5000" required />
+        <!-- Sticky resource bar -->
+        <header class="sticky top-0 z-40 backdrop-blur-xl"
+          style="border-bottom:1px solid rgba(216,209,189,0.7);background:rgba(247,243,232,0.88);padding:0.75rem 1rem">
+          <div class="mx-auto flex max-w-6xl items-center gap-3">
+            <div class="hidden w-[9rem] shrink-0 lg:block">
+              <p class="font-display text-lg font-extrabold tracking-tight" style="color:#164f33">SugboCents</p>
+              <p class="text-xs font-semibold" style="color:#5f6f63">Habit finance game</p>
+            </div>
+            <div id="resourceBar" class="flex-1" aria-label="Your stats" style="min-height:4rem"></div>
           </div>
-          <div>
-            <label class="label" for="goalDeadline">Target date (optional)</label>
-            <input id="goalDeadline" type="date" class="input" />
-          </div>
+        </header>
+
+        <!-- Goals content -->
+        <div class="mx-auto max-w-6xl space-y-6 px-4 py-5 sm:px-6 lg:px-8">
+
+          <!-- PAGE HEADER -->
+          <section>
+            <p class="text-xs font-extrabold uppercase tracking-[0.24em]" style="color:#6b756c">Savings</p>
+            <div class="mt-1 flex items-end justify-between gap-4">
+              <div>
+                <h1 class="font-display text-4xl font-black" style="color:#102b1d">Goals</h1>
+                <p class="mt-2 text-sm font-semibold" style="color:#617063">Separate from your weekly budget. This is future-you money.</p>
+              </div>
+              <button id="newGoalBtnDesktop" onclick="document.getElementById('goalModalBackdrop').classList.remove('hidden')"
+                class="hidden rounded-full px-5 py-3 text-sm font-black text-white sm:block"
+                style="background:#164f33" type="button">
+                + New Goal
+              </button>
+            </div>
+          </section>
+
+          <!-- GOALS GRID -->
+          <section>
+            <!-- Empty state -->
+            <div id="goalEmpty" class="hidden grid min-h-72 place-items-center rounded-[2rem] bg-white p-8 text-center shadow-sm" style="outline:1px solid #ded7c6">
+              <div>
+                <div class="mx-auto relative h-16 w-16 animate-float" aria-hidden="true">
+                  <div class="absolute left-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+                  <div class="absolute right-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+                  <div class="absolute inset-1 rounded-[38%_38%_44%_44%]" style="background:#2b8259;box-shadow:inset 0 -10px 0 rgba(22,79,51,0.26)"></div>
+                  <div class="absolute left-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
+                  <div class="absolute right-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
+                  <div class="absolute left-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
+                  <div class="absolute right-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
+                  <div class="absolute bottom-[26%] left-1/2 h-4 w-8 rounded-b-full" style="border-bottom:4px solid #102b1d;transform:translateX(-50%)"></div>
+                  <div class="absolute -bottom-1 left-1/2 flex h-6 w-8 items-center justify-center rounded-full text-xs font-black" style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+                </div>
+                <h2 class="mt-4 font-display text-3xl font-black" style="color:#102b1d">What are you saving for?</h2>
+                <p class="mt-2 text-sm font-semibold" style="color:#617063">Create your first goal and make every deposit feel visible.</p>
+                <button onclick="document.getElementById('goalModalBackdrop').classList.remove('hidden')"
+                  class="mt-5 rounded-full px-5 py-3 text-sm font-black text-white"
+                  style="background:#164f33" type="button">
+                  Create a goal
+                </button>
+              </div>
+            </div>
+            <!-- Goals grid rendered by JS -->
+            <div id="goalList" class="grid gap-4 lg:grid-cols-3"></div>
+          </section>
+
+          <!-- SAVINGS BADGES -->
+          <section class="rounded-[2rem] p-5 sm:p-6" style="background:#f8f5eb;outline:1px solid #ded7c6">
+            <div class="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Savings badges</p>
+                <h2 class="font-display text-2xl font-extrabold tracking-tight" style="color:#102b1d">Unlock by depositing</h2>
+              </div>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-3">
+              <div class="rounded-3xl bg-white p-4 text-center" style="outline:1px solid #ded7c6">
+                <div class="mx-auto grid h-12 w-12 place-items-center rounded-full text-xl" style="background:#edf7ef">&#127807;</div>
+                <p class="mt-3 font-extrabold" style="color:#102b1d">Saver Seed</p>
+                <p class="mt-1 text-xs font-semibold" style="color:#617063">Log a savings contribution.</p>
+              </div>
+              <div class="rounded-3xl bg-white p-4 text-center" style="outline:1px solid #ded7c6;opacity:0.4;filter:grayscale(1)">
+                <div class="mx-auto grid h-12 w-12 place-items-center rounded-full text-xl" style="background:#edf7ef">&#127807;</div>
+                <p class="mt-3 font-extrabold" style="color:#102b1d">Palawan Planner</p>
+                <p class="mt-1 text-xs font-semibold" style="color:#617063">Log a savings contribution.</p>
+              </div>
+              <div class="rounded-3xl bg-white p-4 text-center" style="outline:1px solid #ded7c6;opacity:0.4;filter:grayscale(1)">
+                <div class="mx-auto grid h-12 w-12 place-items-center rounded-full text-xl" style="background:#edf7ef">&#127807;</div>
+                <p class="mt-3 font-extrabold" style="color:#102b1d">Emergency Ready</p>
+                <p class="mt-1 text-xs font-semibold" style="color:#617063">Log a savings contribution.</p>
+              </div>
+            </div>
+          </section>
+
         </div>
-        <p id="createGoalError" class="field-error hidden"></p>
-        <button id="createGoalBtn" type="submit" class="btn-primary w-full mt-1">Add goal</button>
-      </form>
-    </section>
+      </main>
+    </div>
+  </div>
 
-    <!-- Goals list -->
-    <section class="mt-7">
-      <h2 class="text-lg font-bold text-ink mb-1">My goals</h2>
-      <p class="text-xs text-slate-500 mb-3">Tap "+ Add savings" to update your progress.</p>
-
-      <div id="goalList" class="goal-list"></div>
-
-      <div id="goalEmpty" class="goal-empty hidden">
-        <div class="goal-empty-icon">&#x1F3AF;</div>
-        <p class="goal-empty-title">No goals yet</p>
-        <p class="goal-empty-sub">Create your first savings goal above to start tracking!</p>
-      </div>
-    </section>
-  </main>
-  </div><!-- /app-main -->
-  </div><!-- /app-layout -->
-
-  <nav class="bottom-nav" aria-label="Main navigation">
-    <a href="dashboard.html" data-nav="dashboard" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span class="nav-text">Dashboard</span>
+  <!-- MOBILE BOTTOM NAV -->
+  <nav class="bottom-nav-new lg:hidden" aria-label="Main navigation">
+    <a href="dashboard.html" data-nav="dashboard">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Home</span>
     </a>
-    <a href="activity.html" data-nav="activity" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span class="nav-text">Activity</span>
+    <a href="quests.html" data-nav="quests">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+      <span>Quests</span>
     </a>
-    <a href="tigom.html" data-nav="tigom" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-      <span class="nav-text">Goals</span>
+    <a href="tigom.html" data-nav="goals" class="active">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+      <span>Goals</span>
     </a>
-    <a href="chat.html" data-nav="chat" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <span class="nav-text">Sugbo AI</span>
+    <a href="chat.html" data-nav="chat">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>AI Chat</span>
     </a>
-    <a href="settings.html" data-nav="settings" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      <span class="nav-text">Settings</span>
+    <a href="profile.html" data-nav="profile">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Profile</span>
     </a>
   </nav>
 
-  <!-- Progress update modal -->
-  <div id="progressModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="progressModalTitle">
-    <div class="modal-sheet">
-      <p class="modal-title" id="progressModalTitle">Update progress</p>
-      <input type="hidden" id="progressModalGoalId" />
-      <div class="modal-field">
-        <label class="label" for="progressAmount">Amount to add (&#x20B1;)</label>
-        <input id="progressAmount" type="number" class="input" min="1" step="0.01" placeholder="e.g. 500" />
-        <p id="progressModalError" class="field-error hidden"></p>
+  <!-- FAB mobile -->
+  <button id="fabNewGoal" onclick="document.getElementById('goalModalBackdrop').classList.remove('hidden')"
+    class="fixed z-30 rounded-full px-5 py-4 text-sm font-black text-white shadow-xl sm:hidden"
+    style="bottom:5.5rem;right:1rem;background:#164f33;box-shadow:0 8px 24px rgba(22,79,51,0.25)" type="button">
+    + New Goal
+  </button>
+
+  <!-- ADD GOAL MODAL -->
+  <div id="goalModalBackdrop" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+    style="background:rgba(16,43,29,0.55);backdrop-filter:blur(4px)"
+    role="dialog" aria-modal="true" aria-labelledby="goalModalTitle">
+    <div class="w-full max-w-lg rounded-t-[2rem] sm:rounded-[2rem] bg-white p-6 shadow-2xl" style="outline:1px solid #ded7c6">
+      <div class="flex items-center justify-between mb-5">
+        <h2 id="goalModalTitle" class="font-display text-2xl font-black" style="color:#102b1d">New Goal</h2>
+        <button onclick="document.getElementById('goalModalBackdrop').classList.add('hidden')"
+          class="grid h-9 w-9 place-items-center rounded-full text-lg font-bold"
+          style="background:#f3ede0;color:#617063" type="button" aria-label="Close">&times;</button>
       </div>
-      <div class="flex gap-3 mt-4">
-        <button id="progressModalCancel" type="button" class="btn-outline flex-1">Cancel</button>
-        <button id="progressModalSave" type="button" class="btn-primary flex-1">Save progress</button>
+      <form id="createGoalForm" novalidate class="space-y-4">
+        <div>
+          <label class="block text-xs font-extrabold uppercase tracking-[0.15em] mb-1.5" style="color:#6b756c" for="goalName">Goal name</label>
+          <input id="goalName" type="text" maxlength="60" placeholder="e.g. Trip to Palawan, New Laptop..."
+            class="w-full rounded-2xl px-4 py-3 text-sm font-semibold outline-none transition"
+            style="background:#f3ede0;color:#102b1d;border:2px solid transparent"
+            onfocus="this.style.borderColor='#164f33'" onblur="this.style.borderColor='transparent'" required />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-extrabold uppercase tracking-[0.15em] mb-1.5" style="color:#6b756c" for="goalTarget">Target (&#8369;)</label>
+            <input id="goalTarget" type="number" min="1" step="0.01" placeholder="e.g. 15000"
+              class="w-full rounded-2xl px-4 py-3 text-sm font-semibold outline-none transition"
+              style="background:#f3ede0;color:#102b1d;border:2px solid transparent"
+              onfocus="this.style.borderColor='#164f33'" onblur="this.style.borderColor='transparent'" required />
+          </div>
+          <div>
+            <label class="block text-xs font-extrabold uppercase tracking-[0.15em] mb-1.5" style="color:#6b756c" for="goalDeadline">Target date</label>
+            <input id="goalDeadline" type="date"
+              class="w-full rounded-2xl px-4 py-3 text-sm font-semibold outline-none transition"
+              style="background:#f3ede0;color:#102b1d;border:2px solid transparent"
+              onfocus="this.style.borderColor='#164f33'" onblur="this.style.borderColor='transparent'" />
+          </div>
+        </div>
+        <p id="createGoalError" class="hidden text-xs font-bold" style="color:#b91c1c"></p>
+        <button id="createGoalBtn" type="submit"
+          class="w-full rounded-2xl px-4 py-3.5 text-sm font-black text-white"
+          style="background:#164f33">Add goal</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- DEPOSIT MODAL -->
+  <div id="progressModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+    style="background:rgba(16,43,29,0.55);backdrop-filter:blur(4px)"
+    role="dialog" aria-modal="true" aria-labelledby="progressModalTitle">
+    <div class="w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] bg-white p-6 shadow-2xl" style="outline:1px solid #ded7c6">
+      <div class="flex items-center justify-between mb-5">
+        <h2 id="progressModalTitle" class="font-display text-xl font-black" style="color:#102b1d">Add savings</h2>
+        <button id="progressModalCancel"
+          class="grid h-9 w-9 place-items-center rounded-full text-lg font-bold"
+          style="background:#f3ede0;color:#617063" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-extrabold uppercase tracking-[0.15em] mb-1.5" style="color:#6b756c" for="progressAmount">Amount to add (&#8369;)</label>
+          <input id="progressAmount" type="number" min="1" step="0.01" placeholder="e.g. 500"
+            class="w-full rounded-2xl px-4 py-3 text-sm font-semibold outline-none transition"
+            style="background:#f3ede0;color:#102b1d;border:2px solid transparent"
+            onfocus="this.style.borderColor='#164f33'" onblur="this.style.borderColor='transparent'" />
+          <p id="progressModalError" class="hidden mt-1 text-xs font-bold" style="color:#b91c1c"></p>
+        </div>
+        <button id="progressModalSave" type="button"
+          class="w-full rounded-2xl px-4 py-3.5 text-sm font-black text-white"
+          style="background:#164f33">Save progress</button>
       </div>
     </div>
   </div>
@@ -196,6 +287,5 @@
   <script src="js/dark-mode.js"></script>
   <script src="js/tigom.js"></script>
   <script src="js/chat-ai.js"></script>
-  <script src="js/mascot.js"></script>
 </body>
 </html>

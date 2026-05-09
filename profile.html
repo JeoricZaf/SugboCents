@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1f6b46" />
+  <title>SugboCents - Profile</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dark-mode.css" />
+  <script>(function () { if (localStorage.getItem("darkModeEnabled") === "true") document.documentElement.classList.add("dark-mode"); }());</script>
+</head>
+<body data-page="profile" data-protected="true" class="antialiased"
+  style="background:#f7f3e8;font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;color:#102b1d;min-height:100vh">
+
+  <div style="min-height:100vh;background:#f7f3e8">
+    <div class="lg:flex">
+
+      <!-- DESKTOP SIDEBAR -->
+      <aside class="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-y-auto lg:flex"
+        style="background:#f7f3e8;padding:1.25rem;border-right:1px solid rgba(216,209,189,0.8)"
+        aria-label="Sidebar navigation">
+        <!-- Brand block with Tigom -->
+        <div class="rounded-[2rem] p-5 text-white" style="background:#164f33">
+          <div class="flex items-center gap-3">
+            <div class="relative h-12 w-12 shrink-0 animate-float" aria-hidden="true">
+              <div class="absolute left-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+              <div class="absolute right-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+              <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
+                style="background:#2b8259;box-shadow:inset 0 -10px 0 rgba(22,79,51,0.26)"></div>
+              <div class="absolute left-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
+              <div class="absolute right-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
+              <div class="absolute left-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
+              <div class="absolute right-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
+              <div class="absolute bottom-[26%] left-1/2 h-4 w-8 rounded-b-full"
+                style="border-bottom:4px solid #102b1d;transform:translateX(-50%)"></div>
+              <div class="absolute -bottom-1 left-1/2 flex h-6 w-8 items-center justify-center rounded-full text-xs font-black"
+                style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+            </div>
+            <div>
+              <p class="font-display text-2xl font-black">SugboCents</p>
+              <p class="text-xs font-bold" style="color:rgba(255,255,255,0.65)">Budgeting that feels alive</p>
+            </div>
+          </div>
+        </div>
+        <!-- Nav links -->
+        <nav class="mt-6 flex-1 space-y-2" aria-label="Main navigation">
+          <a href="dashboard.html" data-nav="dashboard" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#x2302;</span> Home
+          </a>
+          <a href="quests.html" data-nav="quests" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9671;</span> Quests
+          </a>
+          <a href="leaderboard.html" data-nav="leaderboard" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9819;</span> League
+          </a>
+          <a href="profile.html" data-nav="profile" class="sidebar-new-link sidebar-new-link--active">
+            <span class="sidebar-new-link__icon">&#9689;</span> Profile
+          </a>
+          <a href="activity.html" data-nav="activity" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#8776;</span> Activity
+          </a>
+          <a href="tigom.html" data-nav="goals" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9678;</span> Goals
+          </a>
+          <a href="chat.html" data-nav="chat" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#10022;</span> AI Chat
+          </a>
+          <a href="settings.html" data-nav="settings" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9776;</span> Settings
+          </a>
+        </nav>
+        <!-- User strip -->
+        <a href="settings.html" class="mt-4 flex items-center gap-3 rounded-2xl px-3 py-3 transition hover:bg-white"
+          style="text-decoration:none">
+          <div id="sidebarAvatar"
+            class="grid h-10 w-10 shrink-0 place-items-center rounded-full font-display text-sm font-black text-white"
+            style="background:#84919a">U</div>
+          <div class="min-w-0 flex-1">
+            <p id="sidebarName" class="truncate text-sm font-extrabold" style="color:#102b1d">Loading&hellip;</p>
+            <p class="text-xs font-semibold" style="color:#617063">Account settings</p>
+          </div>
+          <span style="color:#164f33">&#8594;</span>
+        </a>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <main class="min-w-0 flex-1 pb-28 lg:pb-8">
+
+        <!-- Sticky resource bar -->
+        <header class="sticky top-0 z-40 backdrop-blur-xl"
+          style="border-bottom:1px solid rgba(216,209,189,0.7);background:rgba(247,243,232,0.88);padding:0.75rem 1rem">
+          <div class="mx-auto flex max-w-6xl items-center gap-3">
+            <div class="hidden w-[9rem] shrink-0 lg:block">
+              <p class="font-display text-lg font-extrabold tracking-tight" style="color:#164f33">SugboCents</p>
+              <p class="text-xs font-semibold" style="color:#5f6f63">Habit finance game</p>
+            </div>
+            <div id="resourceBar" class="flex-1" aria-label="Your stats" style="min-height:4rem"></div>
+          </div>
+        </header>
+
+        <!-- Profile content -->
+        <div class="mx-auto max-w-6xl space-y-6 px-4 py-5 sm:px-6 lg:px-8">
+
+          <!-- ── Profile Hero Card ───────────────────────── -->
+          <section class="rounded-[2rem] bg-white p-6 shadow-sm sm:p-8" style="outline:1px solid #ded7c6">
+            <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex items-center gap-5">
+                <div class="relative shrink-0">
+                  <div id="profileAvatarCircle"
+                    class="grid h-20 w-20 place-items-center rounded-full font-display text-3xl font-black text-white"
+                    style="background:#84919a">
+                    <span id="profileInitial">U</span>
+                  </div>
+                  <div id="profileLevelBadge"
+                    class="absolute -bottom-1 -right-1 grid h-9 w-9 place-items-center rounded-full text-xs font-black text-white"
+                    style="background:#EAB308;outline:4px solid #f7f3e8">Lv1</div>
+                </div>
+                <div>
+                  <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Own profile</p>
+                  <h1 id="profileName" class="font-display text-4xl font-black tracking-tight" style="color:#102b1d">Loading&hellip;</h1>
+                  <p id="profileLevelName" class="mt-1 text-sm font-bold" style="color:#617063">Rookie Saver &middot; Level 1</p>
+                  <p id="profileJoined" class="text-sm font-semibold" style="color:#7a817a">Saving since &hellip;</p>
+                </div>
+              </div>
+              <div class="rounded-3xl px-5 py-4 shrink-0" style="background:#f0fdfa;outline:1px solid rgba(13,148,136,0.25);color:#0f766e">
+                <p class="text-xs font-extrabold uppercase tracking-[0.18em]">Sentimos</p>
+                <p id="profileSentimos" class="font-display text-3xl font-black">&#8373;0</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── 4 Stat Tiles ───────────────────────────── -->
+          <section class="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Your statistics">
+            <div class="rounded-[1.7rem] bg-white p-4 shadow-sm" style="outline:1px solid #ded7c6">
+              <p class="text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">Current streak</p>
+              <p id="statStreak" class="mt-2 font-display text-3xl font-black" style="color:#F97316">0</p>
+            </div>
+            <div class="rounded-[1.7rem] bg-white p-4 shadow-sm" style="outline:1px solid #ded7c6">
+              <p class="text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">Total XP</p>
+              <p id="statXp" class="mt-2 font-display text-3xl font-black" style="color:#EAB308">0</p>
+            </div>
+            <div class="rounded-[1.7rem] bg-white p-4 shadow-sm" style="outline:1px solid #ded7c6">
+              <p class="text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">Badges</p>
+              <p id="statBadges" class="mt-2 font-display text-3xl font-black" style="color:#164f33">0</p>
+            </div>
+            <div class="rounded-[1.7rem] bg-white p-4 shadow-sm" style="outline:1px solid #ded7c6">
+              <p class="text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">Quests done</p>
+              <p id="statLevel" class="mt-2 font-display text-3xl font-black" style="color:#102b1d">0</p>
+            </div>
+          </section>
+
+          <!-- ── Badge Shelf + Week Map ─────────────────── -->
+          <div class="grid gap-6 lg:grid-cols-[1fr_0.86fr]">
+
+            <!-- Badge shelf -->
+            <section class="rounded-[2rem] bg-white p-5 shadow-sm sm:p-6" style="outline:1px solid #ded7c6">
+              <div class="mb-4 flex items-end justify-between gap-4">
+                <div>
+                  <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Badge shelf</p>
+                  <h2 class="font-display text-2xl font-black tracking-tight" style="color:#102b1d">Recent trophies</h2>
+                </div>
+                <a href="achievements.html" class="shrink-0 text-sm font-extrabold" style="color:#164f33;text-decoration:none">View all &#8594;</a>
+              </div>
+              <!-- JS renders badge tiles here -->
+              <div id="achievementPreview" class="flex gap-3 overflow-x-auto pb-1" style="scrollbar-width:none"></div>
+            </section>
+
+            <!-- Activity mini-map (compact week map) -->
+            <section class="rounded-[2rem] bg-white p-5 shadow-sm sm:p-6" style="outline:1px solid #ded7c6">
+              <div class="mb-4">
+                <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">This week</p>
+                <h2 class="font-display text-2xl font-black tracking-tight" style="color:#102b1d">Activity mini-map</h2>
+              </div>
+              <div id="profileWeekMapGrid" class="flex items-center gap-2"></div>
+              <p id="profileWeekMapMsg" class="mt-4 text-sm font-semibold" style="color:#617063">Loading&hellip;</p>
+            </section>
+
+          </div>
+
+          <!-- ── Personal Records (Money Memories) ─────── -->
+          <section>
+            <div class="mb-4">
+              <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Personal records</p>
+              <h2 class="font-display text-2xl font-black tracking-tight" style="color:#102b1d">Money memories</h2>
+            </div>
+            <div class="flex gap-4 overflow-x-auto pb-1" style="scrollbar-width:none;margin:0 -1rem;padding:0 1rem">
+              <div class="min-w-[15rem] rounded-[2rem] bg-white p-5 shadow-sm shrink-0" style="outline:1px solid #ded7c6">
+                <p class="text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">Longest streak</p>
+                <p id="profileLongestStreakVal" class="mt-2 font-display text-3xl font-black" style="color:#102b1d">0 days</p>
+                <p id="profileLongestStreakDate" class="mt-2 text-sm font-bold" style="color:#617063">&mdash;</p>
+              </div>
+              <div class="min-w-[15rem] rounded-[2rem] bg-white p-5 shadow-sm shrink-0" style="outline:1px solid #ded7c6">
+                <p class="text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">Best week XP</p>
+                <p id="profileBestWeekXpVal" class="mt-2 font-display text-3xl font-black" style="color:#EAB308">0 XP</p>
+                <p id="profileBestWeekXpDate" class="mt-2 text-sm font-bold" style="color:#617063">&mdash;</p>
+              </div>
+              <div class="min-w-[15rem] rounded-[2rem] bg-white p-5 shadow-sm shrink-0" style="outline:1px solid #ded7c6">
+                <p class="text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">Best month saved</p>
+                <p id="profileBestMonthSavedVal" class="mt-2 font-display text-3xl font-black" style="color:#102b1d">&#8369;0</p>
+                <p id="profileBestMonthSavedDate" class="mt-2 text-sm font-bold" style="color:#617063">&mdash;</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Friends (Barkada List) ─────────────────── -->
+          <section class="rounded-[2rem] bg-white p-5 shadow-sm sm:p-6" style="outline:1px solid #ded7c6" aria-label="Friends" id="friendsSection">
+            <div class="mb-4">
+              <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Friends</p>
+              <h2 class="font-display text-2xl font-black tracking-tight" style="color:#102b1d">Barkada list</h2>
+            </div>
+
+            <!-- Own profile: friend code + add form -->
+            <div id="ownFriendsUI">
+              <!-- Friend code -->
+              <div class="mb-4 flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3"
+                style="background:#faf8f1;outline:1px solid #ded7c6">
+                <span class="text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">Your Friend Code</span>
+                <span id="friendCodeValue" class="flex-1 truncate font-display font-black text-sm" style="color:#102b1d">&hellip;</span>
+                <button id="friendCodeCopy" type="button"
+                  class="shrink-0 rounded-full px-3 py-1.5 text-xs font-black text-white"
+                  style="background:#164f33">&#128203; Copy</button>
+              </div>
+
+              <!-- Add friend form -->
+              <form id="friendAddForm" autocomplete="off" class="flex gap-2 mb-3">
+                <input id="friendAddInput" type="text" maxlength="128"
+                  placeholder="Paste a friend&#x2019;s code&hellip;"
+                  class="min-w-0 flex-1 rounded-2xl px-4 py-3 text-sm font-semibold outline-none"
+                  style="background:#faf8f1;border:1px solid #d8d1bd;color:#102b1d" />
+                <button type="submit"
+                  class="shrink-0 rounded-2xl px-5 py-3 text-sm font-black text-white"
+                  style="background:#164f33">Add</button>
+              </form>
+              <div id="friendAddStatus" role="status" aria-live="polite" class="mb-4 text-sm font-semibold" style="color:#617063"></div>
+
+              <!-- Pending requests -->
+              <div id="friendRequestsWrap" style="display:none;margin-bottom:1rem">
+                <p class="mb-2 text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">Pending Requests</p>
+                <div id="friendRequestsList"></div>
+              </div>
+
+              <!-- Friends list -->
+              <div id="friendsListWrap">
+                <div id="friendsList" class="flex items-center gap-3 flex-wrap"></div>
+                <p id="friendsEmptyMsg" class="text-sm font-semibold" style="color:#617063;display:none">No friends yet &mdash; share your code to connect!</p>
+              </div>
+
+              <!-- Add more button -->
+              <button type="button"
+                class="mt-4 h-14 shrink-0 rounded-full px-5 text-sm font-black"
+                style="border:2px dashed #b7ad96;color:#164f33;background:transparent"
+                onclick="document.getElementById('friendAddInput').focus()">
+                + Find Friends
+              </button>
+            </div>
+
+            <!-- Public profile view: Add / Pending / Friend button -->
+            <div id="publicProfileFriendUI" style="display:none">
+              <button id="publicProfileAddBtn" type="button"
+                class="rounded-full px-5 py-3 text-sm font-black text-white"
+                style="background:#164f33">Add Friend</button>
+            </div>
+          </section>
+
+        </div><!-- /page content -->
+      </main>
+    </div>
+  </div>
+
+  <!-- FLOATING TIGOM CHAT FAB -->
+  <a href="chat.html" class="fixed z-30 grid place-items-center rounded-full shadow-2xl transition lg:bottom-6"
+    style="bottom:5.5rem;right:1rem;height:4rem;width:4rem;background:white;outline:2px solid rgba(22,79,51,0.15);box-shadow:0 8px 32px rgba(16,43,29,0.2);text-decoration:none"
+    aria-label="Open Tigom AI chat">
+    <div class="relative h-10 w-10" aria-hidden="true">
+      <div class="absolute left-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>
+      <div class="absolute right-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>
+      <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
+        style="background:#2b8259;box-shadow:inset 0 -8px 0 rgba(22,79,51,0.26)"></div>
+      <div class="absolute left-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
+      <div class="absolute right-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
+      <div class="absolute left-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>
+      <div class="absolute right-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>
+      <div class="absolute bottom-[26%] left-1/2 rounded-b-full"
+        style="height:3px;width:1.5rem;border-bottom:3px solid #102b1d;transform:translateX(-50%)"></div>
+      <div class="absolute -bottom-1 left-1/2 flex h-5 w-6 items-center justify-center rounded-full text-[0.55rem] font-black"
+        style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+    </div>
+  </a>
+
+  <!-- MOBILE BOTTOM NAV -->
+  <nav class="fixed inset-x-0 bottom-0 z-40 border-t px-2 py-2 lg:hidden"
+    style="background:rgba(251,248,239,0.94);border-color:#d8d1bd;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding-bottom:calc(0.5rem + env(safe-area-inset-bottom))"
+    aria-label="Main navigation">
+    <div class="mx-auto grid max-w-md grid-cols-5 gap-1">
+      <a href="dashboard.html" data-nav="dashboard"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#x2302;</span>
+        <span class="mt-1 block">Home</span>
+      </a>
+      <a href="quests.html" data-nav="quests"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#9671;</span>
+        <span class="mt-1 block">Quests</span>
+      </a>
+      <a href="leaderboard.html" data-nav="leaderboard"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#9819;</span>
+        <span class="mt-1 block">League</span>
+      </a>
+      <a href="profile.html" data-nav="profile"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition"
+        style="background:#164f33;color:white;text-decoration:none">
+        <span class="block text-lg leading-none">&#9689;</span>
+        <span class="mt-1 block">Profile</span>
+      </a>
+      <a href="activity.html" data-nav="activity"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#8776;</span>
+        <span class="mt-1 block">More</span>
+      </a>
+    </div>
+  </nav>
+
+  <script src="js/firebase-init.js"></script>
+  <script src="js/firebase-auth-service.js"></script>
+  <script src="js/firestore-service.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/gamification.js"></script>
+  <script src="js/dark-mode.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/mascot.js"></script>
+  <script src="js/dev-tools.js"></script>
+</body>
+</html>
+

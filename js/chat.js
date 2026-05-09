@@ -1,16 +1,17 @@
 (function () {
-  var MASCOT_IMGS = {
-    happy: "assets/images/mascot/mascot-happy.png",
-    thinking: "assets/images/mascot/mascot-neutral.png",
-    celebrating: "assets/images/mascot/mascot-happy.png",
-    concerned: "assets/images/mascot/mastcot-sad.png"
+  // Mood → data-mood mapping for CSS TigomFace
+  var MOOD_MAP = {
+    happy:      "happy",
+    thinking:   "neutral",
+    celebrating:"happy",
+    concerned:  "worried"
   };
 
   var SUGGESTIONS = [
-    { icon: "bi-bar-chart-fill", label: "Analyze my spending",   prompt: "Analyze my spending this week." },
-    { icon: "bi-wallet2",        label: "Help me budget",        prompt: "Help me build a simple budget for this month." },
-    { icon: "bi-fire",           label: "Show my streak",        prompt: "What's my spending streak right now?" },
-    { icon: "bi-bullseye",       label: "Suggest a goal",        prompt: "Suggest a savings goal I can start this month." }
+    { label: "How's my budget looking this week?",   prompt: "How's my budget looking this week?" },
+    { label: "What's my biggest spending category?", prompt: "What's my biggest spending category?" },
+    { label: "Give me a tip to save more.",          prompt: "Give me a tip to save more." },
+    { label: "How close am I to my savings goal?",  prompt: "How close am I to my savings goal?" }
   ];
 
   var currentAvatarState = "happy";
@@ -68,17 +69,36 @@
     return base;
   }
 
+  function makeTigomFace(moodState) {
+    var dataMood = MOOD_MAP[moodState] || "happy";
+    var el = document.createElement("div");
+    el.className = "tigom-face tigom-face--sm";
+    el.setAttribute("data-mood", dataMood);
+    el.setAttribute("aria-hidden", "true");
+    el.innerHTML =
+      '<div class="tf-ear-l"></div>' +
+      '<div class="tf-ear-r"></div>' +
+      '<div class="tf-head"></div>' +
+      '<div class="tf-eye-white-l"></div>' +
+      '<div class="tf-eye-white-r"></div>' +
+      '<div class="tf-pupil-l"></div>' +
+      '<div class="tf-pupil-r"></div>' +
+      '<div class="tf-mouth"></div>' +
+      '<div class="tf-badge">\u20b1</div>';
+    return el;
+  }
+
+  function setTigomMood(moodState) {
+    var dataMood = MOOD_MAP[moodState] || "happy";
+    ["chatTigomFace", "chatFooterTigomFace"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) { el.setAttribute("data-mood", dataMood); }
+    });
+  }
+
   function setAvatarState(state, subtitleOverride) {
     currentAvatarState = state || "happy";
-    var avatarEl = document.getElementById("chatAvatarImg");
-    if (avatarEl) {
-      var nextSrc = MASCOT_IMGS[currentAvatarState] || MASCOT_IMGS.happy;
-      avatarEl.classList.add("is-fading");
-      setTimeout(function () {
-        avatarEl.src = nextSrc;
-        avatarEl.classList.remove("is-fading");
-      }, 120);
-    }
+    setTigomMood(currentAvatarState);
 
     var subtitleEl = document.getElementById("chatSubtitle");
     if (subtitleEl) {
@@ -87,12 +107,12 @@
         return;
       }
       var labels = {
-        happy: "On track — keep it up",
-        thinking: "Sugbo is analyzing...",
-        celebrating: "Doing great this week! 🎉",
-        concerned: "Let's keep spending in check"
+        happy:      "On track \u2014 keep it up",
+        thinking:   "Tigom is thinking...",
+        celebrating:"Doing great this week! \uD83C\uDF89",
+        concerned:  "Let's keep spending in check"
       };
-      subtitleEl.textContent = labels[currentAvatarState] || "Your budget buddy";
+      subtitleEl.textContent = labels[currentAvatarState] || "Your personal budgeting buddy";
     }
   }
 
@@ -123,18 +143,13 @@
 
     var msg = document.createElement("div");
     msg.className = "chat-msg chat-msg--bot";
-
-    var avatar = document.createElement("img");
-    avatar.src = MASCOT_IMGS.happy;
-    avatar.alt = "Sugbo";
-    avatar.className = "chat-msg-avatar";
-    msg.appendChild(avatar);
+    msg.appendChild(makeTigomFace("happy"));
 
     var inner = document.createElement("div");
     var bubble = document.createElement("div");
     bubble.className = "chat-bubble chat-bubble--welcome";
     bubble.id = "chatWelcomeText";
-    bubble.textContent = "Hi! I\u2019m Sugbo, your budget buddy. Ask me anything about your finances.";
+    bubble.textContent = "Hi! I\u2019m Tigom, your personal budgeting buddy. Ask me anything about your finances.";
     inner.appendChild(bubble);
     msg.appendChild(inner);
     block.appendChild(msg);
@@ -145,7 +160,7 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "chat-suggestion-btn";
-      btn.innerHTML = '<i class="bi ' + item.icon + '" aria-hidden="true"></i>' + item.label;
+      btn.textContent = item.label;
       btn.addEventListener("click", function () {
         clearWelcomeBlock();
         sendMessage(item.prompt);
@@ -276,7 +291,7 @@
       del.type = "button";
       del.className = "chat-thread-delete";
       del.setAttribute("aria-label", "Delete conversation");
-      del.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
+      del.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>';
       del.addEventListener("click", function (e) {
         e.stopPropagation();
         pendingDeleteThreadId = thread.id;
@@ -343,11 +358,7 @@
     msg.className = "chat-msg chat-msg--" + (role === "user" ? "user" : "bot");
 
     if (role === "bot") {
-      var avatar = document.createElement("img");
-      avatar.src = MASCOT_IMGS[avatarState || currentAvatarState] || MASCOT_IMGS.happy;
-      avatar.alt = "Sugbo";
-      avatar.className = "chat-msg-avatar";
-      msg.appendChild(avatar);
+      msg.appendChild(makeTigomFace(avatarState || currentAvatarState));
     }
 
     var inner = document.createElement("div");
@@ -381,20 +392,17 @@
     var msg = document.createElement("div");
     msg.id = id;
     msg.className = "chat-msg chat-msg--bot";
+    msg.appendChild(makeTigomFace("thinking"));
 
-    var avatar = document.createElement("img");
-    avatar.src = MASCOT_IMGS.thinking;
-    avatar.alt = "Sugbo";
-    avatar.className = "chat-msg-avatar";
-    msg.appendChild(avatar);
-
+    // typing bubble: flex items-center gap-1 rounded-[1.5rem] bg-white px-4 py-4 ring-1 ring-[#ded7c6]
     var bubble = document.createElement("div");
-    bubble.className = "chat-bubble chat-typing";
-    bubble.innerHTML = "<span></span><span></span><span></span>";
+    bubble.className = "chat-typing-bubble";
+    var d1 = document.createElement("span"); d1.className = "typing-dot";
+    var d2 = document.createElement("span"); d2.className = "typing-dot delay-150";
+    var d3 = document.createElement("span"); d3.className = "typing-dot delay-300";
+    bubble.appendChild(d1); bubble.appendChild(d2); bubble.appendChild(d3);
 
-    var inner = document.createElement("div");
-    inner.appendChild(bubble);
-    msg.appendChild(inner);
+    msg.appendChild(bubble);
     container.appendChild(msg);
     scrollToBottom();
     return id;
@@ -663,10 +671,10 @@
     var toggle = document.getElementById("chatSidebarToggle");
     if (toggle) { toggle.style.display = "none"; }
 
-    var backBtn = document.querySelector(".chat-page-back");
+    var backBtn = document.getElementById("chatBackBtn");
     if (!backBtn) { return; }
     backBtn.setAttribute("aria-label", "Close chat");
-    backBtn.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
+    backBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     backBtn.addEventListener("click", function (e) {
       e.preventDefault();
       if (window.parent) {
@@ -797,6 +805,18 @@
     window.addEventListener("online", function () {
       setOfflineState(false);
       setAvatarState(getBudgetMoodState());
+    });
+
+    // Wire the persistent quick-prompt pills
+    var promptPills = document.querySelectorAll(".chat-prompt-pill[data-prompt]");
+    promptPills.forEach(function (pill) {
+      pill.addEventListener("click", function () {
+        var prompt = pill.getAttribute("data-prompt");
+        if (prompt) {
+          clearWelcomeBlock();
+          sendMessage(prompt);
+        }
+      });
     });
 
     window.addEventListener("sugbocents:synced", function () {

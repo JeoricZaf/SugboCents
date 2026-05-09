@@ -1,5 +1,6 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,235 +9,435 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Sora:wght@400;700;800&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;700;800&display=swap"
+    rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/spending-chart.css" />
-  <link rel="stylesheet" href="css/stats.css" />
-  <link rel="stylesheet" href="css/mascot.css" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
   <link rel="stylesheet" href="css/dark-mode.css" />
-  <script>(function(){var c=document.documentElement.classList;if(localStorage.getItem("sidebarCollapsed")==="true")c.add("sidebar-collapsed");if(localStorage.getItem("darkModeEnabled")==="true")c.add("dark-mode");}());</script>
+  <script>(function () { if (localStorage.getItem("darkModeEnabled") === "true") document.documentElement.classList.add("dark-mode"); }());</script>
 </head>
-<body data-page="dashboard" data-protected="true" class="bg-mist min-h-screen antialiased">
 
-  <div class="app-layout">
+<body data-page="dashboard" data-protected="true" class="antialiased"
+  style="background:#f7f3e8;font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;color:#102b1d;min-height:100vh">
 
-  <!-- sidebar nav (desktop only) -->
-  <aside class="app-sidebar" aria-label="Sidebar navigation">
-    <div class="sidebar-header">
-      <a href="dashboard.html" class="sidebar-brand" tabindex="-1" aria-hidden="true">
-        <span class="sidebar-brand-mark" aria-hidden="true">SC</span>
-        <span class="sidebar-brand-name">SugboCents</span>
-      </a>
-      <button id="sidebarToggle" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="1.5" y="1.5" width="15" height="15" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 1.5v15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      </button>
-    </div>
-    <nav class="sidebar-nav-section" aria-label="Main navigation">
-      <a href="dashboard.html" data-nav="dashboard" class="sidebar-nav-link" data-tooltip="Dashboard">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        <span class="nav-link-label">Dashboard</span>
-      </a>
-      <a href="activity.html" data-nav="activity" class="sidebar-nav-link" data-tooltip="Activity">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        <span class="nav-link-label">Activity</span>
-      </a>
-      <a href="stats.html" data-nav="stats" class="sidebar-nav-link" data-tooltip="Profile">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span class="nav-link-label">Profile</span>
-      </a>
-      <a href="tigom.html" data-nav="tigom" class="sidebar-nav-link" data-tooltip="Goals">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-        <span class="nav-link-label">Goals</span>
-      </a>
-      <a href="chat.html" data-nav="chat" class="sidebar-nav-link" data-tooltip="Sugbo AI">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <span class="nav-link-label">Sugbo AI</span>
-      </a>
-    </nav>
-    <a href="settings.html" class="sidebar-user" aria-label="Account settings">
-      <div id="sidebarAvatar" class="sidebar-user-avatar">U</div>
-      <div class="min-w-0 sidebar-user-info">
-        <div id="sidebarName" class="sidebar-user-name">Loading�</div>
-        <div class="sidebar-user-sub">Account settings</div>
-      </div>
-      <svg class="sidebar-user-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-    </a>
-  </aside>
+  <div style="min-height:100vh;background:#f7f3e8">
+    <div class="lg:flex">
 
-  <div class="app-main">
-  <main class="pb-32 pt-6 px-4 max-w-lg mx-auto">
-
-    <!-- identity / XP hero -->
-    <header class="page-greeting">
-      <div class="greeting-row">
-        <div class="greeting-text">
-          <div class="level-name-row">
-            <h1 id="xpLevelName" class="xp-level-name">Rookie Saver</h1>
-            <span id="xpLevelBadge" class="level-badge">Lv. 1</span>
-          </div>
-        </div>
-        <button id="greetingStreakBadge" class="streak-badge streak-badge--cold" aria-label="Daily streak: 0 days" type="button">
-          <span class="material-icons streak-badge-icon" aria-hidden="true">local_fire_department</span>
-          <span id="streakBadgeCount" class="streak-badge-count">0</span>
-        </button>
-      </div>
-      <div class="xp-bar-hero">
-        <div class="xp-bar-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="XP progress">
-          <div id="xpBar" class="xp-bar-fill" style="width:0%"></div>
-        </div>
-        <div class="xp-bar-hero-labels">
-          <span id="xpValue" class="xp-value-label">0 XP</span>
-          <span id="xpNextLabel" class="xp-next-label">Log your first expense to earn XP</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- budget card -->
-    <section class="budget-card" id="budgetCard">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <p class="text-sm font-medium text-emerald-200" style="letter-spacing:0.02em">Remaining this week</p>
-          <p id="remainingAmount" class="budget-amount">₱0.00</p>
-          <p id="budgetSummary" class="mt-2 text-sm text-emerald-100/80">Set your weekly budget in Settings.</p>
-        </div>
-        <a href="settings.html" class="budget-gear-btn shrink-0" aria-label="Edit budget">
-          <span class="material-icons" aria-hidden="true">settings</span>
-        </a>
-      </div>
-      <div class="mt-5">
-        <div class="budget-progress-track">
-          <div id="budgetProgress" class="budget-progress-bar" style="width:0%"></div>
-        </div>
-        <div class="flex items-center justify-between mt-2">
-          <p id="progressLabel" class="text-xs text-emerald-100/70">0% used</p>
-          <p id="budgetWeekLabel" class="text-xs text-emerald-100/50"></p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Pace pill — Duolingo-style status strip outside the budget card -->
-    <div id="budgetHealthLine" class="budget-health-pill hidden" aria-live="polite"></div>
-
-
-    <!-- action zone: mission + shortcuts + one-time log -->
-    <section class="action-zone mt-5">
-      <!-- mission banner -->
-      <div id="todayMissionCard" class="today-mission-card today-mission-card--none" aria-label="Today's mission">
-        <div class="today-mission-inner">
-          <span id="todayMissionIcon" class="today-mission-icon" aria-hidden="true">📋</span>
-          <div class="today-mission-text">
-            <p class="today-mission-title">Today's Mission</p>
-            <p id="todayMissionMsg" class="today-mission-desc">Log your first expense today to start building your streak.</p>
-          </div>
-        </div>
-        <button id="todayMissionBtn" type="button" class="btn-primary w-full mt-3">Log Now</button>
-      </div>
-      <!-- quick add shortcuts -->
-      <p class="action-zone-label mt-4">Your shortcuts</p>
-      <div id="quickAddGrid" class="mt-2 grid gap-3"></div>
-      <!-- one-time expense log -->
-      <button id="logOneTimeBtn" type="button" class="log-one-time-btn mt-3">
-        <span class="log-one-time-btn-left">
-          <span class="material-icons" aria-hidden="true">add_circle_outline</span>
-          Log a one-time expense
-        </span>
-        <span class="log-btn-xp" id="logOnceXpBadge">&#9889; +5 XP</span>
-      </button>
-    </section>
-
-    <!-- hidden weekAtGlance stub (JS early-returns on null) -->
-    <div id="weekAtGlance" class="hidden" aria-hidden="true"></div>
-
-    <!-- badge teaser -->
-    <section id="badgeTeaserSection" class="mt-5 hidden" aria-label="Next milestone">
-      <p class="action-zone-label mb-2">Next milestone</p>
-      <div class="badge-teaser-card card-panel p-3">
-        <div class="badge-teaser-row">
-          <div id="badgeTeaserTarget" class="badge-target" aria-label="Target badge"></div>
-          <div class="badge-teaser-info">
-            <p id="badgeTeaserName" class="badge-teaser-name"></p>
-            <p id="badgeTeaserJourney" class="badge-journey-line hidden"></p>
-            <p id="badgeTeaserCondition" class="badge-teaser-condition"></p>
-            <div id="badgeTeaserProgressWrap" class="badge-teaser-progress-track mt-1">
-              <div id="badgeTeaserProgressFill" class="badge-teaser-progress-fill" style="width:0%"></div>
+      <!-- DESKTOP SIDEBAR -->
+      <aside class="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-y-auto lg:flex"
+        style="background:#f7f3e8;padding:1.25rem;border-right:1px solid rgba(216,209,189,0.8)"
+        aria-label="Sidebar navigation">
+        <!-- Brand block with Tigom -->
+        <div class="rounded-[2rem] p-5 text-white" style="background:#164f33">
+          <div class="flex items-center gap-3">
+            <div class="relative h-12 w-12 shrink-0 animate-float" aria-hidden="true">
+              <div class="absolute left-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+              <div class="absolute right-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+              <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
+                style="background:#2b8259;box-shadow:inset 0 -10px 0 rgba(22,79,51,0.26)"></div>
+              <div class="absolute left-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)">
+              </div>
+              <div class="absolute right-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)">
+              </div>
+              <div class="absolute left-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
+              <div class="absolute right-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
+              <div class="absolute bottom-[26%] left-1/2 h-4 w-8 rounded-b-full"
+                style="border-bottom:4px solid #102b1d;transform:translateX(-50%)"></div>
+              <div
+                class="absolute -bottom-1 left-1/2 flex h-6 w-8 items-center justify-center rounded-full text-xs font-black"
+                style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
             </div>
-            <button id="badgeTeaserClaimBtn" class="badge-claim-btn hidden" type="button">Claim badge &#8594;</button>
+            <div>
+              <p class="font-display text-2xl font-black">SugboCents</p>
+              <p class="text-xs font-bold" style="color:rgba(255,255,255,0.65)">Budgeting that feels alive</p>
+            </div>
           </div>
         </div>
-        <p id="badgeTeaserMore" class="badge-teaser-more hidden"></p>
-      </div>
-    </section>
+        <!-- Nav links -->
+        <nav class="mt-6 flex-1 space-y-2" aria-label="Main navigation">
+          <a href="dashboard.html" data-nav="dashboard" class="sidebar-new-link sidebar-new-link--active">
+            <span class="sidebar-new-link__icon">&#x2302;</span> Home
+          </a>
+          <a href="quests.html" data-nav="quests" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9671;</span> Quests
+          </a>
+          <a href="leaderboard.html" data-nav="leaderboard" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9819;</span> League
+          </a>
+          <a href="profile.html" data-nav="profile" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9689;</span> Profile
+          </a>
+          <a href="activity.html" data-nav="activity" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#8776;</span> Activity
+          </a>
+          <a href="tigom.html" data-nav="goals" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9678;</span> Goals
+          </a>
+          <a href="chat.html" data-nav="chat" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#10022;</span> AI Chat
+          </a>
+          <a href="settings.html" data-nav="settings" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9776;</span> Settings
+          </a>
+        </nav>
+        <!-- User strip -->
+        <a href="settings.html" class="mt-4 flex items-center gap-3 rounded-2xl px-3 py-3 transition hover:bg-white"
+          style="text-decoration:none">
+          <div id="sidebarAvatar"
+            class="grid h-10 w-10 shrink-0 place-items-center rounded-full font-display text-sm font-black text-white"
+            style="background:#84919a">U</div>
+          <div class="min-w-0 flex-1">
+            <p id="sidebarName" class="truncate text-sm font-extrabold" style="color:#102b1d">Loading&hellip;</p>
+            <p class="text-xs font-semibold" style="color:#617063">Account settings</p>
+          </div>
+          <span style="color:#164f33">&#8594;</span>
+        </a>
+      </aside>
 
-    <!-- recent expenses -->
-    <section class="mt-8">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-bold text-ink">Recent expenses</h2>
-        <a href="activity.html" class="view-all-link">View all &#8594;</a>
-      </div>
-      <ul id="recentExpenseList" class="card-panel divide-y divide-slate-100"></ul>
-      <p id="emptyExpenseState" class="card-panel p-4 text-sm text-slate-500 hidden">No expenses yet &#8212; tap a shortcut above or log a one-time expense to get started.</p>
-    </section>
+      <!-- MAIN CONTENT -->
+      <main class="min-w-0 flex-1 pb-28 lg:pb-8">
 
-    <!-- Phase F: Stats Block (Idea A+C hybrid) -->
-    <!-- Reference: Peloton status position (pill), Strava PR framing (vs last week), Finch variable CTA text -->
-    <section id="statsBlock" class="mt-8">
-      <div class="week-challenge-header mb-3">
-        <h2 class="text-lg font-bold text-ink">This week</h2>
-        <span id="weekStatusPill" class="week-status-pill hidden"></span>
+        <!-- Sticky resource bar -->
+        <header class="sticky top-0 z-40 backdrop-blur-xl"
+          style="border-bottom:1px solid rgba(216,209,189,0.7);background:rgba(247,243,232,0.88);padding:0.75rem 1rem">
+          <div class="mx-auto flex max-w-6xl items-center gap-3">
+            <div class="hidden w-[9rem] shrink-0 lg:block">
+              <p class="font-display text-lg font-extrabold tracking-tight" style="color:#164f33">SugboCents</p>
+              <p class="text-xs font-semibold" style="color:#5f6f63">Habit finance game</p>
+            </div>
+            <div id="resourceBar" class="flex-1" aria-label="Your stats" style="min-height:4rem"></div>
+          </div>
+        </header>
+
+        <!-- Dashboard content -->
+        <div class="mx-auto max-w-6xl space-y-6 px-4 py-5 sm:px-6 lg:px-8">
+
+          <!-- HERO -->
+          <section class="relative overflow-hidden rounded-[2rem] px-5 py-6 text-white shadow-xl sm:px-8 sm:py-8"
+            style="background:#164f33;box-shadow:0 20px 48px rgba(22,79,51,0.15)">
+            <div class="absolute -right-20 -top-20 h-48 w-48 rounded-full" style="background:rgba(255,255,255,0.1)"
+              aria-hidden="true"></div>
+            <div class="absolute -bottom-24 left-10 h-56 w-56 rounded-full" style="background:rgba(43,130,89,0.4)"
+              aria-hidden="true"></div>
+            <div class="relative flex items-center justify-between gap-5">
+              <div class="max-w-2xl">
+                <p id="heroGreeting" class="text-sm font-bold uppercase tracking-[0.2em]"
+                  style="color:rgba(255,255,255,0.7)">Good evening, there</p>
+                <h1 class="mt-2 font-display text-4xl font-black tracking-tight sm:text-6xl">SugboCents</h1>
+                <p class="mt-3 max-w-xl text-base font-medium sm:text-lg" style="color:rgba(255,255,255,0.78)">Your
+                  streak is alive, your budget has a story, and Tigom is watching the small wins.</p>
+                <span id="xpLevelName" style="display:none">Rookie Saver</span>
+              </div>
+              <div class="relative hidden sm:block h-24 w-24 shrink-0 animate-float" aria-hidden="true">
+                <div class="absolute left-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+                <div class="absolute right-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+                <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
+                  style="background:#2b8259;box-shadow:inset 0 -10px 0 rgba(22,79,51,0.26)"></div>
+                <div class="absolute left-[27%] top-[36%] h-3 w-3 rounded-full"
+                  style="background:rgba(255,255,255,0.8)"></div>
+                <div class="absolute right-[27%] top-[36%] h-3 w-3 rounded-full"
+                  style="background:rgba(255,255,255,0.8)"></div>
+                <div id="heroTigomLeftEye" class="absolute left-[31%] top-[39%] rounded-full" style="background:#102b1d;height:0.625rem;width:0.625rem"></div>
+                <div id="heroTigomRightEye" class="absolute right-[31%] top-[39%] rounded-full" style="background:#102b1d;height:0.625rem;width:0.625rem"></div>
+                <div id="heroTigomMouth" class="absolute left-1/2"
+                  style="border-bottom:4px solid #102b1d;border-radius:0 0 9999px 9999px;height:1rem;width:2rem;bottom:26%;transform:translateX(-50%)"></div>
+                <div
+                  class="absolute -bottom-1 left-1/2 flex h-6 w-8 items-center justify-center rounded-full text-xs font-black"
+                  style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+              </div>
+            </div>
+            <!-- 3-col resource stats -->
+            <div class="relative mt-7 grid grid-cols-3 gap-3">
+              <div>
+                <p class="text-xs font-bold uppercase tracking-[0.18em]" style="color:rgba(255,255,255,0.6)">Streak</p>
+                <button id="greetingStreakBadge" class="streak-badge streak-badge--cold hero-streak-btn mt-0.5"
+                  aria-label="Daily streak: 0 days" type="button"
+                  style="background:transparent;border:none;padding:0;cursor:pointer">
+                  <span id="streakBadgeCount" class="font-display text-4xl font-black" style="color:#F97316">0</span>
+                </button>
+              </div>
+              <div>
+                <p class="text-xs font-bold uppercase tracking-[0.18em]" style="color:rgba(255,255,255,0.6)">Sentimos
+                </p>
+                <p id="sentimosHeroVal" class="font-display text-4xl font-black" style="color:#5eead4">&#8373;0</p>
+              </div>
+              <div>
+                <p class="text-xs font-bold uppercase tracking-[0.18em]" style="color:rgba(255,255,255,0.6)">Level</p>
+                <p class="font-display text-4xl font-black" style="color:#EAB308"><span id="xpLevelBadge">Lv. 1</span>
+                </p>
+                <div class="xp-bar-hero mt-1.5">
+                  <div class="xp-bar-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+                    aria-label="XP progress">
+                    <div id="xpBar" class="xp-bar-fill" style="width:0%"></div>
+                  </div>
+                </div>
+                <div class="xp-bar-hero-labels">
+                  <span id="xpValue" class="xp-value-label" style="color:rgba(255,255,255,0.6)">0 XP</span>
+                  <span id="xpNextLabel" class="xp-next-label" style="color:rgba(255,255,255,0.6)">Log to earn XP</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- BUDGET + TIGOM SAYS -->
+          <div class="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+            <section id="budgetCard" class="budget-card rounded-[2rem] bg-white p-5 shadow-sm sm:p-6"
+              style="outline:1px solid #ded7c6">
+              <div class="flex items-start justify-between gap-4">
+                <div style="min-width:0">
+                  <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Weekly budget</p>
+                  <h2 id="remainingAmount" class="mt-1 font-display text-3xl font-black tracking-tight"
+                    style="color:#102b1d">&#8369;0.00</h2>
+                  <p id="budgetSummary" class="mt-1 text-sm font-semibold" style="color:#617063">Set your weekly budget
+                    in Settings.</p>
+                </div>
+                <div class="budget-donut-ring" aria-hidden="true">
+                  <div class="budget-donut-inner">
+                    <span id="budgetDonutPct" class="font-display text-2xl font-black" style="color:#102b1d">0%</span>
+                    <span class="block text-[0.62rem] font-bold uppercase" style="color:#69746b">used</span>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-5">
+                <div class="relative overflow-hidden rounded-full h-3" style="background:#e7e0cf">
+                  <div id="budgetProgress" class="budget-progress-bar h-full rounded-full transition-all duration-700"
+                    style="width:0%"></div>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <p id="progressLabel" class="text-xs font-semibold" style="color:#5f6f63">0% used</p>
+                  <p id="budgetWeekLabel" class="text-xs font-semibold" style="color:#5f6f63"></p>
+                </div>
+                <div id="budgetHealthLine" class="budget-health-pill hidden mt-2" aria-live="polite"></div>
+              </div>
+            </section>
+            <section class="tigom-says-card rounded-[2rem] p-5 shadow-sm sm:p-6"
+              style="background:#edf7ef;outline:1px solid #cfe2d3">
+              <div class="flex items-center gap-4">
+                <div class="relative h-16 w-16 shrink-0 animate-float" aria-hidden="true">
+                  <div class="absolute left-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+                  <div class="absolute right-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+                  <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
+                    style="background:#2b8259;box-shadow:inset 0 -10px 0 rgba(22,79,51,0.26)"></div>
+                  <div class="absolute left-[27%] top-[36%] h-3 w-3 rounded-full"
+                    style="background:rgba(255,255,255,0.8)"></div>
+                  <div class="absolute right-[27%] top-[36%] h-3 w-3 rounded-full"
+                    style="background:rgba(255,255,255,0.8)"></div>
+                  <div id="tigomCardLeftEye" class="absolute left-[31%] top-[39%] rounded-full"
+                    style="background:#102b1d;height:0.625rem;width:0.625rem"></div>
+                  <div id="tigomCardRightEye" class="absolute right-[31%] top-[39%] rounded-full"
+                    style="background:#102b1d;height:0.625rem;width:0.625rem"></div>
+                  <div id="tigomCardMouth" class="absolute bottom-[26%] left-1/2 h-4 w-8 rounded-b-full"
+                    style="border-bottom:4px solid #102b1d;transform:translateX(-50%)"></div>
+                  <div
+                    class="absolute -bottom-1 left-1/2 flex h-6 w-8 items-center justify-center rounded-full text-xs font-black"
+                    style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+                </div>
+                <div>
+                  <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#5b7160">Tigom says</p>
+                  <h2 id="tigomSaysTitle" class="font-display text-2xl font-black" style="color:#102b1d">Budget status
+                  </h2>
+                  <p id="tigomSaysMsg" class="mt-1 text-sm font-semibold" style="color:#526b57">Checking your
+                    budget&hellip;</p>
+
+                </div>
+              </div>
+              <a href="chat.html"
+                class="mt-5 block w-full rounded-2xl px-4 py-3 text-center text-sm font-extrabold text-white"
+                style="background:#164f33;text-decoration:none">Ask Tigom for a budget read</a>
+            </section>
+          </div>
+
+          <!-- PACE BANNER — full-width, JS fills and shows/hides -->
+          <section id="paceBanner" style="display:none" aria-live="polite"></section>
+
+          <!-- TODAY MISSION hidden shell — JS controls display -->
+          <section id="todayMissionCard" class="today-mission-card today-mission-card--none" style="display:none"
+            aria-label="Daily Quests">
+            <div class="today-mission-inner">
+              <span id="todayMissionIcon" class="today-mission-icon" aria-hidden="true">&#x1F4CB;</span>
+              <div class="today-mission-text">
+                <p class="today-mission-title">Daily Quests</p>
+                <p id="todayMissionMsg" class="today-mission-desc">Log your first expense today to start building your
+                  streak.</p>
+              </div>
+            </div>
+            <button id="todayMissionBtn" type="button" class="btn-primary w-full mt-3">Log Now</button>
+          </section>
+
+          <!-- QUICK ADD -->
+          <section>
+            <div class="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Quick add</p>
+                <h2 class="font-display text-2xl font-black tracking-tight" style="color:#102b1d">Log in one tap</h2>
+              </div>
+            </div>
+            <div id="quickAddGrid" class="qa-new-grid"></div>
+            <button id="logOneTimeBtn" type="button" class="log-one-time-btn mt-3">
+              <span class="log-one-time-btn-left">+ Log a one-time expense</span>
+              <span class="log-btn-xp" id="logOnceXpBadge">&#9889; +5 XP</span>
+            </button>
+          </section>
+
+          <!-- STREAK PATH + ACTIVE QUEST -->
+          <div class="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+            <!-- Week Map -->
+            <div class="rounded-[2rem] bg-white p-5 shadow-sm sm:p-6" style="outline:1px solid #ded7c6">
+              <div class="mb-4">
+                <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Streak path</p>
+                <h2 class="font-display text-2xl font-black tracking-tight" style="color:#102b1d">This week&#x2019;s map
+                </h2>
+              </div>
+              <div class="relative">
+                <div class="absolute left-[7%] right-[7%] top-5 h-1 rounded-full" style="background:#ded7c6"></div>
+                <div id="weekMapGrid" class="relative z-10 grid grid-cols-7 gap-2"><!-- JS fills --></div>
+              </div>
+              <p id="weekMapMsg" class="mt-4 text-sm font-semibold" style="color:#5f6f63">Loading streak path&hellip;
+              </p>
+            </div>
+            <!-- Active Quest -->
+            <section id="activeQuestSection" class="rounded-[2rem] bg-white p-5 shadow-sm sm:p-6"
+              style="outline:1px solid #ded7c6">
+              <div class="flex items-start justify-between gap-4">
+                <div style="min-width:0;flex:1">
+                  <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Active quest</p>
+                  <h2 id="activeQuestTitle" class="mt-1 font-display text-2xl font-black" style="color:#102b1d">
+                    Loading&hellip;</h2>
+                  <p id="activeQuestDesc" class="mt-1 text-sm font-semibold" style="color:#617063"></p>
+                </div>
+                <div id="activeQuestReward" class="shrink-0 rounded-full px-3 py-1 text-sm font-black"
+                  style="background:#f0fdfa;color:#0f766e;outline:1px solid rgba(13,148,136,0.25)"></div>
+              </div>
+              <div class="mt-5">
+                <div class="relative overflow-hidden rounded-full h-5" style="background:#e7e0cf">
+                  <div id="activeQuestBar" class="h-full rounded-full transition-all duration-700"
+                    style="width:0%;background:#EAB308"></div>
+                  <span id="activeQuestBarLabel"
+                    class="absolute inset-0 flex items-center justify-center text-xs font-black" style="color:#102b1d">0
+                    / 7 days</span>
+                </div>
+              </div>
+              <a href="quests.html" class="mt-5 block text-sm font-extrabold"
+                style="color:#164f33;text-decoration:none">See weekly quests &#8594;</a>
+            </section>
+          </div>
+
+          <!-- backward-compat hidden containers for existing JS hooks -->
+          <div id="weekAtGlance" style="display:none"></div>
+
+          <!-- BADGE TEASER — JS may show this -->
+          <section id="badgeTeaserSection" style="display:none" aria-label="Next milestone">
+            <div class="mb-4">
+              <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Next milestone</p>
+              <h2 class="font-display text-2xl font-extrabold tracking-tight" style="color:#102b1d">Badge progress</h2>
+            </div>
+            <div class="rounded-[2rem] bg-white p-5 shadow-sm sm:p-6" style="outline:1px solid #ded7c6">
+              <div class="badge-teaser-row">
+                <div id="badgeTeaserTarget" class="badge-target" aria-label="Target badge"></div>
+                <div class="badge-teaser-info">
+                  <p id="badgeTeaserName" class="badge-teaser-name"></p>
+                  <p id="badgeTeaserJourney" class="badge-journey-line hidden"></p>
+                  <p id="badgeTeaserCondition" class="badge-teaser-condition"></p>
+                  <div id="badgeTeaserProgressWrap" class="badge-teaser-progress-track mt-1">
+                    <div id="badgeTeaserProgressFill" class="badge-teaser-progress-fill" style="width:0%"></div>
+                  </div>
+                  <button id="badgeTeaserClaimBtn" class="badge-claim-btn hidden" type="button">Claim badge
+                    &#8594;</button>
+                </div>
+              </div>
+              <p id="badgeTeaserMore" class="badge-teaser-more hidden"></p>
+            </div>
+          </section>
+
+          <!-- RECENT EXPENSES -->
+          <section class="rounded-[2rem] bg-white p-5 shadow-sm sm:p-6" style="outline:1px solid #ded7c6">
+            <div class="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Activity</p>
+                <h2 class="font-display text-2xl font-black tracking-tight" style="color:#102b1d">Recent expenses</h2>
+              </div>
+              <a href="activity.html" class="shrink-0 text-sm font-extrabold"
+                style="color:#164f33;text-decoration:none">View all &#8594;</a>
+            </div>
+            <ul id="recentExpenseList" class="divide-y divide-[#ece6d8]"></ul>
+            <p id="emptyExpenseState" class="hidden text-sm py-4" style="color:#5f6f63">No expenses yet &#8212; tap a
+              shortcut above or log a one-time expense to get started.</p>
+          </section>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- FLOATING TIGOM CHAT FAB -->
+  <a href="chat.html" class="fixed z-30 grid place-items-center rounded-full shadow-2xl transition lg:bottom-6"
+    style="bottom:5.5rem;right:1rem;height:4rem;width:4rem;background:white;outline:2px solid rgba(22,79,51,0.15);box-shadow:0 8px 32px rgba(16,43,29,0.2);text-decoration:none"
+    aria-label="Open Tigom AI chat">
+    <div class="relative h-10 w-10" aria-hidden="true">
+      <div class="absolute left-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>
+      <div class="absolute right-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>
+      <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
+        style="background:#2b8259;box-shadow:inset 0 -8px 0 rgba(22,79,51,0.26)"></div>
+      <div class="absolute left-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)">
       </div>
-      <div class="card-panel p-4">
-        <!-- vs last week delta — compete with your past self (Strava PR) -->
-        <div id="vsLastWeek" class="vs-last-week-row hidden"></div>
-        <!-- Daily spend bars -->
-        <div id="dailyBarChart" class="daily-bar-chart" aria-hidden="true"></div>
-        <!-- Where it went this week -->
-        <p class="action-zone-label mt-4 mb-2">Where it went</p>
-        <div id="topCatBars" class="cat-bars"></div>
+      <div class="absolute right-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)">
       </div>
-      <!-- Dynamic CTA text changes based on week state (Finch variable reward) -->
-      <a href="stats.html" id="seeStatsCta" class="view-stats-link-card">
-        <span class="view-stats-link-card-icon"><i class="bi bi-bar-chart-fill" aria-hidden="true"></i></span>
-        <span id="seeStatsCtaText" class="view-stats-link-card-text">See full stats</span>
-        <span class="view-stats-link-card-arrow">&#8594;</span>
+      <div class="absolute left-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>
+      <div class="absolute right-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>
+      <div class="absolute bottom-[26%] left-1/2 rounded-b-full"
+        style="height:3px;width:1.5rem;border-bottom:3px solid #102b1d;transform:translateX(-50%)"></div>
+      <div
+        class="absolute -bottom-1 left-1/2 flex h-5 w-6 items-center justify-center rounded-full text-[0.55rem] font-black"
+        style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+    </div>
+  </a>
+
+  <!-- MOBILE BOTTOM NAV -->
+  <nav class="fixed inset-x-0 bottom-0 z-40 border-t px-2 py-2 lg:hidden"
+    style="background:rgba(251,248,239,0.94);border-color:#d8d1bd;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding-bottom:calc(0.5rem + env(safe-area-inset-bottom))"
+    aria-label="Main navigation">
+    <div class="mx-auto grid max-w-md grid-cols-5 gap-1">
+      <a href="dashboard.html" data-nav="dashboard"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition"
+        style="background:#164f33;color:white;text-decoration:none">
+        <span class="block text-lg leading-none">&#x2302;</span>
+        <span class="mt-1 block">Home</span>
       </a>
-    </section>
-  </main>
-  </div><!-- /app-main -->
-  </div><!-- /app-layout -->
-
-  <!-- 5-tab bottom nav -->
-  <nav class="bottom-nav" aria-label="Main navigation">
-    <a href="dashboard.html" data-nav="dashboard" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span class="nav-text">Dashboard</span>
-    </a>
-    <a href="activity.html" data-nav="activity" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span class="nav-text">Activity</span>
-    </a>
-    <a href="tigom.html" data-nav="tigom" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-      <span class="nav-text">Goals</span>
-    </a>
-    <a href="chat.html" data-nav="chat" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <span class="nav-text">Sugbo AI</span>
-    </a>
-    <a href="settings.html" data-nav="settings" class="nav-link">
-      <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      <span class="nav-text">Settings</span>
-    </a>
+      <a href="quests.html" data-nav="quests"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#9671;</span>
+        <span class="mt-1 block">Quests</span>
+      </a>
+      <a href="leaderboard.html" data-nav="leaderboard"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#9819;</span>
+        <span class="mt-1 block">League</span>
+      </a>
+      <a href="profile.html" data-nav="profile"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#9689;</span>
+        <span class="mt-1 block">Profile</span>
+      </a>
+      <a href="activity.html" data-nav="activity"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#8776;</span>
+        <span class="mt-1 block">More</span>
+      </a>
+    </div>
   </nav>
 
-  <!-- budget-gate modal -->
-  <div id="budgetGateModal" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="budgetGateTitle">
+  <!-- MODALS -->
+  <div id="budgetGateModal" class="modal-backdrop hidden" role="alertdialog" aria-modal="true"
+    aria-labelledby="budgetGateTitle">
     <div class="modal-sheet" style="text-align:center">
-      <div style="font-size:2.5rem;margin-bottom:0.5rem" aria-hidden="true">??</div>
+      <div style="font-size:2.5rem;margin-bottom:0.5rem" aria-hidden="true">&#x1F4B0;</div>
       <p class="modal-title" id="budgetGateTitle">Set a budget first</p>
-      <p class="text-sm text-slate-500 mt-1 mb-4">You need a weekly budget before you can log expenses.</p>
+      <p class="text-sm mt-1 mb-4" style="color:#64748b">You need a weekly budget before you can log expenses.</p>
       <div class="modal-actions">
         <button type="button" id="budgetGateCancel" class="btn-outline">Maybe later</button>
         <a href="settings.html" class="btn-primary">Go to Settings</a>
@@ -244,109 +445,80 @@
     </div>
   </div>
 
-  <!-- quick-add edit/create modal -->
   <div id="qaModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="qaModalTitle">
     <div class="modal-sheet">
-
-      <!-- Header: title + × close button -->
       <div class="qa-modal-header">
         <p class="modal-title" id="qaModalTitle">New shortcut</p>
         <button type="button" id="qaModalClose" class="qa-modal-close-btn" aria-label="Close">&times;</button>
       </div>
-
       <input type="hidden" id="qaModalItemId" />
       <input type="hidden" id="qaModalEmoji" value="&#x1F354;" />
-
-      <!-- Identity row: emoji circle + name input -->
       <div class="qa-identity-row">
-        <button type="button" id="qaModalEmojiBtn" class="qa-emoji-btn" aria-label="Pick an icon" aria-expanded="false">&#x1F354;</button>
+        <button type="button" id="qaModalEmojiBtn" class="qa-emoji-btn" aria-label="Pick an icon"
+          aria-expanded="false">&#x1F354;</button>
         <div class="qa-identity-name-wrap">
-          <input class="input" type="text" id="qaModalCategory" maxlength="24" placeholder="What&#x2019;s this for?" autocomplete="off" />
+          <input class="input" type="text" id="qaModalCategory" maxlength="24" placeholder="What&#x2019;s this for?"
+            autocomplete="off" />
           <p class="field-error" id="qaModalCategoryError"></p>
         </div>
       </div>
-
-      <!-- Suggestion chips strip -->
       <div id="qaNameSuggestions" class="qa-name-suggestions" aria-live="polite"></div>
-
-      <!-- Emoji picker panel (collapsed by default) -->
       <div id="qaPickerPanel" class="qa-picker-panel" aria-hidden="true">
         <div class="emoji-picker-grid" id="qaModalEmojiGrid" role="group" aria-label="Select an emoji icon"></div>
       </div>
-
-      <!-- Amount row with ₱ prefix and large number input -->
       <p class="qa-cat-chips-label">Amount</p>
       <div class="qa-amount-row">
         <span class="qa-amount-prefix">&#8369;</span>
-        <input class="qa-amount-input" type="number" id="qaModalAmount" min="1" step="1" placeholder="0" inputmode="decimal" />
+        <input class="qa-amount-input" type="number" id="qaModalAmount" min="1" step="1" placeholder="0"
+          inputmode="decimal" />
       </div>
       <p class="field-error" id="qaModalAmountError"></p>
-
-      <!-- Category chips (visual selection) -->
       <p class="qa-cat-chips-label">Category</p>
       <div id="qaModalCategoryChips" class="qa-cat-chips-row" role="group" aria-label="Select a category"></div>
-
-      <!-- Hidden select kept for saveModal() data binding — do not remove -->
       <select id="qaModalCategoryId" style="display:none" aria-hidden="true" tabindex="-1">
         <option value=""></option>
       </select>
-
-      <!-- Footer: Delete (hidden by default) + full-width Save -->
       <div class="qa-modal-footer">
-        <button type="button" id="qaModalDelete" class="btn-danger qa-delete-btn" style="display:none" aria-label="Delete this shortcut">Delete</button>
+        <button type="button" id="qaModalDelete" class="btn-danger qa-delete-btn" style="display:none"
+          aria-label="Delete this shortcut">Delete</button>
         <button type="button" id="qaModalSave" class="qa-save-btn">Save Shortcut</button>
       </div>
-
     </div>
   </div>
 
-
-  <!-- log a one-time expense modal -->
-  <div id="customLogModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="customLogTitle">
+  <div id="customLogModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="customLogTitle">
     <div class="modal-sheet">
-
-      <!-- Header: title + × close -->
       <div class="qa-modal-header">
         <p class="modal-title" id="customLogTitle">Log a one-time expense</p>
         <button type="button" id="customLogClose" class="qa-modal-close-btn" aria-label="Close">&times;</button>
       </div>
-
-      <!-- Note FIRST — mandatory, drives AI category suggestion -->
       <div class="modal-field">
         <label class="label" for="customLogNote">What did you spend on?</label>
-        <input class="input" type="text" id="customLogNote" maxlength="80" placeholder="e.g. Jollibee, Textbook, Grab" autocomplete="off" />
+        <input class="input" type="text" id="customLogNote" maxlength="80" placeholder="e.g. Jollibee, Textbook, Grab"
+          autocomplete="off" />
         <p class="field-error" id="customLogNoteError"></p>
       </div>
-
-      <!-- Amount with ₱ prefix -->
       <p class="qa-cat-chips-label">Amount</p>
       <div class="qa-amount-row">
         <span class="qa-amount-prefix">&#8369;</span>
-        <input class="qa-amount-input" type="number" id="customLogAmount" min="1" step="1" placeholder="0" inputmode="decimal" />
+        <input class="qa-amount-input" type="number" id="customLogAmount" min="1" step="1" placeholder="0"
+          inputmode="decimal" />
       </div>
       <p class="field-error" id="customLogAmountError"></p>
-
-      <!-- Category chips (visual) + hidden select for data binding -->
       <p class="qa-cat-chips-label">Category</p>
       <div id="customLogCategoryChips" class="qa-cat-chips-row" role="group" aria-label="Select a category"></div>
       <select id="customLogCategory" style="display:none" aria-hidden="true" tabindex="-1">
         <option value=""></option>
       </select>
       <p class="field-error" id="customLogCategoryError"></p>
-
-      <!-- Full-width save button -->
       <div class="qa-modal-footer">
-        <button type="button" id="customLogSave" class="qa-save-btn">Log Expense <span class="log-btn-xp-inline">&#9889; +5 XP</span></button>
+        <button type="button" id="customLogSave" class="qa-save-btn">Log Expense <span class="log-btn-xp-inline">&#9889;
+            +5 XP</span></button>
       </div>
-
     </div>
   </div>
-  <div id="dashboardAccountMenu" class="dashboard-account-menu hidden" role="menu" aria-label="Account menu">
-    <a href="settings.html" class="dashboard-account-menu-item" role="menuitem">Profile &amp; Settings</a>
-    <a href="settings.html" class="dashboard-account-menu-item" role="menuitem">Settings</a>
-  </div>
 
-  <!-- Undo toast -->
   <div id="undoToast" class="undo-toast hidden" role="status" aria-live="polite">
     <span id="undoToastMsg">Expense removed</span>
     <button type="button" id="undoToastBtn" class="undo-btn">Undo</button>
@@ -360,7 +532,9 @@
   <script src="js/gamification.js"></script>
   <script src="js/dark-mode.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/leaderboard.js"></script>
   <script src="js/mascot.js"></script>
   <script src="js/dev-tools.js"></script>
 </body>
+
 </html>

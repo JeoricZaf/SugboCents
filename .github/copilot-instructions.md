@@ -5,8 +5,8 @@
 - **Tailwind CSS via CDN** for utility classes; custom overrides in `css/style.css`
 - **Firebase Auth** for authentication (with local `storage.js` fallback)
 - **PWA**: `manifest.json` + `sw.js` (cache-first shell strategy)
-- The app shell must run by opening HTML files in a browser — no server required for Sprint 1–2
-- **Sprint 3 exception:** A minimal Node.js/Express backend is allowed **only** for email sending and AI API proxying. All other features must remain frontend-only.
+- The app shell must run by opening HTML files in a browser — no server required for the core shell
+- **Backend:** Firebase Cloud Functions (`functions/index.js`) is deployed and active. Use it freely for AI, email, or any server-side feature — no sprint gate.
 
 ## Architecture
 - **Separate HTML pages** per route — NOT a single-page app with hidden sections
@@ -30,7 +30,7 @@
 ## Current Sprint: Sprint 1 / Sprint 2
 Sprint 1 focus areas: Login/Register, Budget Setup, Quick-Add Expenses, Mobile Nav, PWA baseline.
 Sprint 2 focus areas: Spending Chart, Tigom mascot (state-driven, no AI), Goals, Streaks.
-Do NOT build Sprint 3 features yet (AI Recommendations, AI Wrapped Email, backend server).
+AI features (emoji suggestion, recommendations, AI Wrapped Email) may use the existing Cloud Functions backend in `functions/index.js`. The backend uses Groq (free tier) via the `GROQ_API_KEY` secret.
 
 ## Protected Routes
 Pages with `data-protected="true"` redirect to `login.html` if no session exists.

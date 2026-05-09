@@ -93,6 +93,5 @@ At the end, print a **Summary** table:
 
 ## Constraints
 - DO NOT edit any files
-- DO NOT suggest Sprint 3 features (AI, email backend)
 - DO NOT flag style preferences as bugs — only flag functional defects
 - If the user asks you to fix a bug, tell them to use the default agent or run the specific fix themselves

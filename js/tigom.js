@@ -24,10 +24,12 @@
     if (goals.length === 0) {
       list.innerHTML = "";
       empty.classList.remove("hidden");
+      empty.style.display = "";
       return;
     }
 
     empty.classList.add("hidden");
+    empty.style.display = "none";
 
     var html = "";
     goals.forEach(function (goal) {
@@ -35,35 +37,38 @@
         ? Math.min(100, Math.round((goal.savedAmount / goal.targetAmount) * 100))
         : 0;
 
-      var deadlineHtml = goal.deadline
-        ? '<p class="goal-card-deadline">🗓 Target: ' + escapeHtml(goal.deadline) + '</p>'
-        : "";
+      var deadlineText = goal.deadline
+        ? 'TARGET: ' + escapeHtml(goal.deadline).toUpperCase()
+        : 'TARGET: —';
 
-      var badgeHtml = goal.completed
-        ? '<span class="goal-badge-completed">✅ Done</span>'
-        : "";
+      var doneBadge = goal.completed
+        ? '<span style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.75rem;font-weight:900;background:#edf7ef;color:#164f33">&#10003; Done</span>'
+        : '';
 
       html +=
-        '<div class="goal-card' + (goal.completed ? " goal-completed" : "") + '" data-goal-id="' + escapeHtml(goal.id) + '">' +
-          '<div class="goal-card-header">' +
+        '<div style="background:#fff;border-radius:2rem;padding:1.25rem;outline:1px solid #ded7c6;box-shadow:0 1px 3px rgba(0,0,0,0.06)" data-goal-id="' + escapeHtml(goal.id) + '">' +
+          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem">' +
             '<div>' +
-              '<p class="goal-card-name">' + escapeHtml(goal.name) + '</p>' +
-              deadlineHtml +
+              '<h2 style="font-family:\'Sora\',ui-sans-serif,system-ui,sans-serif;font-size:1.5rem;font-weight:900;color:#102b1d;margin:0">' + escapeHtml(goal.name) + '</h2>' +
+              '<p style="margin:0.25rem 0 0;font-size:0.875rem;font-weight:700;color:#617063">' + formatPhp(goal.savedAmount) + ' / ' + formatPhp(goal.targetAmount) + '</p>' +
             '</div>' +
-            badgeHtml +
+            doneBadge +
           '</div>' +
-          '<div class="goal-amounts">' +
-            '<span class="goal-saved">' + formatPhp(goal.savedAmount) + '</span>' +
-            '<span class="goal-target"> / ' + formatPhp(goal.targetAmount) + '</span>' +
+          '<div style="margin-top:1.25rem">' +
+            '<div style="position:relative;overflow:hidden;border-radius:9999px;background:#e7e0cf;height:0.75rem">' +
+              '<div style="height:100%;border-radius:9999px;background:#2b8259;transition:width 0.7s;width:' + pct + '%"></div>' +
+            '</div>' +
+            '<p style="margin-top:0.5rem;font-size:0.75rem;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#6b756c">' + deadlineText + '</p>' +
           '</div>' +
-          '<div class="goal-progress-track">' +
-            '<div class="goal-progress-fill" style="width:' + pct + '%"></div>' +
-          '</div>' +
-          '<p class="goal-progress-label">' + pct + '% saved</p>' +
-          '<div class="goal-card-actions">' +
-            '<button class="goal-add-btn" data-action="add-progress" data-id="' + escapeHtml(goal.id) + '" data-name="' + escapeHtml(goal.name) + '" data-saved="' + goal.savedAmount + '" data-target="' + goal.targetAmount + '">+ Add savings</button>' +
-            '<button class="goal-delete-btn" data-action="delete" data-id="' + escapeHtml(goal.id) + '" aria-label="Delete goal">Delete</button>' +
-          '</div>' +
+          '<button data-action="add-progress" data-id="' + escapeHtml(goal.id) + '" data-name="' + escapeHtml(goal.name) + '" data-saved="' + goal.savedAmount + '" data-target="' + goal.targetAmount + '"' +
+            (goal.completed ? ' disabled' : '') +
+            ' style="margin-top:1.25rem;width:100%;border-radius:1rem;padding:0.75rem 1rem;font-size:0.875rem;font-weight:900;color:#fff;border:none;cursor:' + (goal.completed ? 'default' : 'pointer') + ';background:' + (goal.completed ? '#9a9f98' : '#164f33') + '">' +
+            'Add &#8369;500' +
+          '</button>' +
+          '<button data-action="delete" data-id="' + escapeHtml(goal.id) + '" aria-label="Delete goal"' +
+            ' style="margin-top:0.5rem;width:100%;border-radius:1rem;padding:0.5rem 1rem;font-size:0.75rem;font-weight:700;color:#617063;border:none;cursor:pointer;background:transparent;text-decoration:underline">' +
+            'Delete goal' +
+          '</button>' +
         '</div>';
     });
 
@@ -118,6 +123,9 @@
 
       // Reset form
       form.reset();
+      // Close the modal
+      var backdrop = document.getElementById("goalModalBackdrop");
+      if (backdrop) { backdrop.classList.add("hidden"); }
 
       renderGoals();
       updateSummaryStats();
@@ -142,20 +150,16 @@
   function openProgressModal(goalId, goalName, savedAmount, targetAmount) {
     var modal = document.getElementById("progressModal");
     var modalTitle = document.getElementById("progressModalTitle");
-    var modalCurrent = document.getElementById("progressModalCurrent");
     var amountInput = document.getElementById("progressAmount");
 
     activeGoalId = goalId;
 
     if (modalTitle) {
-      modalTitle.textContent = "Add savings to \u201c" + goalName + "\u201d";
-    }
-    if (modalCurrent) {
-      modalCurrent.textContent = "Current: " + formatPhp(savedAmount) + " / " + formatPhp(targetAmount);
+      modalTitle.textContent = "Add to \u201c" + goalName + "\u201d";
     }
     if (amountInput) { amountInput.value = ""; }
     if (modal) { modal.classList.remove("hidden"); }
-    if (amountInput) { amountInput.focus(); }
+    if (amountInput) { setTimeout(function(){ amountInput.focus(); }, 50); }
   }
 
   function closeProgressModal() {
@@ -178,6 +182,14 @@
     if (modal) {
       modal.addEventListener("click", function (e) {
         if (e.target === modal) { closeProgressModal(); }
+      });
+    }
+
+    // Also handle backdrop click for goal add modal
+    var goalBackdrop = document.getElementById("goalModalBackdrop");
+    if (goalBackdrop) {
+      goalBackdrop.addEventListener("click", function(e) {
+        if (e.target === goalBackdrop) { goalBackdrop.classList.add("hidden"); }
       });
     }
 

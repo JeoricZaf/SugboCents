@@ -36,6 +36,144 @@
     "personal care": "personal_care"
   };
 
+  // ── Sprint 3: Weekly Quest Pool ──────────────────────────
+  var QUESTS = [
+    {
+      id: "quest-log5-budget3",
+      title: "Disciplined Week",
+      description: "Log expenses 5 days and stay under budget on at least 3",
+      icon: "\u26A1",
+      conditions: [
+        { type: "log_days", target: 5 },
+        { type: "under_budget_days", target: 3 }
+      ],
+      xpReward: 150,
+      sentimosReward: 50
+    },
+    {
+      id: "quest-log7",
+      title: "Logging Habit",
+      description: "Log at least 1 expense every day for 7 days",
+      icon: "\uD83D\uDCC5",
+      conditions: [
+        { type: "log_days", target: 7 }
+      ],
+      xpReward: 200,
+      sentimosReward: 50
+    },
+    {
+      id: "quest-budget-every-day",
+      title: "Budget Warrior",
+      description: "Stay under your daily budget every day this week",
+      icon: "\uD83D\uDEE1\uFE0F",
+      conditions: [
+        { type: "no_overspend_days", target: 7 }
+      ],
+      xpReward: 175,
+      sentimosReward: 50
+    },
+    {
+      id: "quest-early-riser",
+      title: "Early Riser",
+      description: "Log before noon on 3 different days",
+      icon: "\uD83C\uDF05",
+      conditions: [
+        { type: "log_days_before_noon", target: 3 }
+      ],
+      xpReward: 100,
+      sentimosReward: 50
+    },
+    {
+      id: "quest-big-logger",
+      title: "Big Logger",
+      description: "Log 10 or more expenses this week",
+      icon: "\uD83D\uDCCB",
+      conditions: [
+        { type: "log_count", target: 10 }
+      ],
+      xpReward: 120,
+      sentimosReward: 50
+    },
+    {
+      id: "quest-night-owl",
+      title: "Night Owl",
+      description: "Log after 9 PM on 2 different days",
+      icon: "\uD83C\uDF19",
+      conditions: [
+        { type: "log_days_after_9pm", target: 2 }
+      ],
+      xpReward: 100,
+      sentimosReward: 50
+    },
+    {
+      id: "quest-frugal-run",
+      title: "Frugal Run",
+      description: "Spend 50% or less of your weekly budget",
+      icon: "\uD83D\uDCB0",
+      conditions: [
+        { type: "frugal_week", target: 1 }
+      ],
+      xpReward: 175,
+      sentimosReward: 50
+    },
+    {
+      id: "quest-15-logs",
+      title: "Expense Marathon",
+      description: "Log 15 or more expenses this week",
+      icon: "\uD83C\uDFC3",
+      conditions: [
+        { type: "log_count", target: 15 }
+      ],
+      xpReward: 160,
+      sentimosReward: 60
+    },
+    {
+      id: "quest-5-budget-days",
+      title: "Five-Day Discipline",
+      description: "Stay under your daily budget on 5 different days",
+      icon: "\uD83D\uDEE1\uFE0F",
+      conditions: [
+        { type: "under_budget_days", target: 5 }
+      ],
+      xpReward: 150,
+      sentimosReward: 50
+    },
+    {
+      id: "quest-combo-week",
+      title: "Balanced Week",
+      description: "Log 5 days this week and stay under budget on 3 of them",
+      icon: "\u2696\uFE0F",
+      conditions: [
+        { type: "log_days", target: 5 },
+        { type: "under_budget_days", target: 3 }
+      ],
+      xpReward: 180,
+      sentimosReward: 60
+    },
+    {
+      id: "quest-variety-week",
+      title: "Variety Pack",
+      description: "Log expenses in at least 4 different categories this week",
+      icon: "\uD83C\uDFAF",
+      conditions: [
+        { type: "category_diversity_week", target: 4 }
+      ],
+      xpReward: 140,
+      sentimosReward: 50
+    },
+    {
+      id: "quest-xp-200",
+      title: "XP Grinder",
+      description: "Earn 200 XP this week by logging and staying on budget",
+      icon: "\u26A1",
+      conditions: [
+        { type: "xp_earned_week", target: 200 }
+      ],
+      xpReward: 200,
+      sentimosReward: 75
+    }
+  ];
+
   var XP_LOG_DAILY_CAP = 25;
   var XP_LEVELS = [
     { level: 1, name: "Rookie Saver", minXp: 0 },
@@ -46,29 +184,50 @@
     { level: 6, name: "Finance Pro", minXp: 1200 },
     { level: 7, name: "Budget Legend", minXp: 2000 }
   ];
-  // Achievement IDs follow GAMIFICATION_DESIGN_V1.md + user-requested expansion.
-  // Savings badges (saver-seed, triple-digits) are Phase 5 — not included until savings feature ships.
+  // Achievement IDs follow GAMIFICATION_DESIGN_V1.md + Phase 2 expansion.
+  // Each badge carries: series (grouping key), tier (1-based), totalTiers, rarity, threshold (number overlay on art).
+  // Standalone badges (no series) omit series/tier/totalTiers.
   var ACHIEVEMENTS = [
-    // ── Logging ───────────────────────────────────────────────
-    { id: "first-step",      name: "First Step",      description: "Log your first expense",          icon: "bi-pencil-square",         type: "expense_count", target: 1,   category: "Logging" },
-    { id: "getting-started", name: "Getting Started", description: "Log 5 expenses",                  icon: "bi-check2-circle",          type: "expense_count", target: 5,   category: "Logging" },
-    { id: "budget-regular",  name: "Budget Regular",  description: "Log 25 expenses",                 icon: "bi-journal-check",          type: "expense_count", target: 25,  category: "Logging" },
-    { id: "century",         name: "Century Club",    description: "Log 100 expenses",                icon: "bi-list-check",             type: "expense_count", target: 100, category: "Logging" },
-    // ── Streaks ───────────────────────────────────────────────
-    { id: "on-fire",         name: "On Fire",         description: "Reach a 3-day streak",            icon: "bi-fire",                   type: "streak",        target: 3,   category: "Streak" },
-    { id: "consistent",      name: "Consistent",      description: "Reach a 7-day streak",            icon: "bi-calendar-check-fill",    type: "streak",        target: 7,   category: "Streak" },
-    { id: "streak-master",   name: "Streak Master",   description: "Reach a 30-day streak",           icon: "bi-trophy-fill",            type: "streak",        target: 30,  category: "Streak" },
+    // ── Logging (series: "expense-count") ────────────────────
+    { id: "first-step",        name: "First Step",        description: "Log your first expense",                   icon: "bi-pencil-square",         type: "expense_count",    target: 1,    category: "Logging",  series: "expense-count",    tier: 1, totalTiers: 4, rarity: "bronze",  threshold: 1    },
+    { id: "getting-started",   name: "Getting Started",   description: "Log 5 expenses",                           icon: "bi-check2-circle",          type: "expense_count",    target: 5,    category: "Logging",  series: "expense-count",    tier: 2, totalTiers: 4, rarity: "bronze",  threshold: 5    },
+    { id: "budget-regular",    name: "Budget Regular",    description: "Log 25 expenses",                          icon: "bi-journal-check",          type: "expense_count",    target: 25,   category: "Logging",  series: "expense-count",    tier: 3, totalTiers: 4, rarity: "silver",  threshold: 25   },
+    { id: "century",           name: "Century Club",      description: "Log 100 expenses",                         icon: "bi-list-check",             type: "expense_count",    target: 100,  category: "Logging",  series: "expense-count",    tier: 4, totalTiers: 4, rarity: "gold",    threshold: 100  },
+    // ── Logging (standalone) ─────────────────────────────────
+    { id: "variety-pro",       name: "Category Explorer", description: "Use all 10 expense categories",            icon: "bi-grid-fill",              type: "category_variety", target: 10,   category: "Logging",  rarity: "silver",  threshold: 10   },
+    // ── Streaks (series: "streak") ────────────────────────────
+    { id: "on-fire",           name: "On Fire",           description: "Reach a 3-day streak",                     icon: "bi-fire",                   type: "streak",           target: 3,    category: "Streak",   series: "streak",           tier: 1, totalTiers: 3, rarity: "bronze",  threshold: 3    },
+    { id: "consistent",        name: "Consistent",        description: "Reach a 7-day streak",                     icon: "bi-calendar-check-fill",    type: "streak",           target: 7,    category: "Streak",   series: "streak",           tier: 2, totalTiers: 3, rarity: "silver",  threshold: 7    },
+    { id: "streak-master",     name: "Streak Master",     description: "Reach a 30-day streak",                    icon: "bi-trophy-fill",            type: "streak",           target: 30,   category: "Streak",   series: "streak",           tier: 3, totalTiers: 3, rarity: "gold",    threshold: 30   },
+    // ── Streak Diamonds (series: "streak-diamond") ────────────
+    { id: "streak-diamond-7",  name: "First Diamond",     description: "Reach a 7-day streak",                     icon: "bi-gem",                    type: "streak_diamonds",  target: 7,    category: "Streak",   series: "streak-diamond",   tier: 1, totalTiers: 3, rarity: "gold",    threshold: 7    },
+    { id: "streak-diamond-42", name: "Six-Week Run",      description: "Reach a 42-day streak",                    icon: "bi-gem",                    type: "streak_diamonds",  target: 42,   category: "Streak",   series: "streak-diamond",   tier: 2, totalTiers: 3, rarity: "emerald", threshold: 42   },
+    { id: "streak-diamond-100",name: "Century Flame",     description: "Reach a 100-day streak",                   icon: "bi-gem",                    type: "streak_diamonds",  target: 100,  category: "Streak",   series: "streak-diamond",   tier: 3, totalTiers: 3, rarity: "diamond", threshold: 100  },
     // ── Budget ────────────────────────────────────────────────
-    { id: "under-budget",    name: "Under Budget",    description: "Finish a week under budget",      icon: "bi-check-circle-fill",      type: "budget_week",   target: 1,   category: "Budget" },
-    { id: "frugal",          name: "Frugal Week",     description: "Spend \u226450% of weekly budget", icon: "bi-piggy-bank",             type: "budget_frugal", target: 1,   category: "Budget" },
-    // ── Misc ──────────────────────────────────────────────────
-    { id: "early-bird",      name: "Early Bird",      description: "Log an expense before 7 AM",      icon: "bi-sunrise",                type: "time_of_day",   target: 1,   category: "Misc" },
-    { id: "night-owl",       name: "Night Owl",       description: "Log an expense after 10 PM",      icon: "bi-moon-stars-fill",        type: "time_of_day",   target: 1,   category: "Misc" },
+    { id: "under-budget",      name: "Under Budget",      description: "Finish a week under budget",               icon: "bi-check-circle-fill",      type: "budget_week",      target: 1,    category: "Budget",   rarity: "silver",  threshold: 1    },
+    { id: "frugal",            name: "Frugal Week",       description: "Spend \u226450% of weekly budget",          icon: "bi-piggy-bank",             type: "budget_frugal",    target: 1,    category: "Budget",   rarity: "gold",    threshold: 1    },
+    { id: "budget-blitz",      name: "Budget Blitz",      description: "Finish 5 weeks under budget",              icon: "bi-shield-check",           type: "budget_weeks_total",target: 5,   category: "Budget",   rarity: "gold",    threshold: 5    },
+    // ── Missions (series: "mission") ──────────────────────────
+    { id: "mission-5",         name: "Getting Going",     description: "Complete 5 daily missions",                icon: "bi-check2",                 type: "mission_count",    target: 5,    category: "Missions", series: "mission",          tier: 1, totalTiers: 4, rarity: "bronze",  threshold: 5    },
+    { id: "mission-25",        name: "On a Roll",         description: "Complete 25 daily missions",               icon: "bi-check2-circle",          type: "mission_count",    target: 25,   category: "Missions", series: "mission",          tier: 2, totalTiers: 4, rarity: "silver",  threshold: 25   },
+    { id: "mission-100",       name: "Mission Machine",   description: "Complete 100 daily missions",              icon: "bi-check2-all",             type: "mission_count",    target: 100,  category: "Missions", series: "mission",          tier: 3, totalTiers: 4, rarity: "gold",    threshold: 100  },
+    { id: "mission-365",       name: "Daily Legend",      description: "Complete 365 daily missions",              icon: "bi-trophy-fill",            type: "mission_count",    target: 365,  category: "Missions", series: "mission",          tier: 4, totalTiers: 4, rarity: "emerald", threshold: 365  },
+    // ── Quests (series: "quest") ──────────────────────────────
+    { id: "quest-1",           name: "First Quest",       description: "Complete your first weekly quest",         icon: "bi-map",                    type: "quest_count",      target: 1,    category: "Quests",   series: "quest",            tier: 1, totalTiers: 3, rarity: "silver",  threshold: 1    },
+    { id: "quest-5",           name: "Quest Regular",     description: "Complete 5 weekly quests",                 icon: "bi-map-fill",               type: "quest_count",      target: 5,    category: "Quests",   series: "quest",            tier: 2, totalTiers: 3, rarity: "gold",    threshold: 5    },
+    { id: "quest-streak-3",    name: "Quest Streak",      description: "Complete 3 quests in a row",               icon: "bi-lightning-fill",         type: "quest_streak",     target: 3,    category: "Quests",   series: "quest",            tier: 3, totalTiers: 3, rarity: "emerald", threshold: 3    },
+    // ── Savings ───────────────────────────────────────────────
+    { id: "saved-1000",        name: "First Thousand",    description: "Save \u20B11,000 toward any goal",          icon: "bi-piggy-bank-fill",        type: "savings_total",    target: 1000, category: "Goals",    series: "savings",          tier: 1, totalTiers: 2, rarity: "gold",    threshold: 1000 },
+    { id: "saved-5000",        name: "Five K Club",       description: "Save \u20B15,000 across all goals",         icon: "bi-safe2-fill",             type: "savings_total",    target: 5000, category: "Goals",    series: "savings",          tier: 2, totalTiers: 2, rarity: "emerald", threshold: 5000 },
     // ── Goals ─────────────────────────────────────────────────
-    { id: "goal-setter",     name: "Goal Setter",     description: "Create your first savings goal",  icon: "bi-flag-fill",              type: "goal_count",    target: 1,   category: "Goals" },
-    // ── XP / Level ───────────────────────────────────────────
-    { id: "level-up-2",      name: "Budget Aware",    description: "Reach Level 2",                   icon: "bi-arrow-up-circle-fill",   type: "level",         target: 2,   category: "XP" },
-    { id: "level-up-5",      name: "Streak Hunter",   description: "Reach Level 5",                   icon: "bi-lightning-charge-fill",  type: "level",         target: 5,   category: "XP" }
+    { id: "goal-setter",       name: "Goal Setter",       description: "Create your first savings goal",           icon: "bi-flag-fill",              type: "goal_count",       target: 1,    category: "Goals",    rarity: "bronze",  threshold: 1    },
+    { id: "goal-achiever",     name: "Goal Achiever",     description: "Complete 3 savings goals",                 icon: "bi-trophy",                 type: "goals_completed",  target: 3,    category: "Goals",    rarity: "gold",    threshold: 3    },
+    // ── Misc ──────────────────────────────────────────────────
+    { id: "early-bird",        name: "Early Bird",        description: "Log an expense before 7 AM",               icon: "bi-sunrise",                type: "time_of_day",      target: 1,    category: "Misc",     rarity: "bronze",  threshold: 1    },
+    { id: "night-owl",         name: "Night Owl",         description: "Log an expense after 10 PM",               icon: "bi-moon-stars-fill",        type: "time_of_day",      target: 1,    category: "Misc",     rarity: "bronze",  threshold: 1    },
+    // ── XP / Level (series: "level") ─────────────────────────
+    { id: "level-up-2",        name: "Budget Aware",      description: "Reach Level 2",                            icon: "bi-arrow-up-circle-fill",   type: "level",            target: 2,    category: "XP",       series: "level",            tier: 1, totalTiers: 2, rarity: "bronze",  threshold: 2    },
+    { id: "level-up-5",        name: "Streak Hunter",     description: "Reach Level 5",                            icon: "bi-lightning-charge-fill",  type: "level",            target: 5,    category: "XP",       series: "level",            tier: 2, totalTiers: 2, rarity: "silver",  threshold: 5    }
   ];
 
   function normalizeLegacyCategory(raw) {
@@ -138,6 +297,31 @@
       user.dailyXpLog = { dateKey: getLocalDateKey(), xpFromLogging: 0 };
     }
     if (typeof user.level !== "number") { user.level = 1; }
+    // Sprint 3 quest fields
+    if (user.activeQuest === undefined) { user.activeQuest = null; }
+    if (!Array.isArray(user.questHistory)) { user.questHistory = []; }
+    if (typeof user.questsCompleted !== "number") { user.questsCompleted = 0; }
+    if (typeof user.missionsCompleted !== "number") { user.missionsCompleted = 0; }
+    if (user.lastMissionCreditedDate === undefined) { user.lastMissionCreditedDate = null; }
+    if (user.monthlyChallenge === undefined) { user.monthlyChallenge = null; }
+    if (typeof user.weeklyXpStart !== "number") { user.weeklyXpStart = user.totalXp || user.xp || 0; }
+    if (!user.weeklyXpStartDate) { user.weeklyXpStartDate = null; }
+    // Sprint 3 Phase 4: Sentimos currency
+    if (typeof user.sentimos !== "number") { user.sentimos = 0; }
+    if (!Array.isArray(user.sentimosLog)) { user.sentimosLog = []; }
+    if (typeof user.streakFreezeCount !== "number") { user.streakFreezeCount = 0; }
+    if (typeof user.streakFreezeActive !== "boolean") { user.streakFreezeActive = false; }
+    // Sprint 3 Phase 2: Budget weeks counter
+    if (typeof user.underBudgetWeeksCount !== "number") { user.underBudgetWeeksCount = 0; }
+    if (user.lastBudgetWeekCreditedKey === undefined) { user.lastBudgetWeekCreditedKey = null; }
+    // Sprint 3 Phase 2: Personal Records
+    if (!user.records || typeof user.records !== "object") {
+      user.records = {
+        longestStreak: { value: 0, date: null },
+        bestWeekXp:    { value: 0, weekStart: null },
+        bestMonthSaved: { value: 0, month: null }
+      };
+    }
   }
 
   function getLevelFromXp(xp) {
@@ -199,6 +383,23 @@
     }, 0);
   }
 
+  function _countQuestStreak(questHistory) {
+    // Count consecutive completed weeks (no missed week) from most recent
+    var sorted = (questHistory || [])
+      .filter(function (q) { return q.completedAt; })
+      .slice()
+      .sort(function (a, b) { return new Date(b.completedAt) - new Date(a.completedAt); });
+    if (sorted.length === 0) { return 0; }
+    var count = 1;
+    for (var i = 1; i < sorted.length; i++) {
+      var prev = new Date(sorted[i - 1].assignedAt);
+      var curr = new Date(sorted[i].assignedAt);
+      var diff = Math.round((prev - curr) / (7 * 24 * 3600 * 1000));
+      if (diff === 1) { count++; } else { break; }
+    }
+    return count;
+  }
+
   function buildAchievementState(user) {
     ensureGamificationFields(user);
     var expenses = Array.isArray(user.expenses) ? user.expenses : [];
@@ -208,12 +409,19 @@
     var weeklyBudget = Number(user.weeklyBudget) || 0;
     var weekTotal = getThisWeekTotal(expenses);
     var goalsCount = Array.isArray(user.goals) ? user.goals.length : 0;
+    var goalsCompleted = Array.isArray(user.goals) ? user.goals.filter(function (g) { return g.completed; }).length : 0;
     var hasEarlyExpense = expenses.some(function (e) {
       return new Date(e.timestamp).getHours() < 7;
     });
     var hasLateExpense = expenses.some(function (e) {
       return new Date(e.timestamp).getHours() >= 22;
     });
+    // Unique categories used across all expenses
+    var usedCategories = {};
+    expenses.forEach(function (e) { if (e.category) { usedCategories[e.category] = true; } });
+    var uniqueCategoriesCount = Object.keys(usedCategories).length;
+    // Savings total across all goals
+    var savingsTotal = Array.isArray(user.goals) ? user.goals.reduce(function (s, g) { return s + (Number(g.savedAmount) || 0); }, 0) : 0;
 
     return ACHIEVEMENTS.map(function (a) {
       var progress = 0;
@@ -221,7 +429,7 @@
       if (a.type === "expense_count") {
         progress = expenseCount;
         unlockable = progress >= a.target;
-      } else if (a.type === "streak") {
+      } else if (a.type === "streak" || a.type === "streak_diamonds") {
         progress = streak;
         unlockable = progress >= a.target;
       } else if (a.type === "level") {
@@ -240,6 +448,27 @@
       } else if (a.type === "goal_count") {
         progress = goalsCount;
         unlockable = progress >= a.target;
+      } else if (a.type === "goals_completed") {
+        progress = goalsCompleted;
+        unlockable = progress >= a.target;
+      } else if (a.type === "category_variety") {
+        progress = uniqueCategoriesCount;
+        unlockable = progress >= a.target;
+      } else if (a.type === "mission_count") {
+        progress = user.missionsCompleted || 0;
+        unlockable = progress >= a.target;
+      } else if (a.type === "quest_count") {
+        progress = user.questsCompleted || 0;
+        unlockable = progress >= a.target;
+      } else if (a.type === "quest_streak") {
+        progress = _countQuestStreak(user.questHistory);
+        unlockable = progress >= a.target;
+      } else if (a.type === "savings_total") {
+        progress = savingsTotal;
+        unlockable = progress >= a.target;
+      } else if (a.type === "budget_weeks_total") {
+        progress = user.underBudgetWeeksCount || 0;
+        unlockable = progress >= a.target;
       }
 
       var claimed = user.unlockedAchievements.indexOf(a.id) !== -1;
@@ -254,7 +483,12 @@
         progress: progress,
         unlockable: unlockable,
         claimed: claimed,
-        notified: notified
+        notified: notified,
+        series: a.series || null,
+        tier: a.tier || null,
+        totalTiers: a.totalTiers || null,
+        rarity: a.rarity || "bronze",
+        threshold: a.threshold || a.target
       };
     });
   }
@@ -729,6 +963,20 @@
     user.expenses.unshift(entry);
     var xpToAward = isFirstLogToday ? 10 : 5;
     var xpAwarded = addXpInternal(user, xpToAward, "expense_log");
+    // Sentimos: ₵5 per expense + ₵2 first-of-day bonus
+    addSentimosInternal(user, 5, "expense");
+    if (isFirstLogToday) { addSentimosInternal(user, 2, "first-log-bonus"); }
+    // Streak milestone Sentimos rewards
+    var newStreak = getCurrentStreakFromExpenses(user.expenses);
+    var STREAK_MILESTONES = { 7: 10, 14: 20, 30: 50, 100: 100 };
+    if (STREAK_MILESTONES[newStreak]) {
+      addSentimosInternal(user, STREAK_MILESTONES[newStreak], "streak-" + newStreak);
+    }
+    // Update longestStreak record
+    if (!user.records) { user.records = { longestStreak: { value: 0, date: null }, bestWeekXp: { value: 0, weekStart: null }, bestMonthSaved: { value: 0, month: null } }; }
+    if (newStreak > (user.records.longestStreak.value || 0)) {
+      user.records.longestStreak = { value: newStreak, date: getLocalDateKey() };
+    }
     var afterUnlockable = buildAchievementState(user)
       .filter(function (a) { return a.unlockable && !a.claimed; })
       .map(function (a) { return a.id; });
@@ -737,10 +985,25 @@
     });
     saveStore(store);
     window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    // Sprint 3: Update quest progress after each expense
+    updateQuestProgress();
 
     if (window.FirestoreService) {
       window.FirestoreService.addExpenseDoc(store.session.userId, entry);
       syncGamificationFields(store.session.userId, user);
+      var currentStreak = getCurrentStreakFromExpenses(user.expenses || []);
+      var xpInfoForSync = getXpInfoFromUser(user);
+      window.FirestoreService.syncPublicProfile(store.session.userId, {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        streak: currentStreak,
+        questsCompleted: user.questsCompleted || 0,
+        xp: user.xp || 0,
+        weeklyXpStart: user.weeklyXpStart || 0,
+        weeklyXpStartDate: user.weeklyXpStartDate || null,
+        level: xpInfoForSync.level,
+        levelName: xpInfoForSync.levelName
+      });
     }
 
     return {
@@ -820,9 +1083,157 @@
     ensureGamificationFields(user);
     var grant = Math.max(0, Math.floor(Number(amount) || 0));
     if (grant <= 0) { return 0; }
+    var prevLevel = user.level;
     user.xp = Math.max(0, Number(user.xp || 0) + grant);
     user.level = getLevelFromXp(user.xp).level;
+    // Level-up Sentimos reward
+    if (user.level > prevLevel) {
+      addSentimosInternal(user, 75, "level-up");
+    }
+    // Update personal record: bestWeekXp
+    var now = new Date();
+    var weekMondayKey = getLocalDateKey((function () {
+      var d = new Date(now);
+      var day = d.getDay();
+      d.setDate(d.getDate() - ((day + 6) % 7));
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }()));
+    if (!user.records) { user.records = { longestStreak: { value: 0, date: null }, bestWeekXp: { value: 0, weekStart: null }, bestMonthSaved: { value: 0, month: null } }; }
+    if (!user.weeklyXpStartDate || user.weeklyXpStartDate !== weekMondayKey) {
+      user.weeklyXpStart = user.xp - grant;
+      user.weeklyXpStartDate = weekMondayKey;
+    }
+    var weekXp = Math.max(0, user.xp - (user.weeklyXpStart || 0));
+    if (weekXp > (user.records.bestWeekXp.value || 0)) {
+      user.records.bestWeekXp = { value: weekXp, weekStart: weekMondayKey };
+    }
     return grant;
+  }
+
+  // ── Sprint 3 Phase 4: Sentimos Currency ──────────────────
+
+  function addSentimosInternal(user, amount, source) {
+    ensureGamificationFields(user);
+    var grant = Math.max(0, Math.floor(Number(amount) || 0));
+    if (grant <= 0) { return 0; }
+    user.sentimos = (user.sentimos || 0) + grant;
+    user.sentimosLog.unshift({ amount: grant, source: source || "unknown", type: "earn", date: nowIso() });
+    if (user.sentimosLog.length > 50) { user.sentimosLog = user.sentimosLog.slice(0, 50); }
+    return grant;
+  }
+
+  function getSentimosBalance() {
+    var store = loadStore();
+    if (!store.session) { return 0; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return 0; }
+    ensureGamificationFields(user);
+    return user.sentimos || 0;
+  }
+
+  function addSentimos(amount, source) {
+    var store = loadStore();
+    if (!store.session) { return { ok: false, error: "No active session." }; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return { ok: false, error: "User not found." }; }
+    var granted = addSentimosInternal(user, amount, source || "manual");
+    saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    if (window.FirestoreService && window.FirestoreService.syncPublicProfile) {
+      window.FirestoreService.syncPublicProfile(store.session.userId, user);
+    }
+    return { ok: true, newBalance: user.sentimos, granted: granted };
+  }
+
+  function spendSentimos(amount, reason) {
+    var cost = Math.max(0, Math.floor(Number(amount) || 0));
+    var store = loadStore();
+    if (!store.session) { return { ok: false, error: "No active session." }; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return { ok: false, error: "User not found." }; }
+    ensureGamificationFields(user);
+    if ((user.sentimos || 0) < cost) {
+      return { ok: false, error: "Insufficient Sentimos.", balance: user.sentimos || 0 };
+    }
+    user.sentimos = (user.sentimos || 0) - cost;
+    user.sentimosLog.unshift({ amount: cost, source: reason || "spend", type: "spend", date: nowIso() });
+    if (user.sentimosLog.length > 50) { user.sentimosLog = user.sentimosLog.slice(0, 50); }
+    saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    return { ok: true, newBalance: user.sentimos };
+  }
+
+  function getSentimosLog() {
+    var store = loadStore();
+    if (!store.session) { return []; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return []; }
+    ensureGamificationFields(user);
+    return user.sentimosLog.slice(0, 10);
+  }
+
+  function getStreakFreezeCount() {
+    var store = loadStore();
+    if (!store.session) { return 0; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return 0; }
+    ensureGamificationFields(user);
+    return user.streakFreezeCount || 0;
+  }
+
+  function activateStreakFreeze() {
+    var FREEZE_COST = 50;
+    var store = loadStore();
+    if (!store.session) { return { ok: false, error: "No active session." }; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return { ok: false, error: "User not found." }; }
+    ensureGamificationFields(user);
+    if ((user.streakFreezeCount || 0) >= 2) {
+      return { ok: false, error: "Already at maximum freezes (2)." };
+    }
+    if ((user.sentimos || 0) < FREEZE_COST) {
+      return { ok: false, error: "Insufficient Sentimos.", balance: user.sentimos || 0, cost: FREEZE_COST };
+    }
+    user.sentimos = (user.sentimos || 0) - FREEZE_COST;
+    user.sentimosLog.unshift({ amount: FREEZE_COST, source: "streak-freeze", type: "spend", date: nowIso() });
+    user.streakFreezeCount = (user.streakFreezeCount || 0) + 1;
+    user.streakFreezeActive = true;
+    saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    return { ok: true, newBalance: user.sentimos, freezeCount: user.streakFreezeCount };
+  }
+
+  function useStreakFreeze() {
+    // Consume one equipped freeze to protect a broken streak
+    var store = loadStore();
+    if (!store.session) { return { ok: false }; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return { ok: false }; }
+    ensureGamificationFields(user);
+    if ((user.streakFreezeCount || 0) <= 0) { return { ok: false, error: "No freeze equipped." }; }
+    user.streakFreezeCount = Math.max(0, (user.streakFreezeCount || 0) - 1);
+    user.streakFreezeActive = user.streakFreezeCount > 0;
+    saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    return { ok: true, newCount: user.streakFreezeCount };
+  }
+
+  // ── Sprint 3 Phase 2: Personal Records ───────────────────
+
+  function getRecords() {
+    var store = loadStore();
+    if (!store.session) { return null; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return null; }
+    ensureGamificationFields(user);
+    // Update longestStreak record in real-time
+    var currentStreak = getCurrentStreakFromExpenses(Array.isArray(user.expenses) ? user.expenses : []);
+    if (currentStreak > (user.records.longestStreak.value || 0)) {
+      user.records.longestStreak = { value: currentStreak, date: getLocalDateKey() };
+      saveStore(store);
+    }
+    return JSON.parse(JSON.stringify(user.records));
   }
 
   function addXp(amount, source) {
@@ -832,6 +1243,7 @@
     if (!user) { return { ok: false, error: "User not found." }; }
     var awarded = addXpInternal(user, amount, source || "manual");
     saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
     syncGamificationFields(store.session.userId, user);
     return { ok: true, awarded: awarded, xpInfo: getXpInfoFromUser(user) };
   }
@@ -897,7 +1309,9 @@
     if (achievement.claimed) { return { ok: false, error: "Achievement already claimed." }; }
     user.unlockedAchievements.push(id);
     var xpAwarded = addXpInternal(user, 15, "achievement_claim");
+    addSentimosInternal(user, 25, "badge-" + id);
     saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
     syncGamificationFields(store.session.userId, user);
     return { ok: true, xpAwarded: xpAwarded, xpInfo: getXpInfoFromUser(user) };
   }
@@ -1610,6 +2024,289 @@
     return { ok: true };
   }
 
+  // ── Dev-only: restore gamification snapshot (used by dev-tools.js Reset) ──
+  function devRestoreGamState(snapshot) {
+    if (!snapshot) { return { ok: false }; }
+    var store = loadStore();
+    if (!store.session) { return { ok: false }; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return { ok: false }; }
+    if (typeof snapshot.xp === "number")          { user.xp = Math.max(0, snapshot.xp); }
+    if (typeof snapshot.level === "number")       { user.level = Math.max(1, snapshot.level); }
+    if (typeof snapshot.streakCount === "number") { user.streakCount = Math.max(0, snapshot.streakCount); }
+    if (snapshot.dailyXpLog && typeof snapshot.dailyXpLog === "object") {
+      user.dailyXpLog = snapshot.dailyXpLog;
+    }
+    saveStore(store);
+    if (window.FirestoreService) {
+      syncGamificationFields(store.session.userId, user);
+    }
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    return { ok: true };
+  }
+
+  // ── Sprint 3: Weekly Quests ───────────────────────────────
+
+  function getIsoWeekNumber(date) {
+    var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    var dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  }
+
+  function getWeekMondayDate(date) {
+    var d = new Date(date);
+    var day = d.getDay();
+    var diff = (day === 0) ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function _buildFreshQuest(weekNum) {
+    var idx = weekNum % QUESTS.length;
+    var template = QUESTS[idx];
+    var now = new Date();
+    var monday = getWeekMondayDate(now);
+    var sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    var quest = {
+      id: template.id,
+      title: template.title,
+      description: template.description,
+      icon: template.icon,
+      conditions: template.conditions.map(function (c) {
+        return { type: c.type, target: c.target, progress: 0 };
+      }),
+      xpReward: template.xpReward,
+      sentimosReward: template.sentimosReward,
+      assignedAt: monday.toISOString(),
+      expiresAt: sunday.toISOString(),
+      completedAt: null
+    };
+    return quest;
+  }
+
+  function getCurrentQuest() {
+    var store = loadStore();
+    if (!store.session) { return null; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return null; }
+    ensureGamificationFields(user);
+
+    var now = new Date();
+    var weekNum = getIsoWeekNumber(now);
+    var mondayKey = getLocalDateKey(getWeekMondayDate(now));
+
+    // Check if active quest is valid for this week
+    if (user.activeQuest) {
+      var questMondayKey = getLocalDateKey(new Date(user.activeQuest.assignedAt));
+      if (questMondayKey === mondayKey) {
+        return user.activeQuest;
+      }
+      // Quest is from a previous week — archive it
+      user.questHistory.unshift(user.activeQuest);
+      user.activeQuest = null;
+    }
+
+    // Assign a fresh quest for this week
+    user.activeQuest = _buildFreshQuest(weekNum);
+    saveStore(store);
+    return user.activeQuest;
+  }
+
+  function getQuestHistory() {
+    var store = loadStore();
+    if (!store.session) { return []; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return []; }
+    ensureGamificationFields(user);
+    return user.questHistory.slice();
+  }
+
+  function _completeQuestInternal(store, user, quest) {
+    quest.completedAt = new Date().toISOString();
+    addXpInternal(user, quest.xpReward, "quest-complete");
+    addSentimosInternal(user, quest.sentimosReward || 25, "quest-" + quest.id);
+    user.questsCompleted = (user.questsCompleted || 0) + 1;
+    user.questHistory.unshift(Object.assign({}, quest));
+    user.activeQuest = null;
+    saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    if (window.GamificationUI && window.GamificationUI.queueModal) {
+      window.GamificationUI.queueModal({
+        type: "quest-complete",
+        title: "Quest Complete!",
+        body: "You finished \u201c" + quest.title + "\u201d",
+        xpGained: quest.xpReward,
+        reward: "\u20B1" + quest.xpReward + " XP earned",
+        forwardCopy: "New quest unlocks Monday. Keep logging!",
+        cta: "AWESOME"
+      });
+    }
+  }
+
+  function updateQuestProgress() {
+    var store = loadStore();
+    if (!store.session) { return; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return; }
+    ensureGamificationFields(user);
+
+    // Ensure quest is assigned
+    var now = new Date();
+    var weekNum = getIsoWeekNumber(now);
+    var mondayKey = getLocalDateKey(getWeekMondayDate(now));
+
+    if (!user.activeQuest) {
+      user.activeQuest = _buildFreshQuest(weekNum);
+    } else {
+      var questMondayKey = getLocalDateKey(new Date(user.activeQuest.assignedAt));
+      if (questMondayKey !== mondayKey) {
+        user.questHistory.unshift(user.activeQuest);
+        user.activeQuest = _buildFreshQuest(weekNum);
+      }
+    }
+
+    if (user.activeQuest.completedAt) { return; }
+
+    var expenses = Array.isArray(user.expenses) ? user.expenses : [];
+    var weeklyBudget = user.weeklyBudget || 0;
+    var monday = getWeekMondayDate(now);
+    var sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    var weekExpenses = expenses.filter(function (e) {
+      var d = new Date(e.timestamp);
+      return d >= monday && d <= sunday;
+    });
+
+    // Count unique log days
+    var logDays = {};
+    weekExpenses.forEach(function (e) {
+      logDays[getLocalDateKey(e.timestamp)] = true;
+    });
+    var logDaysCount = Object.keys(logDays).length;
+
+    // Count total expense count this week
+    var logCount = weekExpenses.length;
+
+    // Count days logged before noon
+    var daysBeforeNoon = {};
+    weekExpenses.forEach(function (e) {
+      var d = new Date(e.timestamp);
+      if (d.getHours() < 12) { daysBeforeNoon[getLocalDateKey(e.timestamp)] = true; }
+    });
+    var logDaysBeforeNoon = Object.keys(daysBeforeNoon).length;
+
+    // Count days logged after 9pm
+    var daysAfter9pm = {};
+    weekExpenses.forEach(function (e) {
+      var d = new Date(e.timestamp);
+      if (d.getHours() >= 21) { daysAfter9pm[getLocalDateKey(e.timestamp)] = true; }
+    });
+    var logDaysAfter9pm = Object.keys(daysAfter9pm).length;
+
+    // Under budget days (requires budget set)
+    var underBudgetDays = 0;
+    var noOverspendDays = 0;
+    if (weeklyBudget > 0) {
+      var dailySlice = weeklyBudget / 7;
+      var spendByDay = {};
+      weekExpenses.forEach(function (e) {
+        var dk = getLocalDateKey(e.timestamp);
+        spendByDay[dk] = (spendByDay[dk] || 0) + (Number(e.amount) || 0);
+      });
+      var allGood = true;
+      Object.keys(spendByDay).forEach(function (dk) {
+        if (spendByDay[dk] <= dailySlice) {
+          underBudgetDays += 1;
+        } else {
+          allGood = false;
+        }
+      });
+      noOverspendDays = allGood ? logDaysCount : 0;
+    }
+
+    // Frugal week: total spent ≤ 50% of weekly budget
+    var totalSpentThisWeek = weekExpenses.reduce(function (s, e) { return s + (Number(e.amount) || 0); }, 0);
+    var frugalWeek = weeklyBudget > 0 && totalSpentThisWeek <= weeklyBudget * 0.5 ? 1 : 0;
+
+    // Category diversity this week
+    var weekCategories = {};
+    weekExpenses.forEach(function (e) { weekCategories[e.category || "others"] = true; });
+    var categoryDiversityCount = Object.keys(weekCategories).length;
+
+    // XP earned this week — reset weekly snapshot on new week
+    var weekMondayKey = getLocalDateKey(monday);
+    if (user.weeklyXpStartDate !== weekMondayKey) {
+      user.weeklyXpStart = user.totalXp || user.xp || 0;
+      user.weeklyXpStartDate = weekMondayKey;
+    }
+    var xpEarnedThisWeek = Math.max(0, ((user.totalXp || user.xp || 0) - (user.weeklyXpStart || 0)));
+
+    var progressMap = {
+      "log_days": logDaysCount,
+      "log_count": logCount,
+      "under_budget_days": underBudgetDays,
+      "no_overspend_days": noOverspendDays,
+      "log_days_before_noon": logDaysBeforeNoon,
+      "log_days_after_9pm": logDaysAfter9pm,
+      "frugal_week": frugalWeek,
+      "category_diversity_week": categoryDiversityCount,
+      "xp_earned_week": xpEarnedThisWeek
+    };
+
+    var oldProgress = user.activeQuest.conditions.map(function (c) { return c.progress; });
+
+    user.activeQuest.conditions.forEach(function (c) {
+      var newVal = Math.min(c.target, progressMap[c.type] || 0);
+      c.progress = newVal;
+    });
+
+    var anyTick = user.activeQuest.conditions.some(function (c, i) { return c.progress !== oldProgress[i]; });
+
+    var allMet = user.activeQuest.conditions.every(function (c) {
+      return c.progress >= c.target;
+    });
+
+    if (allMet) {
+      _completeQuestInternal(store, user, user.activeQuest);
+    } else {
+      saveStore(store);
+      if (anyTick) {
+        var questSnap = JSON.parse(JSON.stringify(user.activeQuest));
+        window.dispatchEvent(new CustomEvent("sugbocents:questProgressTick", { detail: questSnap }));
+      }
+    }
+  }
+
+  function creditDailyMission() {
+    var store = loadStore();
+    if (!store.session) { return; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return; }
+    ensureGamificationFields(user);
+    var key = getLocalDateKey();
+    if (user.lastMissionCreditedDate === key) { return; }
+    user.lastMissionCreditedDate = key;
+    user.missionsCompleted = (user.missionsCompleted || 0) + 1;
+    addSentimosInternal(user, 10, "mission-day");
+    saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    // Check achievements after mission increment
+    checkNewAchievementsForUser(user);
+  }
+
+  function checkNewAchievementsForUser(user) {
+    return buildAchievementState(user).filter(function (a) {
+      return a.unlockable && !a.claimed && !a.notified;
+    });
+  }
+
   window.StorageAPI = {
     resolveAuthState: resolveAuthState,
     getSession: getSession,
@@ -1653,7 +2350,22 @@
     saveChatMessage: saveChatMessage,
     clearChatHistory: clearChatHistory,
     updateChatThreadTitle: updateChatThreadTitle,
-    seedDemoData: seedDemoData
+    getCurrentQuest: getCurrentQuest,
+    getQuestHistory: getQuestHistory,
+    updateQuestProgress: updateQuestProgress,
+    creditDailyMission: creditDailyMission,
+    // Sprint 3 Phase 4: Sentimos
+    getSentimosBalance: getSentimosBalance,
+    addSentimos: addSentimos,
+    spendSentimos: spendSentimos,
+    getSentimosLog: getSentimosLog,
+    getStreakFreezeCount: getStreakFreezeCount,
+    activateStreakFreeze: activateStreakFreeze,
+    useStreakFreeze: useStreakFreeze,
+    // Sprint 3 Phase 2: Records
+    getRecords: getRecords,
+    seedDemoData: seedDemoData,
+    __devRestoreGamState: devRestoreGamState
   };
 })();
 

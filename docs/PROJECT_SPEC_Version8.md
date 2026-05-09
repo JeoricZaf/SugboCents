@@ -5,12 +5,12 @@
 ## 0) Key Decisions / Constraints (Read first)
 - **Frontend-first for Sprint 1–2:** The core app must run by opening HTML files in a browser with no server required.
 - **Tech choice:** Use **Vanilla HTML, CSS, and JavaScript**. Tailwind CSS via CDN is allowed for styling.
-- **No UI frameworks:** Do NOT use React, Vue, or Angular. Node.js/Express is allowed **only** as a thin backend for Sprint 3 AI and email features — the main app shell must NOT depend on a running server.
-- **Backend scope (Sprint 3 only):** A minimal backend is permitted for: sending emails (e.g. via Nodemailer / a small Express endpoint) and proxying AI API calls (to keep API keys server-side). All other features remain frontend-only.
+- **No UI frameworks:** Do NOT use React, Vue, or Angular. The main app shell must NOT depend on a running server.
+- **Backend:** Firebase Cloud Functions (`functions/index.js`) is deployed and available. Use it for AI features, email, or any server-side logic — no restrictions on when backend features can be built.
 - **Major features must be separate pages/routes:** Do **not** build a single-page HTML app with sections that are just hidden/shown. Use real, separate HTML files (e.g., `login.html`, `dashboard.html`) for major features.
 - **Data storage (The "storage.js" rule):** Prefer local persistence (`localStorage`). However, UI button clicks must NEVER call `localStorage` directly. All data saving/loading MUST be routed through a dedicated `js/storage.js` file to allow easy migration to a real backend in the future.
 - **Mobile PWA is required:** Implement PWA accurately (manifest + icons + installability).
-- **AI/email safety:** AI and email features must have fallback behavior if the backend/API is unavailable. Do not implement AI/email until Sprint 3. The backend for these features should be a separate, optional service — the app must still load and function without it.
+- **AI/email safety:** AI and email features must have graceful fallback behavior if the backend/API is unavailable. The app must still load and function without a backend response.
 
 ## 1) Important: Current Sprint Focus (Sprint 1 only)
 We are currently working on **Sprint 1**. When generating code, **focus only on Sprint 1 scope** and avoid building Sprint 2–3 features early.

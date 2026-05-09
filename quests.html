@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1f6b46" />
+  <title>SugboCents - Quests</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dark-mode.css" />
+  <script>(function () { if (localStorage.getItem("darkModeEnabled") === "true") document.documentElement.classList.add("dark-mode"); }());</script>
+</head>
+<body data-page="quests" data-protected="true" class="antialiased"
+  style="background:#f7f3e8;font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;color:#102b1d;min-height:100vh">
+
+  <div style="min-height:100vh;background:#f7f3e8">
+    <div class="lg:flex">
+
+      <!-- DESKTOP SIDEBAR -->
+      <aside class="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-y-auto lg:flex"
+        style="background:#f7f3e8;padding:1.25rem;border-right:1px solid rgba(216,209,189,0.8)"
+        aria-label="Sidebar navigation">
+        <!-- Brand block with Tigom -->
+        <div class="rounded-[2rem] p-5 text-white" style="background:#164f33">
+          <div class="flex items-center gap-3">
+            <div class="relative h-12 w-12 shrink-0 animate-float" aria-hidden="true">
+              <div class="absolute left-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+              <div class="absolute right-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+              <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
+                style="background:#2b8259;box-shadow:inset 0 -10px 0 rgba(22,79,51,0.26)"></div>
+              <div class="absolute left-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
+              <div class="absolute right-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
+              <div class="absolute left-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
+              <div class="absolute right-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
+              <div class="absolute bottom-[26%] left-1/2 h-4 w-8 rounded-b-full"
+                style="border-bottom:4px solid #102b1d;transform:translateX(-50%)"></div>
+              <div class="absolute -bottom-1 left-1/2 flex h-6 w-8 items-center justify-center rounded-full text-xs font-black"
+                style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+            </div>
+            <div>
+              <p class="font-display text-2xl font-black">SugboCents</p>
+              <p class="text-xs font-bold whitespace-nowrap" style="color:rgba(255,255,255,0.65)">Budgeting that feels alive</p>
+            </div>
+          </div>
+        </div>
+        <!-- Nav links -->
+        <nav class="mt-6 flex-1 space-y-2" aria-label="Main navigation">
+          <a href="dashboard.html" data-nav="dashboard" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#x2302;</span> Home
+          </a>
+          <a href="quests.html" data-nav="quests" class="sidebar-new-link sidebar-new-link--active">
+            <span class="sidebar-new-link__icon">&#9671;</span> Quests
+          </a>
+          <a href="leaderboard.html" data-nav="leaderboard" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9819;</span> League
+          </a>
+          <a href="profile.html" data-nav="profile" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9689;</span> Profile
+          </a>
+          <a href="activity.html" data-nav="activity" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#8776;</span> Activity
+          </a>
+          <a href="tigom.html" data-nav="goals" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9678;</span> Goals
+          </a>
+          <a href="chat.html" data-nav="chat" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#10022;</span> AI Chat
+          </a>
+          <a href="settings.html" data-nav="settings" class="sidebar-new-link">
+            <span class="sidebar-new-link__icon">&#9776;</span> Settings
+          </a>
+        </nav>
+        <!-- User strip -->
+        <a href="settings.html" class="mt-4 flex items-center gap-3 rounded-2xl px-3 py-3 transition hover:bg-white"
+          style="text-decoration:none">
+          <div id="sidebarAvatar"
+            class="grid h-10 w-10 shrink-0 place-items-center rounded-full font-display text-sm font-black text-white"
+            style="background:#84919a">U</div>
+          <div class="min-w-0 flex-1">
+            <p id="sidebarName" class="truncate text-sm font-extrabold" style="color:#102b1d">Loading&hellip;</p>
+            <p class="text-xs font-semibold" style="color:#617063">Account settings</p>
+          </div>
+          <span style="color:#164f33">&#8594;</span>
+        </a>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <main class="min-w-0 flex-1 pb-28 lg:pb-8">
+
+        <!-- Sticky resource bar -->
+        <header class="sticky top-0 z-40 backdrop-blur-xl"
+          style="border-bottom:1px solid rgba(216,209,189,0.7);background:rgba(247,243,232,0.88);padding:0.75rem 1rem">
+          <div class="mx-auto flex max-w-6xl items-center gap-3">
+            <div class="hidden w-[9rem] shrink-0 lg:block">
+              <p class="font-display text-lg font-extrabold tracking-tight" style="color:#164f33">SugboCents</p>
+              <p class="text-xs font-semibold" style="color:#5f6f63">Habit finance game</p>
+            </div>
+            <div id="resourceBar" class="flex-1" aria-label="Your stats" style="min-height:4rem"></div>
+          </div>
+        </header>
+
+        <!-- Quests content -->
+        <div class="mx-auto max-w-6xl space-y-6 px-4 py-5 sm:px-6 lg:px-8">
+
+          <!-- ── Hero banner ──────────────────────────────── -->
+          <section class="relative overflow-hidden rounded-[2rem] p-6 text-white sm:p-8"
+            style="background:linear-gradient(135deg,#164f33 0%,#1f6f47 55%,#2b8259 100%);box-shadow:0 20px 40px rgba(22,79,51,0.18)">
+            <div class="pointer-events-none absolute -right-12 top-6 h-28 w-28 rounded-full"
+              style="background:rgba(255,255,255,0.1)" aria-hidden="true"></div>
+            <div class="pointer-events-none absolute bottom-4 left-8 h-3 w-3 rounded-full"
+              style="background:rgba(255,255,255,0.5)" aria-hidden="true"></div>
+            <div class="relative flex items-center justify-between gap-5">
+              <div class="min-w-0">
+                <p class="text-sm font-extrabold uppercase"
+                  style="letter-spacing:0.22em;color:rgba(255,255,255,0.7)">This week&#x2019;s quest</p>
+                <h1 class="mt-2 text-4xl font-black tracking-tight sm:text-5xl"
+                  style="font-family:'Sora',sans-serif">Earn XP + &#8373;</h1>
+                <p class="mt-3 text-base font-semibold" style="color:rgba(255,255,255,0.82)">
+                  Complete warm-up habits, claim Sentimos, and keep next Monday from feeling like a reset.</p>
+              </div>
+              <!-- Tigom mascot -->
+              <div class="relative hidden shrink-0 sm:block">
+                <div class="relative animate-float" style="height:6rem;width:6rem" aria-hidden="true">
+                  <div class="absolute left-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+                  <div class="absolute right-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
+                  <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
+                    style="background:#2b8259;box-shadow:inset 0 -10px 0 rgba(22,79,51,0.26)"></div>
+                  <div class="absolute left-[27%] top-[36%] h-3 w-3 rounded-full"
+                    style="background:rgba(255,255,255,0.8)"></div>
+                  <div class="absolute right-[27%] top-[36%] h-3 w-3 rounded-full"
+                    style="background:rgba(255,255,255,0.8)"></div>
+                  <div class="absolute left-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
+                  <div class="absolute right-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
+                  <div class="absolute bottom-[26%] left-1/2 h-4 w-8 rounded-b-full"
+                    style="border-bottom:4px solid #102b1d;transform:translateX(-50%)"></div>
+                  <div class="absolute -bottom-1 left-1/2 flex h-6 w-8 items-center justify-center rounded-full text-xs font-black"
+                    style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+                </div>
+                <div class="absolute -right-4 bottom-0 rounded-2xl px-3 py-2 text-xl font-black shadow-lg"
+                  style="background:#f0fdfa;color:#0f766e;font-family:'Sora',sans-serif">&#8373;</div>
+              </div>
+            </div>
+          </section>
+          <!-- ── Active Quest Spotlight ─────────────────────── -->
+          <section id="activeQuestSpotlight"></section>
+
+          <!-- ── Daily reset pill ───────────────────────── -->
+          <div class="flex items-center justify-between rounded-full bg-white px-4 py-3"
+            style="box-shadow:0 1px 4px rgba(0,0,0,0.06);outline:1px solid #ded7c6">
+            <span class="text-sm font-extrabold" style="color:#102b1d">Daily reset</span>
+            <span id="dailyResetPill" class="rounded-full px-3 py-1 text-sm font-black"
+              style="background:#edf7ef;color:#164f33">&#x23F1; calculating&hellip;</span>
+          </div>
+
+          <!-- ── Daily quests ─────────────────────────────── -->
+          <section>
+            <div class="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p class="text-xs font-extrabold uppercase" style="letter-spacing:0.2em;color:#6b756c">Daily</p>
+                <h2 class="text-2xl font-extrabold tracking-tight"
+                  style="font-family:'Sora',sans-serif;color:#102b1d">Today&#x2019;s quests</h2>
+              </div>
+              <span id="dailyQuestsTimer" class="shrink-0 text-sm font-extrabold"
+                style="color:#164f33"></span>
+            </div>
+            <div id="dailyQuestsContainer" class="space-y-4"></div>
+          </section>
+
+          <!-- ── Weekly reset pill ───────────────────────── -->
+          <div class="flex items-center justify-between rounded-full bg-white px-4 py-3"
+            style="box-shadow:0 1px 4px rgba(0,0,0,0.06);outline:1px solid #ded7c6">
+            <span class="text-sm font-extrabold" style="color:#102b1d">Weekly reset</span>
+            <span id="weeklyResetPill" class="rounded-full px-3 py-1 text-sm font-black"
+              style="background:#edf7ef;color:#164f33">Resets in 3 days</span>
+          </div>
+
+          <!-- ── Weekly quest catalog ───────────────────────── -->
+          <section id="weeklyQuestCatalog"></section>
+
+          <!-- ── More quests unlock soon ──────────────────── -->
+          <section class="pb-4">
+            <div class="mb-4">
+              <p class="text-xs font-extrabold uppercase" style="letter-spacing:0.2em;color:#6b756c">Coming next</p>
+              <h2 class="text-2xl font-extrabold tracking-tight"
+                style="font-family:'Sora',sans-serif;color:#102b1d">More quests unlock soon</h2>
+            </div>
+            <div id="lockedQuestsContainer" class="grid gap-4 sm:grid-cols-2"></div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- FLOATING TIGOM CHAT FAB -->
+  <a href="chat.html" class="fixed z-30 grid place-items-center rounded-full shadow-2xl transition lg:bottom-6"
+    style="bottom:5.5rem;right:1rem;height:4rem;width:4rem;background:white;outline:2px solid rgba(22,79,51,0.15);box-shadow:0 8px 32px rgba(16,43,29,0.2);text-decoration:none"
+    aria-label="Open Tigom AI chat">
+    <div class="relative h-10 w-10" aria-hidden="true">
+      <div class="absolute left-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>
+      <div class="absolute right-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>
+      <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
+        style="background:#2b8259;box-shadow:inset 0 -8px 0 rgba(22,79,51,0.26)"></div>
+      <div class="absolute left-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
+      <div class="absolute right-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
+      <div class="absolute left-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>
+      <div class="absolute right-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>
+      <div class="absolute bottom-[26%] left-1/2 rounded-b-full"
+        style="height:3px;width:1.5rem;border-bottom:3px solid #102b1d;transform:translateX(-50%)"></div>
+      <div class="absolute -bottom-1 left-1/2 flex h-5 w-6 items-center justify-center rounded-full text-[0.55rem] font-black"
+        style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+    </div>
+  </a>
+
+  <!-- MOBILE BOTTOM NAV -->
+  <nav class="fixed inset-x-0 bottom-0 z-40 border-t px-2 py-2 lg:hidden"
+    style="background:rgba(251,248,239,0.94);border-color:#d8d1bd;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding-bottom:calc(0.5rem + env(safe-area-inset-bottom))"
+    aria-label="Main navigation">
+    <div class="mx-auto grid max-w-md grid-cols-5 gap-1">
+      <a href="dashboard.html" data-nav="dashboard"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#x2302;</span>
+        <span class="mt-1 block">Home</span>
+      </a>
+      <a href="quests.html" data-nav="quests"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition"
+        style="background:#164f33;color:white;text-decoration:none">
+        <span class="block text-lg leading-none">&#9671;</span>
+        <span class="mt-1 block">Quests</span>
+      </a>
+      <a href="leaderboard.html" data-nav="leaderboard"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#9819;</span>
+        <span class="mt-1 block">League</span>
+      </a>
+      <a href="profile.html" data-nav="profile"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#9689;</span>
+        <span class="mt-1 block">Profile</span>
+      </a>
+      <a href="activity.html" data-nav="activity"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#8776;</span>
+        <span class="mt-1 block">More</span>
+      </a>
+    </div>
+  </nav>
+
+  <script src="js/firebase-init.js"></script>
+  <script src="js/firebase-auth-service.js"></script>
+  <script src="js/firestore-service.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/gamification.js"></script>
+  <script src="js/dark-mode.js"></script>
+  <script src="js/quests.js"></script>
+</body>
+</html>

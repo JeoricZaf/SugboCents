@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   function showMessage(elId, text, isError) {
     var el = document.getElementById(elId);
     if (!el) { return; }
@@ -65,49 +65,69 @@
     });
   }
 
+  // ── Gentle controls (custom visual toggles) ─────────────
+  function wireVisualToggle(trackId, thumbId, inputId, onValue, offValue, onChange) {
+    var track = document.getElementById(trackId);
+    var thumb = document.getElementById(thumbId);
+    var input = document.getElementById(inputId);
+    if (!track || !thumb || !input) { return; }
+
+    function applyState(checked) {
+      track.style.background = checked ? "#2b8259" : "#cbd5e1";
+      thumb.style.transform   = checked ? "translateX(1.25rem)" : "translateX(0)";
+    }
+
+    applyState(input.checked);
+
+    track.addEventListener("click", function () {
+      input.checked = !input.checked;
+      applyState(input.checked);
+      onChange(input.checked);
+    });
+  }
+
   // ── Streak preferences ───────────────────────────────────
   function initStreakSection() {
     var prefs = window.StorageAPI ? window.StorageAPI.getPreferences() : {};
 
-    var toggleStreak = document.getElementById("streakEnabled");
-    var toggleNotif  = document.getElementById("streakNotifications");
-    var toggleWeek   = document.getElementById("streakWeeklySummary");
+    // Streak risk reminder → streakNotifications
+    var notifChecked = prefs.streakNotifications === true;
+    var notifInput = document.getElementById("streakReminderInput");
+    if (notifInput) { notifInput.checked = notifChecked; }
+    wireVisualToggle("streakReminderTrack", "streakReminderThumb", "streakReminderInput",
+      true, false, function (checked) {
+        if (window.StorageAPI) { window.StorageAPI.savePreferences({ streakNotifications: checked }); }
+        showMessage("streakSaveMsg", "Preference saved.", false);
+      }
+    );
 
-    if (toggleStreak) {
-      toggleStreak.checked = prefs.streakEnabled !== false; // default true
-      toggleStreak.addEventListener("change", function () {
-        if (window.StorageAPI) {
-          window.StorageAPI.savePreferences({ streakEnabled: toggleStreak.checked });
-        }
-        showMessage("streakSaveMsg", "Streak preference saved.", false);
-      });
-    }
+    // Weekly quest recap → streakWeeklySummary
+    var weekChecked = prefs.streakWeeklySummary !== false;
+    var weekInput = document.getElementById("weeklyQuestInput");
+    if (weekInput) { weekInput.checked = weekChecked; }
+    wireVisualToggle("weeklyQuestTrack", "weeklyQuestThumb", "weeklyQuestInput",
+      true, false, function (checked) {
+        if (window.StorageAPI) { window.StorageAPI.savePreferences({ streakWeeklySummary: checked }); }
+        showMessage("streakSaveMsg", "Preference saved.", false);
+      }
+    );
 
-    if (toggleNotif) {
-      toggleNotif.checked = prefs.streakNotifications === true; // default false
-      toggleNotif.addEventListener("change", function () {
-        if (window.StorageAPI) {
-          window.StorageAPI.savePreferences({ streakNotifications: toggleNotif.checked });
-        }
-        showMessage("streakSaveMsg", "Notification preference saved.", false);
-      });
-    }
-
-    if (toggleWeek) {
-      toggleWeek.checked = prefs.streakWeeklySummary !== false; // default true
-      toggleWeek.addEventListener("change", function () {
-        if (window.StorageAPI) {
-          window.StorageAPI.savePreferences({ streakWeeklySummary: toggleWeek.checked });
-        }
-        showMessage("streakSaveMsg", "Weekly summary preference saved.", false);
-      });
-    }
+    // Enable streak tracking → streakEnabled
+    var streakChecked = prefs.streakEnabled !== false;
+    var streakInput = document.getElementById("streakEnabled");
+    if (streakInput) { streakInput.checked = streakChecked; }
+    wireVisualToggle("streakTrackingTrack", "streakTrackingThumb", "streakEnabled",
+      true, false, function (checked) {
+        if (window.StorageAPI) { window.StorageAPI.savePreferences({ streakEnabled: checked }); }
+        showMessage("streakSaveMsg", "Streak tracking preference saved.", false);
+      }
+    );
   }
 
   // ── Display preferences ──────────────────────────────────
   function initDisplaySection() {
+    // Dark mode is handled by dark-mode.js; compact expenses preference retained
     var prefs = window.StorageAPI ? window.StorageAPI.getPreferences() : {};
-
     var compactToggle = document.getElementById("compactExpenses");
     if (compactToggle) {
       compactToggle.checked = prefs.compactExpenses === true;
@@ -222,26 +242,7 @@
     }
   }
 
-  // ── XP mini bar ──────────────────────────────────────────
-  function renderXpMiniBar() {
-    if (!window.StorageAPI || !window.StorageAPI.getXpInfo) { return; }
-    var info   = window.StorageAPI.getXpInfo();
-    var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
-    var levelEl  = document.getElementById("xpMiniLevel");
-    var fillEl   = document.getElementById("xpMiniFill");
-    var trackEl  = document.getElementById("xpMiniTrack");
-    var streakEl = document.getElementById("xpMiniStreak");
-    if (levelEl) {
-      levelEl.innerHTML = '<i class="bi bi-arrow-up-circle-fill" aria-hidden="true"></i> Lv. ' + info.level + ' — ' + info.levelName;
-    }
-    if (fillEl)   { fillEl.style.width = info.progressPct + "%"; }
-    if (trackEl)  { trackEl.setAttribute("aria-valuenow", info.progressPct); }
-    if (streakEl) {
-      var cls = "xp-mini-streak" + (streak >= 7 ? " xp-mini-streak--week" : streak >= 3 ? " xp-mini-streak--hot" : streak >= 1 ? " xp-mini-streak--warm" : "");
-      streakEl.className = cls;
-      streakEl.innerHTML = '<i class="bi bi-fire" aria-hidden="true"></i> ' + (streak === 0 ? "0" : streak);
-    }
-  }
+
 
   // ── Init ─────────────────────────────────────────────────
   document.addEventListener("DOMContentLoaded", function () {
@@ -249,7 +250,6 @@
     initStreakSection();
     initDisplaySection();
     initBudgetAndAccountSection();
-    renderXpMiniBar();
 
     // ── Demo seed button ─────────────────────────────────────
     var seedBtn = document.getElementById("seedDemoBtn");
@@ -261,7 +261,7 @@
         seedBtn.textContent = "Loading…";
         var result = window.StorageAPI.seedDemoData();
         seedBtn.disabled = false;
-        seedBtn.innerHTML = '<i class="bi bi-magic" aria-hidden="true"></i> Load Demo Data';
+        seedBtn.innerHTML = '&#10024; Load demo data';
         if (seedMsg) {
           if (result.ok) {
             seedMsg.textContent = "\u2713 Demo data loaded! Head to the Dashboard to explore.";

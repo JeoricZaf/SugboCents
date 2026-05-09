@@ -148,6 +148,18 @@
     return groups;
   }
 
+  function applyCatChipStyle(btn, isActive) {
+    btn.style.background = isActive ? "#164f33" : "#f4f0e5";
+    btn.style.color      = isActive ? "white"   : "#526257";
+    btn.style.borderRadius = "9999px";
+    btn.style.padding    = "0.375rem 0.75rem";
+    btn.style.fontSize   = "0.75rem";
+    btn.style.fontWeight = "800";
+    btn.style.border     = "none";
+    btn.style.cursor     = "pointer";
+    btn.style.transition = "background 0.15s";
+  }
+
   // ── render category filter chips ──────────────────────────
   function renderCategoryChips(periodOnly) {
     var bar = document.getElementById("categoryFilter");
@@ -162,8 +174,8 @@
 
     var allBtn = document.createElement("button");
     allBtn.type = "button";
-    allBtn.className = "filter-chip" + (activeCategory === "all" ? " active" : "");
     allBtn.textContent = "All";
+    applyCatChipStyle(allBtn, activeCategory === "all");
     allBtn.addEventListener("click", function () {
       activeCategory = "all";
       resetExpandedGroups();
@@ -175,8 +187,8 @@
       if (!present[cat.id]) { return; }
       var btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "filter-chip" + (cat.id === activeCategory ? " active" : "");
       btn.textContent = cat.label;
+      applyCatChipStyle(btn, cat.id === activeCategory);
       btn.addEventListener("click", function () {
         activeCategory = cat.id;
         resetExpandedGroups();
@@ -195,8 +207,8 @@
     Object.keys(seenRaw).forEach(function (label) {
       var btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "filter-chip" + (label === activeCategory ? " active" : "");
       btn.textContent = label;
+      applyCatChipStyle(btn, label === activeCategory);
       btn.addEventListener("click", function () {
         activeCategory = label;
         resetExpandedGroups();
@@ -209,45 +221,47 @@
   // ── build a single expense row ────────────────────────────
   function buildExpenseRow(expense) {
     var meta   = getCategoryMeta(expense.category);
-    var chipBg = meta.color || "#e2e8f0";
+    var chipBg = meta.color || "#f4f0e5";
 
     var SYSTEM_NOTES = { "Quick add": true, "One-time": true };
     var noteText = (expense.note && !SYSTEM_NOTES[expense.note])
-      ? " · " + escapeHtml(expense.note)
+      ? " \u00B7 " + escapeHtml(expense.note)
       : "";
 
-    var li = document.createElement("li");
-    li.className = "expense-row";
+    var row = document.createElement("div");
+    row.className = "flex items-center gap-3 py-3.5";
 
-    var chipEl = document.createElement("span");
-    chipEl.className = "expense-chip";
-    chipEl.style.background = chipBg;
-    chipEl.textContent = meta.emoji || (meta.label || "?").slice(0, 2).toUpperCase();
+    var iconEl = document.createElement("div");
+    iconEl.className = "grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-xl";
+    iconEl.style.background = chipBg;
+    iconEl.textContent = meta.emoji || (meta.label || "?").charAt(0).toUpperCase();
 
-    var infoEl = document.createElement("span");
+    var infoEl = document.createElement("div");
     infoEl.className = "min-w-0 flex-1";
     infoEl.innerHTML =
-      '<span class="expense-title">' + escapeHtml(meta.label || expense.category) + "</span>" +
-      '<span class="expense-meta block">' + escapeHtml(formatTime(expense.timestamp)) + noteText + "</span>";
+      '<p class="text-sm font-extrabold" style="color:#102b1d">' + escapeHtml(meta.label || expense.category) + '</p>' +
+      '<p class="text-xs font-semibold" style="color:#6c756e">' + escapeHtml(formatTime(expense.timestamp)) + noteText + '</p>';
 
     var amtEl = document.createElement("span");
-    amtEl.className = "expense-amount";
-    amtEl.textContent = "-" + formatPhp(expense.amount);
+    amtEl.className = "shrink-0 font-display text-base font-black";
+    amtEl.style.color = "#102b1d";
+    amtEl.textContent = "\u2212" + formatPhp(expense.amount);
 
     var delBtn = document.createElement("button");
     delBtn.type = "button";
-    delBtn.className = "expense-delete-btn";
+    delBtn.className = "ml-1 grid h-8 w-8 shrink-0 place-items-center rounded-full transition";
+    delBtn.style.color = "#b0b8b0";
     delBtn.setAttribute("aria-label", "Remove expense");
-    delBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    delBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     delBtn.addEventListener("click", (function (exp) {
       return function () { showUndoToast(exp); };
     }(expense)));
 
-    li.appendChild(chipEl);
-    li.appendChild(infoEl);
-    li.appendChild(amtEl);
-    li.appendChild(delBtn);
-    return li;
+    row.appendChild(iconEl);
+    row.appendChild(infoEl);
+    row.appendChild(amtEl);
+    row.appendChild(delBtn);
+    return row;
   }
 
   // ── render expense list ───────────────────────────────────
@@ -278,7 +292,7 @@
     var groups = groupByDate(visible);
     groups.forEach(function (group) {
       var section = document.createElement("div");
-      section.className = "activity-date-group";
+      section.className = "mb-4";
 
       var isExpanded = !!expandedGroupKeys[group.key];
       var shouldCollapse = group.items.length > DAY_COLLAPSE_LIMIT;
@@ -287,18 +301,21 @@
         : group.items;
       var hiddenCount = group.items.length - DAY_COLLAPSE_LIMIT;
 
+      // Date header
       var header = document.createElement("div");
-      header.className = "activity-date-header";
+      header.className = "mb-2 flex items-center justify-between";
 
-      var labelEl = document.createElement("p");
-      labelEl.className = "activity-date-label";
+      var labelEl = document.createElement("h2");
+      labelEl.className = "text-sm font-black";
+      labelEl.style.color = "#102b1d";
       labelEl.textContent = group.label;
       header.appendChild(labelEl);
 
       if (shouldCollapse) {
         var topToggleBtn = document.createElement("button");
         topToggleBtn.type = "button";
-        topToggleBtn.className = "activity-group-toggle-btn activity-group-toggle-btn--top";
+        topToggleBtn.className = "text-xs font-bold";
+        topToggleBtn.style.color = "#164f33";
         topToggleBtn.textContent = isExpanded ? "See less" : ("See " + hiddenCount + " more");
         topToggleBtn.setAttribute("aria-expanded", isExpanded ? "true" : "false");
         topToggleBtn.addEventListener("click", function () {
@@ -313,11 +330,13 @@
       }
       section.appendChild(header);
 
-      var ul = document.createElement("ul");
-      ul.className = "card-panel divide-y divide-slate-100";
-      visibleItems.forEach(function (exp) { ul.appendChild(buildExpenseRow(exp)); });
-
-      section.appendChild(ul);
+      // Expense rows container
+      var rowsEl = document.createElement("div");
+      rowsEl.className = "divide-y rounded-[1.5rem] bg-white px-4";
+      rowsEl.style.outline = "1px solid #ded7c6";
+      rowsEl.style.borderColor = "#f0ece0";
+      visibleItems.forEach(function (exp) { rowsEl.appendChild(buildExpenseRow(exp)); });
+      section.appendChild(rowsEl);
 
       listEl.appendChild(section);
     });
@@ -378,7 +397,155 @@
     renderAll();
   }
 
+  // ── weekly summary hero ──────────────────────────────────
+  function renderWeeklySummary() {
+    if (!window.StorageAPI) { return; }
+
+    // Compute this week's Monday
+    var now   = new Date();
+    var dow   = now.getDay(); // 0=Sun
+    var daysSinceMon = (dow === 0) ? 6 : dow - 1;
+    var weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - daysSinceMon);
+    weekStart.setHours(0, 0, 0, 0);
+
+    var expenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var weekExpenses = expenses.filter(function (e) {
+      return e.timestamp && new Date(e.timestamp) >= weekStart;
+    });
+    var weekTotal = weekExpenses.reduce(function (s, e) { return s + Number(e.amount || 0); }, 0);
+
+    var user = window.StorageAPI.getCurrentUser ? window.StorageAPI.getCurrentUser() : null;
+    var budget = (user && user.weeklyBudget) ? Number(user.weeklyBudget) : 0;
+
+    var info   = window.StorageAPI.getXpInfo ? window.StorageAPI.getXpInfo() : { xp: 0 };
+    var weekXp = (user && typeof user.weeklyXpStart === "number") ? Math.max(0, info.xp - user.weeklyXpStart) : 0;
+    var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
+
+    var fmtPHP = function (amt) {
+      return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(amt);
+    };
+
+    var spentEl    = document.getElementById("activityWeekSpent");
+    var budgetEl   = document.getElementById("activityWeekBudget");
+    var progressEl = document.getElementById("activityWeekProgress");
+    var logsEl     = document.getElementById("activityLogsCount");
+    var xpEl       = document.getElementById("activityWeekXpVal");
+    var streakEl   = document.getElementById("activityWeekStreakVal");
+
+    if (spentEl)    { spentEl.textContent    = fmtPHP(weekTotal); }
+    if (budgetEl)   { budgetEl.textContent   = fmtPHP(budget); }
+    if (progressEl) {
+      var pct = budget > 0 ? Math.min(100, Math.round((weekTotal / budget) * 100)) : 0;
+      progressEl.style.width = pct + "%";
+      progressEl.style.background = pct >= 90 ? "rgba(252,165,82,0.9)" : "rgba(255,255,255,0.85)";
+    }
+    if (logsEl)     { logsEl.textContent     = weekExpenses.length; }
+    if (xpEl)       { xpEl.textContent       = "+" + weekXp; }
+    if (streakEl)   { streakEl.textContent   = streak + " \uD83D\uDD25"; }
+  }
+
+  // ── tab switcher ─────────────────────────────────────────
+  function wireTabSwitcher() {
+    var btnExpenses = document.getElementById("tabExpenses");
+    var btnActivity = document.getElementById("tabActivity");
+    var panelExp    = document.getElementById("expensesTabPanel");
+    var panelAct    = document.getElementById("activityTabPanel");
+
+    if (!btnExpenses || !btnActivity) { return; }
+
+    function activateTab(tab) {
+      if (tab === "expenses") {
+        btnExpenses.style.background = "white";
+        btnExpenses.style.color      = "#102b1d";
+        btnExpenses.style.boxShadow  = "0 1px 4px rgba(0,0,0,0.1)";
+        btnActivity.style.background = "";
+        btnActivity.style.color      = "#657064";
+        btnActivity.style.boxShadow  = "";
+        if (panelExp) { panelExp.style.display = ""; }
+        if (panelAct) { panelAct.style.display = "none"; }
+      } else {
+        btnActivity.style.background = "white";
+        btnActivity.style.color      = "#102b1d";
+        btnActivity.style.boxShadow  = "0 1px 4px rgba(0,0,0,0.1)";
+        btnExpenses.style.background = "";
+        btnExpenses.style.color      = "#657064";
+        btnExpenses.style.boxShadow  = "";
+        if (panelAct) { panelAct.style.display = ""; }
+        if (panelExp) { panelExp.style.display = "none"; }
+        renderActivityFeed();
+      }
+    }
+
+    btnExpenses.addEventListener("click", function () { activateTab("expenses"); });
+    btnActivity.addEventListener("click", function () { activateTab("activity"); });
+  }
+
+  // ── activity feed ─────────────────────────────────────────
+  function renderActivityFeed() {
+    var feedEl = document.getElementById("activityFeedList");
+    if (!feedEl || !window.StorageAPI) { return; }
+
+    var events = [];
+
+    // Add recent expenses as events
+    var expenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var recent   = expenses.slice().sort(function (a, b) { return new Date(b.timestamp) - new Date(a.timestamp); }).slice(0, 10);
+    recent.forEach(function (e) {
+      var meta = getCategoryMeta(e.category);
+      events.push({
+        icon: meta.emoji || "\uD83D\uDCB8",
+        title: meta.label || e.category,
+        detail: formatPhp(e.amount) + " spent",
+        time: new Date(e.timestamp).toLocaleDateString("en-PH", { month: "short", day: "numeric" }) + " \u00B7 " + formatTime(e.timestamp),
+        featured: false
+      });
+    });
+
+    // Add level info as a featured event
+    if (window.StorageAPI.getXpInfo) {
+      var info2 = window.StorageAPI.getXpInfo();
+      events.unshift({
+        icon: "\u26A1",
+        title: info2.levelName + " \u2014 Level " + info2.level,
+        detail: info2.xp + " XP total \u00B7 " + info2.progressPct + "% to next level",
+        time: "Current status",
+        featured: true
+      });
+    }
+
+    if (events.length === 0) {
+      feedEl.innerHTML = '<div class="rounded-[2rem] bg-white p-5 text-center shadow-sm" style="outline:1px solid #ded7c6">' +
+        '<p class="font-display text-base font-black" style="color:#102b1d">No activity yet</p>' +
+        '<p class="mt-1 text-sm font-semibold" style="color:#617063">Start logging expenses to see your feed.</p>' +
+        '</div>';
+      return;
+    }
+
+    feedEl.innerHTML = events.map(function (ev) {
+      var bg = ev.featured ? "#edf7ef" : "white";
+      var outline = ev.featured ? "" : "outline:1px solid #ded7c6";
+      return '<div class="flex items-center gap-4 rounded-[2rem] p-5 shadow-sm" style="background:' + bg + ';' + outline + '">' +
+        '<div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white text-2xl shadow-sm">' + ev.icon + '</div>' +
+        '<div class="min-w-0 flex-1">' +
+          '<p class="font-display text-base font-black" style="color:#102b1d">' + escapeHtml(ev.title) + '</p>' +
+          '<p class="text-sm font-semibold" style="color:#617063">' + escapeHtml(ev.detail) + '</p>' +
+          '<p class="mt-1 text-xs font-bold uppercase tracking-[0.16em]" style="color:#7b837b">' + escapeHtml(ev.time) + '</p>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+
   // ── wire period chips ─────────────────────────────────────
+  function applyPeriodChipStyles() {
+    var chips = document.querySelectorAll("[data-period]");
+    chips.forEach(function (b) {
+      var isActive = b.getAttribute("data-period") === activePeriod;
+      b.style.background = isActive ? "#164f33" : "#f4f0e5";
+      b.style.color      = isActive ? "white"   : "#526257";
+    });
+  }
+
   function wirePeriodChips() {
     var chips = document.querySelectorAll("[data-period]");
     chips.forEach(function (btn) {
@@ -386,11 +553,11 @@
         activePeriod   = btn.getAttribute("data-period");
         activeCategory = "all";
         resetExpandedGroups();
-        chips.forEach(function (b) { b.classList.remove("active"); });
-        btn.classList.add("active");
+        applyPeriodChipStyles();
         renderAll();
       });
     });
+    applyPeriodChipStyles();
   }
 
   // ── wire search ───────────────────────────────────────────
@@ -432,8 +599,10 @@
     buildCategoryMap();
     allExpenses = window.StorageAPI.getExpenses();
 
+    wireTabSwitcher();
     wirePeriodChips();
     wireSearch();
+    renderWeeklySummary();
     renderAll();
     renderXpMiniBar();
 
@@ -443,8 +612,16 @@
       activePeriod   = "all";
       activeCategory = "all";
       resetExpandedGroups();
+      applyPeriodChipStyles();
+      renderWeeklySummary();
       renderAll();
       renderXpMiniBar();
+    });
+
+    window.addEventListener("sugbocents:dataChanged", function () {
+      allExpenses = window.StorageAPI.getExpenses();
+      renderWeeklySummary();
+      renderAll();
     });
   });
 })();

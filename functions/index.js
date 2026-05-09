@@ -12,14 +12,15 @@ const ALLOWED_ORIGINS = [
 
 // ── Server-side rate limiter (in-memory, per IP) ──────────
 // Resets on cold start — acts as a burst guard, not a hard quota.
-var ipRequestLog = {};
-var RATE_LIMIT_MAX    = 30;   // max requests
+var ipRequestLog      = {};
+var emojiRequestLog   = {};
+var RATE_LIMIT_MAX    = 30;    // chat: 30 req/hr per IP
+var EMOJI_LIMIT_MAX   = 100;   // emojiSuggest: 100 req/hr per IP
 var RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in ms
 
 function isRateLimited(ip) {
   var now = Date.now();
   if (!ipRequestLog[ip]) { ipRequestLog[ip] = []; }
-  // Evict timestamps outside the window
   ipRequestLog[ip] = ipRequestLog[ip].filter(function (t) {
     return now - t < RATE_LIMIT_WINDOW;
   });
@@ -28,14 +29,27 @@ function isRateLimited(ip) {
   return false;
 }
 
+function isEmojiRateLimited(ip) {
+  var now = Date.now();
+  if (!emojiRequestLog[ip]) { emojiRequestLog[ip] = []; }
+  emojiRequestLog[ip] = emojiRequestLog[ip].filter(function (t) {
+    return now - t < RATE_LIMIT_WINDOW;
+  });
+  if (emojiRequestLog[ip].length >= EMOJI_LIMIT_MAX) { return true; }
+  emojiRequestLog[ip].push(now);
+  return false;
+}
+
 // Periodically clean up stale IP entries to prevent memory leak
 setInterval(function () {
   var now = Date.now();
-  Object.keys(ipRequestLog).forEach(function (ip) {
-    ipRequestLog[ip] = (ipRequestLog[ip] || []).filter(function (t) {
-      return now - t < RATE_LIMIT_WINDOW;
+  [ipRequestLog, emojiRequestLog].forEach(function (log) {
+    Object.keys(log).forEach(function (ip) {
+      log[ip] = (log[ip] || []).filter(function (t) {
+        return now - t < RATE_LIMIT_WINDOW;
+      });
+      if (log[ip].length === 0) { delete log[ip]; }
     });
-    if (ipRequestLog[ip].length === 0) { delete ipRequestLog[ip]; }
   });
 }, 15 * 60 * 1000); // run every 15 minutes
 
@@ -109,6 +123,85 @@ exports.chat = onRequest(
       if (!reply) { res.status(502).json({ error: "Empty reply from model." }); return; }
 
       res.json({ reply: reply });
+    } catch (e) {
+      res.status(500).json({ error: e.message || "Internal server error." });
+    }
+  }
+);
+
+// ── emojiSuggest ── returns {emoji, category} for a given expense name ────────
+// Understands English, Filipino, and Bisaya/Cebuano.
+// Deploy: firebase deploy --only functions
+exports.emojiSuggest = onRequest(
+  { secrets: [GROQ_API_KEY], region: "us-central1", invoker: "public" },
+  async (req, res) => {
+    var origin = req.headers.origin || "";
+    if (ALLOWED_ORIGINS.indexOf(origin) !== -1) {
+      res.set("Access-Control-Allow-Origin", origin);
+    }
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST")   { res.status(405).json({ error: "Method Not Allowed" }); return; }
+
+    var clientIp = (req.headers["x-forwarded-for"] || req.ip || "unknown").split(",")[0].trim();
+    if (isEmojiRateLimited(clientIp)) {
+      res.status(429).json({ error: "Rate limited." });
+      return;
+    }
+
+    var name = ((req.body && req.body.name) || "").trim().substring(0, 80);
+    if (!name) { res.status(400).json({ error: "name is required." }); return; }
+
+    var systemPrompt =
+      "You are an emoji picker for a Filipino budgeting app. Given an expense name " +
+      "(may be English, Filipino, or Bisaya/Cebuano), reply ONLY with valid JSON on one line: " +
+      "{\"emoji\":\"🍚\",\"category\":\"food\"}. " +
+      "Valid categories: food, transport, groceries, health, education, utilities, personal_care, " +
+      "shopping, entertainment, other. No explanation, no markdown, nothing else.";
+
+    try {
+      var groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + GROQ_API_KEY.value(),
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-8b-instant",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user",   content: name }
+          ],
+          max_tokens: 30,
+          temperature: 0
+        })
+      });
+
+      if (!groqRes.ok) {
+        res.status(502).json({ error: "Groq error " + groqRes.status + "." });
+        return;
+      }
+
+      var data = await groqRes.json();
+      var raw  = (data.choices && data.choices[0] &&
+                  data.choices[0].message && data.choices[0].message.content) || "";
+      raw = raw.trim();
+
+      // Parse JSON — gracefully handle any extra text the model may emit
+      var parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (e) {
+        var m = raw.match(/\{[^}]+\}/);
+        try { parsed = m ? JSON.parse(m[0]) : null; } catch (e2) { parsed = null; }
+      }
+
+      res.json({
+        emoji:    (parsed && parsed.emoji)    || "\u{1F9FE}",
+        category: (parsed && parsed.category) || "other"
+      });
     } catch (e) {
       res.status(500).json({ error: e.message || "Internal server error." });
     }
