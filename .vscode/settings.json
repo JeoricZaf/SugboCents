@@ -1,3 +1,4 @@
 {
-    "chat.tools.terminal.blockDetectedFileWrites": "never"
+    "chat.tools.terminal.blockDetectedFileWrites": "never",
+    "liveServer.settings.port": 5501
 }

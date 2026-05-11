@@ -318,7 +318,7 @@
         });
       }
 
-
+/* FOR NOW THIS IS DISABLED UNTIL i can integrate the mascot properly
 
   // ── Init ─────────────────────────────────────────────────
   function init() {
@@ -388,6 +388,7 @@
   };
 })();
 
+*/
 
 
 //MASCTOT ANIMATIONS IN DASHBOARD-------------------------------
