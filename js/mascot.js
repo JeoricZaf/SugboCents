@@ -392,21 +392,32 @@
 
 
 
-
+  
 //MASCTOT ANIMATIONS IN DASHBOARD-------------------------------
+
+// var mascotImg = document.getElementById("dashboardMascotImg");
+var mascotImg = document.getElementById("mascot-img-itself");
+  var speechBubble = document.getElementById("mascotSpeechBubble"); //move back inside event listener later
+var fullBodyGifs = [
+    "assets/images/mascot/fullbody-wave.gif",
+    "assets/images/mascot/fullbody-dance1.gif",
+    "assets/images/mascot/fullbody-dance2.gif",
+    "assets/images/mascot/fullbody-cheer.gif",
+    "assets/images/mascot/fullbody-shocked1.gif"
+  ];
+
 document.addEventListener("DOMContentLoaded", function() {
-  var mascotImg = document.getElementById("dashboardMascotImg");
-  var speechBubble = document.getElementById("mascotSpeechBubble");
+  console.log("DOM Content loaded");
   
   if (!mascotImg || !speechBubble) return; // Exit if not on the dashboard
 
   // 📝 Update these paths with your actual GIF files!
   var fullBodyGifs = [
     "assets/images/mascot/fullbody-wave.gif",
-    "assets/images/mascot/fullbody-sleepy.gif",
-    "assets/images/mascot/fullbody-shocked.gif",
-    "assets/images/mascot/fullbody-confused.gif",
-    "assets/images/mascot/fullbody-dance.gif"
+    "assets/images/mascot/fullbody-dance1.gif",
+    "assets/images/mascot/fullbody-dance2.gif",
+    "assets/images/mascot/fullbody-cheer.gif",
+    "assets/images/mascot/fullbody-shocked1.gif"
   ];
   
   // 💬 Random encouraging messages
@@ -454,4 +465,52 @@ document.addEventListener("DOMContentLoaded", function() {
   mascotImg.addEventListener("click", function() {
     interactWithMascot(true);
   });
+
+
+
 });
+
+
+
+  function playRandomMascot() {
+    // var choices = [fullBodyGifs.wave, fullBodyGifs.sleepy, fullBodyGifs.confused, fullBodyGifs.dance];
+    var choices = [fullBodyGifs[0], fullBodyGifs[1], fullBodyGifs[2], fullBodyGifs[3] ];
+    // var choices = [fullybody-cheer, fullbody-dance1, fullBodyGifs.sleepy, fullBodyGifs.confused, fullBodyGifs.dance];
+    var randomGif = choices[Math.floor(Math.random() * choices.length)];
+
+    mascotImg.src = randomGif;
+    // setMascotImage(randomGif);
+    // mascotWrapper.classList.remove("dashboard-alert-active");
+    // hideBubble();
+  }
+
+  function setMascotImage(src) {
+    // mascotImg.src = src + "?t=" + new Date().getTime();
+
+  }
+
+  
+  function interactWithMascot(isClick) {
+    // var state = getBudgetState();
+
+    // if (state === "alarmed") {
+    //   playAlertMascot(isClick !== false);
+    //   return;
+    // }
+
+    console.log("Mascot was clicked");
+    playRandomMascot();
+
+    // if (isClick) {
+    //   var randomMsg = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
+    //   showBubble(randomMsg, false);
+    // }
+  }
+
+  
+  mascotImg.addEventListener("click", function() {
+    interactWithMascot(true);
+  });
+
+
+  
