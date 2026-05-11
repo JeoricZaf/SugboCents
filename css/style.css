@@ -8356,3 +8356,105 @@ html { background: #f7f3e8; }
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
+/* ── AI tip card (dashboard) ───────────────────────────── */
+.ai-tip-card {
+  border-radius: 2rem;
+  background: #ffffff;
+  padding: 1.25rem 1.5rem;
+  outline: 1px solid #ded7c6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.ai-tip-card.ai-tip-card--loading { opacity: 0.75; }
+.ai-tip-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.ai-tip-eyebrow {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #6b756c;
+  margin: 0 0 0.35rem;
+}
+.ai-tip-title {
+  font-family: "Sora", "Plus Jakarta Sans", ui-sans-serif, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #102b1d;
+  margin: 0;
+}
+.ai-tip-source {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: #edf7ef;
+  color: #1f6b46;
+  white-space: nowrap;
+}
+.ai-tip-source.ai-tip-source--local {
+  background: #fef3c7;
+  color: #92400e;
+}
+.ai-tip-body {
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #5f6f63;
+  line-height: 1.55;
+}
+.ai-tip-actions {
+  margin-top: 0.9rem;
+  display: flex;
+  align-items: center;
+}
+.ai-tip-why-btn {
+  border: 1px solid #d8d1bd;
+  background: transparent;
+  color: #164f33;
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.ai-tip-why-btn:hover { background: #f7f3e8; }
+.ai-tip-why-summary {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #526b57;
+  margin: 0 0 0.75rem;
+}
+.ai-tip-why-list {
+  display: grid;
+  gap: 0.5rem;
+}
+.ai-tip-why-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: 0.9rem;
+  background: #f7f3e8;
+  padding: 0.5rem 0.75rem;
+}
+.ai-tip-why-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6b756c;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.ai-tip-why-value {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #102b1d;
+  text-align: right;
+}
+

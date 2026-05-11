@@ -297,6 +297,7 @@
       user.dailyXpLog = { dateKey: getLocalDateKey(), xpFromLogging: 0 };
     }
     if (typeof user.level !== "number") { user.level = 1; }
+    if (user.lastRecommendationTip === undefined) { user.lastRecommendationTip = null; }
     // Sprint 3 quest fields
     if (user.activeQuest === undefined) { user.activeQuest = null; }
     if (!Array.isArray(user.questHistory)) { user.questHistory = []; }
@@ -608,6 +609,7 @@
         dailyXpLog: { dateKey: getLocalDateKey(), xpFromLogging: 0 },
         goals: [],
         preferences: {},
+        lastRecommendationTip: null,
         createdAt: nowIso()
       });
 
@@ -793,6 +795,7 @@
       dailyXpLog: { dateKey: getLocalDateKey(), xpFromLogging: 0 },
       goals: [],
       preferences: {},
+      lastRecommendationTip: null,
       createdAt: nowIso()
     };
 
@@ -1333,6 +1336,7 @@
     user.quickAddItems = [];
     user.goals = [];
     user.preferences = {};
+    user.lastRecommendationTip = null;
     user.xp = 0;
     user.level = 1;
     user.unlockedAchievements = [];
@@ -1503,6 +1507,33 @@
     for (var i = 0; i < keys.length; i++) {
       user.preferences[keys[i]] = prefs[keys[i]];
     }
+    saveStore(store);
+    return { ok: true };
+  }
+
+  function getRecommendationTip() {
+    var store = loadStore();
+    if (!store.session) { return null; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return null; }
+    return user.lastRecommendationTip ? JSON.parse(JSON.stringify(user.lastRecommendationTip)) : null;
+  }
+
+  function saveRecommendationTip(tip) {
+    if (!tip || typeof tip !== "object") {
+      return { ok: false, error: "Tip is required." };
+    }
+    var store = loadStore();
+    if (!store.session) { return { ok: false, error: "No active session." }; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return { ok: false, error: "User not found." }; }
+    user.lastRecommendationTip = {
+      title: String(tip.title || ""),
+      body: String(tip.body || ""),
+      source: String(tip.source || "local"),
+      timestamp: Number(tip.timestamp) || Date.now(),
+      context: tip.context || null
+    };
     saveStore(store);
     return { ok: true };
   }
@@ -2326,6 +2357,8 @@
     updateUserProfile: updateUserProfile,
     getPreferences: getPreferences,
     savePreferences: savePreferences,
+    getRecommendationTip: getRecommendationTip,
+    saveRecommendationTip: saveRecommendationTip,
     getGoals: getGoals,
     addGoal: addGoal,
     updateGoalProgress: updateGoalProgress,
