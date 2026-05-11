@@ -386,9 +386,11 @@
     open: openPanel,
     close: closePanel
   };
+
+  */
 })();
 
-*/
+
 
 
 //MASCTOT ANIMATIONS IN DASHBOARD-------------------------------
