@@ -297,6 +297,7 @@
     var bodyEl = document.getElementById("aiTipBody");
     var sourceEl = document.getElementById("aiTipSource");
     var whyBtn = document.getElementById("aiTipWhyBtn");
+    var refreshBtn = document.getElementById("aiTipRefreshBtn");
 
     if (card) {
       card.classList.remove("ai-tip-card--loading");
@@ -306,6 +307,7 @@
       if (titleEl) { titleEl.textContent = "Tip unavailable"; }
       if (bodyEl) { bodyEl.textContent = "Check your connection or try again later."; }
       if (sourceEl) { sourceEl.textContent = "Offline"; }
+      if (refreshBtn) { refreshBtn.disabled = false; }
       return;
     }
 
@@ -322,6 +324,7 @@
       }
     }
     if (whyBtn) { whyBtn.disabled = false; }
+    if (refreshBtn) { refreshBtn.disabled = false; }
   }
 
   function renderLoading() {
@@ -330,6 +333,7 @@
     var bodyEl = document.getElementById("aiTipBody");
     var sourceEl = document.getElementById("aiTipSource");
     var whyBtn = document.getElementById("aiTipWhyBtn");
+    var refreshBtn = document.getElementById("aiTipRefreshBtn");
 
     if (card) {
       card.classList.add("ai-tip-card--loading");
@@ -338,6 +342,7 @@
     if (bodyEl) { bodyEl.textContent = "Tigom is crafting advice based on your latest logs."; }
     if (sourceEl) { sourceEl.textContent = "Working"; }
     if (whyBtn) { whyBtn.disabled = true; }
+    if (refreshBtn) { refreshBtn.disabled = true; }
   }
 
   function buildWhySummary(context) {
@@ -429,6 +434,7 @@
 
   function wireModal() {
     var whyBtn = document.getElementById("aiTipWhyBtn");
+    var refreshBtn = document.getElementById("aiTipRefreshBtn");
     var closeBtn = document.getElementById("aiTipWhyClose");
     var ctaBtn = document.getElementById("aiTipWhyCta");
 
@@ -447,6 +453,12 @@
 
     if (ctaBtn) {
       ctaBtn.addEventListener("click", closeWhyModal);
+    }
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener("click", function () {
+        loadTip({ forceRefresh: true });
+      });
     }
   }
 

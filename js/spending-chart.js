@@ -141,8 +141,12 @@
 
         var color = CATEGORY_COLORS[cat] || DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
 
-        // Bar
-        chartHtml += '<rect x="' + (xPos + 2) + '" y="' + barY + '" width="32" height="' + barHeight + '" fill="' + color + '" rx="3" ry="3" />';
+        // Bar (animated via scaleY)
+        chartHtml += '<rect x="' + (xPos + 2) + '" y="' + barY + '" width="32" height="' + barHeight + '" fill="' + color + '" rx="3" ry="3" ' +
+          'style="transform-origin: center ' + (barY + barHeight) + 'px; transform: scaleY(0); transition: transform 700ms cubic-bezier(.2,.9,.2,1);" ' +
+          'data-amount="' + amount + '">' +
+          '<title>' + escapeHtml(cat) + ': ' + formatPhp(amount) + '</title>' +
+          '</rect>';
 
         // Category label below bar with dynamic sizing and wrapping
         var categoryFontSize = "8px";
@@ -175,7 +179,7 @@
 
         // Amount label on bar
         if (barHeight > 25) {
-          chartHtml += '<text x="' + (xPos + 18) + '" y="' + (barY + barHeight / 2 + 3) + '" font-weight="700" text-anchor="middle" fill="#1f6b46" style="font-size: ' + verticalAmountFontSize + ';">';
+          chartHtml += '<text x="' + (xPos + 18) + '" y="' + (barY + barHeight / 2 + 3) + '" font-weight="700" text-anchor="middle" fill="#0f5132" style="font-size: ' + verticalAmountFontSize + ';">';
           chartHtml += formatPhp(amount);
           chartHtml += '</text>';
         }
@@ -195,17 +199,21 @@
 
         var color = CATEGORY_COLORS[cat] || DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
 
-        // Category label (left)
-        chartHtml += '<text x="5" y="' + (yPos + 13) + '" font-weight="600" fill="#0f172a" style="font-size: 8px;">';
+          // Category label (left)
+          chartHtml += '<text x="5" y="' + (yPos + 13) + '" font-weight="600" fill="#0f172a" style="font-size: 10px;">';
         chartHtml += escapeHtml(cat.substring(0, 20));
         chartHtml += '</text>';
 
-        // Bar
-        chartHtml += '<rect x="110" y="' + (yPos + 2) + '" width="' + barWidth + '" height="18" fill="' + color + '" rx="3" ry="3" />';
+        // Bar (animated via scaleX)
+        chartHtml += '<rect x="110" y="' + (yPos + 2) + '" width="' + barWidth + '" height="18" fill="' + color + '" rx="3" ry="3" ' +
+          'style="transform-origin: 110px ' + (yPos + 11) + 'px; transform: scaleX(0); transition: transform 700ms cubic-bezier(.2,.9,.2,1);" ' +
+          'data-amount="' + amount + '">' +
+          '<title>' + escapeHtml(cat) + ': ' + formatPhp(amount) + '</title>' +
+          '</rect>';
 
         // Amount label on bar
         if (barWidth > 40) {
-          chartHtml += '<text x="' + (110 + barWidth / 2) + '" y="' + (yPos + 13) + '" font-weight="700" text-anchor="middle" fill="#1f6b46" style="font-size: 7px;">';
+          chartHtml += '<text x="' + (110 + barWidth / 2) + '" y="' + (yPos + 13) + '" font-weight="700" text-anchor="middle" fill="#0f5132" style="font-size: 9px;">';
           chartHtml += formatPhp(amount);
           chartHtml += '</text>';
         }
@@ -230,6 +238,18 @@
     legendHtml += '</div>';
 
     container.innerHTML = chartHtml + legendHtml;
+
+    // Trigger entrance animation for bars
+    requestAnimationFrame(function () {
+      var svg = container.querySelector('.spending-chart-svg');
+      if (!svg) { return; }
+      // Animate rects by setting transform to identity
+      svg.querySelectorAll('rect').forEach(function (r) {
+        try {
+          r.style.transform = (r.style.transform.indexOf('scaleY') !== -1) ? 'scaleY(1)' : 'scaleX(1)';
+        } catch (e) { /* ignore */ }
+      });
+    });
   }
 
   // ── public API ───────────────────────────────────────────

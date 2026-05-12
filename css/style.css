@@ -8414,6 +8414,8 @@ html { background: #f7f3e8; }
   margin-top: 0.9rem;
   display: flex;
   align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 .ai-tip-why-btn {
   border: 1px solid #d8d1bd;
@@ -8426,6 +8428,21 @@ html { background: #f7f3e8; }
   cursor: pointer;
 }
 .ai-tip-why-btn:hover { background: #f7f3e8; }
+.ai-tip-refresh-btn {
+  border: 1px solid #164f33;
+  background: #164f33;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.ai-tip-refresh-btn:hover { background: #1f6b46; }
+.ai-tip-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .ai-tip-why-summary {
   font-size: 0.9rem;
   font-weight: 600;
@@ -8457,4 +8474,153 @@ html { background: #f7f3e8; }
   color: #102b1d;
   text-align: right;
 }
+
+/* ── Chart Containers (Stats Page) ────────────────────────── */
+#summaryMetricsContainer,
+#progressDonutContainer,
+#spendingChartContainer,
+#categoryBreakdownContainer,
+#dailyTrendContainer,
+#weekComparisonContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Canvas/SVG chart styling */
+#summaryMetricsContainer canvas,
+#progressDonutContainer canvas,
+#spendingChartContainer canvas,
+#categoryBreakdownContainer canvas,
+#dailyTrendContainer canvas,
+#weekComparisonContainer canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Chart card hover effect */
+#summaryMetricsContainer,
+#progressDonutContainer,
+#spendingChartContainer,
+#categoryBreakdownContainer,
+#dailyTrendContainer,
+#weekComparisonContainer {
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Ensure proper spacing for chart labels */
+.material-icons {
+  vertical-align: middle;
+  display: inline-block;
+}
+
+/* Metric grid styling for summary metrics */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1rem;
+}
+
+.metric-item {
+  text-align: center;
+  padding: 0.75rem;
+  border-radius: 1rem;
+  background: #f7f3e8;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6b756c;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+
+.metric-value {
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #164f33;
+}
+
+.metric-unit {
+  font-size: 0.65rem;
+  color: #8b9c93;
+  font-weight: 600;
+  margin-left: 0.2rem;
+}
+
+/* Micro-interactions and polish for gamified metrics */
+.metric-item {
+  position: relative;
+  overflow: visible;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+.metric-item:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 30px rgba(16,43,29,0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbf6 100%);
+}
+.metric-item::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 0 4px transparent;
+  transition: background 180ms ease, box-shadow 180ms ease;
+}
+.metric-item.metric-success::after { background: #d1fae5; box-shadow: 0 0 0 6px rgba(34,197,94,0.06); }
+.metric-item.metric-warning::after { background: #fff3cd; box-shadow: 0 0 0 6px rgba(250,204,21,0.06); }
+.metric-item.metric-danger::after { background: #fee2e2; box-shadow: 0 0 0 6px rgba(239,68,68,0.06); }
+
+.metric-value { display: flex; align-items: baseline; justify-content: center; gap: 0.4rem; }
+
+/* Small sparkline placeholder inside metric card */
+.metric-sparkline { height: 28px; width: 100%; display: block; margin-top: 8px; }
+
+@media (min-width: 1024px) {
+  .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Simple tooltip using data-tooltip attribute */
+.metric-item[data-tooltip] { position: relative; }
+.metric-item[data-tooltip]::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px) scale(0.98);
+  bottom: calc(100% + 8px);
+  white-space: nowrap;
+  background: rgba(16,43,29,0.95);
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease, transform 150ms ease;
+  z-index: 40;
+}
+.metric-item[data-tooltip]:hover::before { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+
+/* Highlight target section when a metric is clicked */
+.target-highlight {
+  outline: 4px solid rgba(37,99,235,0.12);
+  box-shadow: 0 8px 30px rgba(16,43,29,0.06);
+  transition: outline 220ms ease, box-shadow 220ms ease;
+}
+
+/* Spending chart visual tweaks */
+.spending-chart-svg rect { will-change: transform; }
+.spending-chart-svg text { font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; }
+.spending-chart-empty { text-align:center; padding:2.25rem; color:#6b756c }
+.spending-chart-empty-icon { font-size:2.25rem; margin-bottom:0.5rem }
+.spending-chart-empty-text { font-weight:700 }
+.spending-chart-legend { display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem }
+.spending-chart-legend .legend-item { display:flex; align-items:center; gap:0.5rem; font-size:0.85rem }
 

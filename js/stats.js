@@ -77,6 +77,137 @@
       '</div>';
   }
 
+  // ── Summary metrics (gamified) ──────────────────────────
+  function renderSummaryMetrics() {
+    var container = document.getElementById("summaryMetricsContainer");
+    if (!container || !window.StorageAPI) { return; }
+
+    var summary = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : { weeklyBudget: 0, totalSpentThisWeek: 0, remaining: 0, percentageSpent: 0 };
+    var expenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var totalCount = (expenses || []).length;
+
+    // Helper: build small sparkline SVG from numeric array
+    function makeSparkline(values, stroke) {
+      stroke = stroke || '#164f33';
+      if (!values || values.length === 0) { return '';
+      }
+      var w = 120, h = 28, pad = 2;
+      var max = Math.max.apply(null, values.concat([1]));
+      var min = Math.min.apply(null, values.concat([0]));
+      var span = Math.max(1, max - min);
+      var pts = values.map(function (v, i) {
+        var x = pad + (i / (values.length - 1 || 1)) * (w - pad * 2);
+        var y = pad + (1 - ((v - min) / span)) * (h - pad * 2);
+        return x + ',' + y;
+      }).join(' ');
+      var svg = '<svg class="metric-sparkline" viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+        '<polyline points="' + pts + '" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.95" />' +
+        '</svg>';
+      return svg;
+    }
+
+    // Build 7-day totals for sparklines (Mon..Sun of current week)
+    var now = new Date();
+    var dayOfWeek = now.getDay();
+    var monday = new Date(now);
+    monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+    monday.setHours(0,0,0,0);
+    var dayTotals = [0,0,0,0,0,0,0];
+    (expenses || []).forEach(function (e) {
+      var d = new Date(e.timestamp);
+      if (d >= monday) {
+        var idx = Math.floor((d - monday) / (24 * 3600 * 1000));
+        if (idx >= 0 && idx < 7) { dayTotals[idx] += Number(e.amount || 0); }
+      }
+    });
+
+    // Top category calculation
+    var catTotals = {};
+    (expenses || []).forEach(function (e) {
+      var id = e.category || 'others';
+      catTotals[id] = (catTotals[id] || 0) + Number(e.amount || 0);
+    });
+    var topCat = null, topAmt = 0;
+    Object.keys(catTotals).forEach(function (k) { if (catTotals[k] > topAmt) { topAmt = catTotals[k]; topCat = k; } });
+    var catLabel = topCat || '—';
+    if (window.StorageAPI.getExpenseCategories) {
+      var cats = window.StorageAPI.getExpenseCategories() || [];
+      var found = cats.find(function (c) { return c.id === topCat; });
+      if (found) { catLabel = found.label; }
+    }
+
+    var daysElapsed = Math.max(1, Math.floor((new Date() - monday) / (24 * 3600 * 1000)) + 1);
+    var dailyAvg = summary.totalSpentThisWeek ? (summary.totalSpentThisWeek / daysElapsed) : 0;
+
+    // XP this week
+    var xpInfo = window.StorageAPI.getXpInfo ? window.StorageAPI.getXpInfo() : { xp: 0, progressPct: 0 };
+    var user = window.StorageAPI.getUser ? window.StorageAPI.getUser() : null;
+    var xpWeek = xpInfo.xp;
+    if (user && typeof user.weeklyXpStart === 'number') { xpWeek = Math.max(0, xpInfo.xp - (user.weeklyXpStart || 0)); }
+    var sentimos = window.StorageAPI.getSentimosBalance ? window.StorageAPI.getSentimosBalance() : 0;
+
+    // Helper to create metric card markup with optional sparkline and tooltip
+    function metricCard(opts) {
+      var cls = 'metric-item' + (opts.cls ? ' ' + opts.cls : '');
+      var tooltip = opts.tooltip ? ' data-tooltip="' + escapeHtml(opts.tooltip) + '"' : '';
+      var targetAttr = opts.target ? ' data-target="' + escapeHtml(opts.target) + '"' : '';
+      var spark = opts.spark ? makeSparkline(opts.spark, opts.sparkColor) : '';
+      return '<div class="' + cls + '"' + tooltip + targetAttr + ' role="button" tabIndex="0">' +
+        '<div class="metric-label">' + escapeHtml(opts.label) + '</div>' +
+        '<div class="metric-value">' + (opts.valueHtml || escapeHtml(String(opts.value || '—'))) + '</div>' +
+        (opts.unit ? '<div class="metric-unit">' + escapeHtml(opts.unit) + '</div>' : '') +
+        (spark ? '<div class="metric-sparkline-wrap">' + spark + '</div>' : '') +
+      '</div>';
+    }
+
+    // Determine classes based on thresholds
+    var pct = summary.percentageSpent || 0;
+    var budgetCls = pct >= 90 ? 'metric-danger' : (pct >= 70 ? 'metric-warning' : 'metric-success');
+    var dailyThreshold = summary.weeklyBudget ? (summary.weeklyBudget / 7) * 1.2 : Infinity;
+    var dailyCls = (dailyAvg > dailyThreshold) ? 'metric-warning' : 'metric-success';
+    var logsCls = totalCount >= 10 ? 'metric-success' : '';
+    var xpCls = xpWeek >= 150 ? 'metric-success' : '';
+    var sentimosCls = (sentimos || 0) > 0 ? 'metric-success' : '';
+
+    var html = '<div class="metrics-grid">';
+
+    html += metricCard({ label: 'This week', valueHtml: '₱' + (summary.totalSpentThisWeek || 0).toLocaleString('en-PH'), unit: (summary.percentageSpent || 0) + '% of budget', spark: dayTotals, sparkColor: '#164f33', cls: pct >= 90 ? 'metric-danger' : '' , tooltip: 'Total spent this week. Click a chart for more details.', target: '#spendingChartContainer' });
+
+    html += metricCard({ label: 'Budget left', valueHtml: '₱' + (summary.remaining || 0).toLocaleString('en-PH'), unit: '', cls: budgetCls, spark: [summary.weeklyBudget - (summary.remaining || 0)], sparkColor: '#2b8259', tooltip: 'Remaining budget for the week. Stay under budget to earn Sentimos.', target: '#progressDonutContainer' });
+
+    html += metricCard({ label: 'Daily avg', valueHtml: '₱' + Math.round(dailyAvg).toLocaleString('en-PH'), unit: 'over ' + daysElapsed + ' day' + (daysElapsed > 1 ? 's' : ''), cls: dailyCls, spark: dayTotals, sparkColor: '#f59e0b', tooltip: 'Average spent per day this week', target: '#dailyTrendContainer' });
+
+    html += metricCard({ label: 'Top category', valueHtml: escapeHtml(catLabel), unit: '₱' + (topAmt ? topAmt.toLocaleString('en-PH') : '0'), cls: '', tooltip: 'Category with highest spend this week', target: '#categoryBreakdownContainer' });
+
+    html += metricCard({ label: 'XP this week', valueHtml: xpWeek + ' XP', unit: 'Progress: ' + (xpInfo.progressPct || 0) + '%', cls: xpCls, tooltip: 'Experience points earned this week', target: '#xpLevel' });
+
+    html += metricCard({ label: 'Sentimos', valueHtml: (sentimos || 0), unit: '💚 balance', cls: sentimosCls, tooltip: 'Currency earned from logging and milestones', target: '#sentimosBalance' });
+
+    html += metricCard({ label: 'Logs', valueHtml: totalCount, unit: '+5 XP / log', cls: logsCls, spark: dayTotals.map(function(v){ return v>0?1:0; }), sparkColor: '#7c3aed', tooltip: 'Number of expense logs', target: '#personalRecords' });
+
+    html += '</div>';
+
+    container.innerHTML = html;
+
+    // Wire click/keyboard handlers: scroll to target and highlight
+    container.querySelectorAll('.metric-item[data-target]').forEach(function (el) {
+      function activate() {
+        var t = el.getAttribute('data-target');
+        if (!t) { return; }
+        try {
+          var target = document.querySelector(t);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.classList.add('target-highlight');
+            setTimeout(function () { target.classList.remove('target-highlight'); }, 1800);
+          }
+        } catch (e) { /* ignore invalid selectors */ }
+      }
+      el.addEventListener('click', activate);
+      el.addEventListener('keyup', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { activate(); } });
+    });
+  }
+
   // ── Badge grid (Duolingo-style rarity system) ─────────────
 
   // Rarity tier → background color
@@ -341,21 +472,60 @@
     }
   }
 
+  // ── Gamification Resources (Sentimos + Savings) ──────────
+  function renderGameResources() {
+    var sentimosEl = document.getElementById("sentimosBalance");
+    var savingsEl  = document.getElementById("totalSavings");
+    var streakTextEl = document.getElementById("streakText");
+
+    if (!window.StorageAPI) { return; }
+
+    // Get Sentimos balance
+    var sentimos = 0;
+    if (window.StorageAPI.getSentimosBalance) {
+      sentimos = window.StorageAPI.getSentimosBalance();
+    }
+    if (sentimosEl) {
+      sentimosEl.textContent = sentimos;
+    }
+
+    // Get total savings (sum of all savings records)
+    var totalSavings = 0;
+    if (window.StorageAPI.getSavingsTotal) {
+      totalSavings = window.StorageAPI.getSavingsTotal();
+    }
+    if (savingsEl) {
+      savingsEl.textContent = "₱" + totalSavings.toLocaleString("en-PH");
+    }
+
+    // Update streak text with actual value
+    var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
+    if (streakTextEl && streak > 0) {
+      streakTextEl.textContent = streak + "-day streak";
+    }
+  }
+
   // ── init ──────────────────────────────────────────────────
   document.addEventListener("DOMContentLoaded", function () {
     renderXpWidget();
     renderPersonalRecords();
     renderBadgeGrid();
+    renderGameResources();
+    renderSummaryMetrics();
 
     window.addEventListener("sugbocents:synced", function () {
       renderXpWidget();
       renderPersonalRecords();
       renderBadgeGrid();
+      renderGameResources();
+      renderSummaryMetrics();
     });
     window.addEventListener("sugbocents:dataChanged", function () {
       renderXpWidget();
       renderPersonalRecords();
       renderBadgeGrid();
+      renderGameResources();
+      renderSummaryMetrics();
     });
   });
 })();
