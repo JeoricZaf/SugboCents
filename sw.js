@@ -1,4 +1,4 @@
-const CACHE_NAME = "sugbocents-shell-v120";
+const CACHE_NAME = "sugbocents-shell-v122";
 const SHELL_FILES = [
   "./",
   "index.html",
@@ -10,7 +10,7 @@ const SHELL_FILES = [
   "stats.html",
   "shop.html",
   "leaderboard.html",
-  "profile.html",
+  "shop.html",
   "achievements.html",
   "quests.html",
   "tigom.html",
@@ -27,6 +27,7 @@ const SHELL_FILES = [
   "js/firebase-auth-service.js",
   "js/firestore-service.js",
   "js/app.js",
+  "js/notifications.js",
   "js/gamification.js",
   "js/quests.js",
   "js/storage.js",
@@ -83,6 +84,33 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  const url = new URL(event.request.url);
+  const isHttp = url.protocol === "http:" || url.protocol === "https:";
+  const isSameOrigin = url.origin === self.location.origin;
+  const canCache = isHttp && isSameOrigin;
+  const isDocument = event.request.mode === "navigate" || event.request.destination === "document";
+  const isScript = event.request.destination === "script" || /\/js\/.+\.js$/i.test(url.pathname);
+
+  function maybeCache(request, response) {
+    if (!canCache || !response || response.status !== 200) {
+      return;
+    }
+    const copy = response.clone();
+    caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
+  }
+
+  if (isDocument || isScript) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          maybeCache(event.request, response);
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) {
@@ -94,10 +122,59 @@ self.addEventListener("fetch", (event) => {
           return response;
         }
 
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        maybeCache(event.request, response);
         return response;
       });
+    })
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let payload = {
+    title: "SugboCents",
+    body: "You have a new budget update.",
+    icon: "icons/icon-192.png",
+    badge: "icons/icon-192.png",
+    tag: "sugbocents-push",
+    url: "/dashboard.html"
+  };
+
+  if (event.data) {
+    try {
+      payload = Object.assign(payload, event.data.json());
+    } catch (error) {
+      payload.body = event.data.text();
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: payload.icon,
+      badge: payload.badge,
+      tag: payload.tag,
+      renotify: true,
+      data: { url: payload.url },
+      vibrate: [200, 100, 200]
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes("dashboard.html") && "focus" in client) {
+          return client.focus();
+        }
+      }
+
+      if (clients.openWindow) {
+        var targetUrl = event.notification.data && event.notification.data.url ? event.notification.data.url : "/dashboard.html";
+        return clients.openWindow(targetUrl);
+      }
     })
   );
 });

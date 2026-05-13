@@ -171,7 +171,7 @@
   }
 
   function scenarioOver() {
-    healthScenario(1.30, 100, "\ud83d\udd34 Over budget:", "over");
+    healthScenario(1.30, 100, "\ud83d\udd34 Overbudget:", "over");
   }
 
   // ── Streak scenarios: inject tagged dev expenses ───────────────────────────
@@ -215,7 +215,7 @@
     "ahead":       scenarioAhead,
     "ontrack":     scenarioOnTrack,
     "warn":        scenarioWarn,
-    "over":        scenarioOver,
+    "overbudget":  scenarioOver,
     "streak5":     scenarioStreak5,
     "streak-risk": scenarioAtRisk,
     "streak14":    scenarioStreak14,
@@ -297,7 +297,7 @@
           "<button class=\"dev-btn dev-btn--green\"  data-dev=\"ahead\">\ud83d\udcc8 Ahead of Pace</button>" +
           "<button class=\"dev-btn dev-btn--teal\"   data-dev=\"ontrack\">\u2713 On Track</button>" +
           "<button class=\"dev-btn dev-btn--amber\"  data-dev=\"warn\">\u26a0\ufe0f Watch Out</button>" +
-          "<button class=\"dev-btn dev-btn--red\"    data-dev=\"over\">\ud83d\udd34 Over Budget</button>" +
+          "<button class=\"dev-btn dev-btn--red\"    data-dev=\"overbudget\">\ud83d\udd34 Overbudget</button>" +
         "</div>" +
 
         "<div class=\"dev-sec\">Streak Badge</div>" +

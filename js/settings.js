@@ -140,6 +140,65 @@
     }
   }
 
+  function initBudgetNotificationSection() {
+    if (!window.StorageAPI) { return; }
+
+    var button = document.getElementById("budgetNotifEnableBtn");
+    var message = document.getElementById("budgetNotifMsg");
+    if (!button) { return; }
+
+    function refreshLabel() {
+      if (!window.Notification) {
+        button.textContent = "Unsupported";
+        button.disabled = true;
+        if (message) {
+          message.textContent = "Your browser does not support notifications.";
+          message.className = "mt-2 text-xs font-semibold text-red-700";
+          message.classList.remove("hidden");
+        }
+        return;
+      }
+
+      if (Notification.permission === "granted") {
+        button.textContent = "Enabled";
+      } else if (Notification.permission === "denied") {
+        button.textContent = "Blocked";
+      } else {
+        button.textContent = "Enable";
+      }
+    }
+
+    refreshLabel();
+
+    button.addEventListener("click", function () {
+      if (!window.NotificationService || !window.NotificationService.requestPermission) {
+        showMessage("budgetNotifMsg", "Notification service is unavailable.", true);
+        return;
+      }
+
+      window.NotificationService.requestPermission().then(function (permission) {
+        if (permission === "granted") {
+          window.StorageAPI.savePreferences({ budgetNotifications: true });
+          refreshLabel();
+          showMessage("budgetNotifMsg", "Budget notifications enabled.", false);
+          if (window.NotificationService.checkBudgetState) {
+            window.NotificationService.checkBudgetState();
+          }
+          return;
+        }
+
+        if (permission === "denied") {
+          window.StorageAPI.savePreferences({ budgetNotifications: false });
+          refreshLabel();
+          showMessage("budgetNotifMsg", "Notifications are blocked in this browser.", true);
+          return;
+        }
+
+        showMessage("budgetNotifMsg", "Notification permission was not changed.", true);
+      });
+    });
+  }
+
   function initBudgetAndAccountSection() {
     if (!window.StorageAPI) { return; }
     var form = document.getElementById("budgetForm");
@@ -249,6 +308,7 @@
     initProfileSection();
     initStreakSection();
     initDisplaySection();
+    initBudgetNotificationSection();
     initBudgetAndAccountSection();
 
     // ── Demo seed button ─────────────────────────────────────

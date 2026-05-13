@@ -316,6 +316,9 @@
         }
         sidebarAvatar.textContent = initials;
       }
+      document.body.classList.add("sidebar-ready");
+    } else {
+      document.body.classList.remove("sidebar-ready");
     }
   }
 
@@ -418,6 +421,7 @@
       toggleBtn.addEventListener("mouseleave", hideTip);
     }
   }
+
 
   document.addEventListener("DOMContentLoaded", async function () {
     await protectRoutes();
