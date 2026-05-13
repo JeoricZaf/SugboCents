@@ -190,7 +190,13 @@ self.addEventListener("notificationclick", (event) => {
       }
       // Otherwise open a new window to the dashboard
       if (clients.openWindow) {
-        var targetUrl = event.notification.data && event.notification.data.url ? event.notification.data.url : "/dashboard.html";
+        var raw = event.notification.data && event.notification.data.url ? event.notification.data.url : "/dashboard.html";
+        var targetUrl = raw;
+        try {
+          targetUrl = new URL(raw, self.location.origin).href;
+        } catch (e) {
+          targetUrl = self.location.origin + (raw.indexOf("/") === 0 ? raw : "/" + raw);
+        }
         return clients.openWindow(targetUrl);
       }
     })

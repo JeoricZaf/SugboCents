@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   function showMessage(elId, text, isError) {
     var el = document.getElementById(elId);
     if (!el) { return; }
@@ -208,7 +208,14 @@
     });
 
     disableBtn.addEventListener("click", function () {
-      setMessage("To disable notifications, click the lock icon in your browser address bar and block notifications.", false, true);
+      if (window.NotificationService && typeof window.NotificationService.unregisterOfflinePush === "function") {
+        window.NotificationService.unregisterOfflinePush().catch(function () {});
+      }
+      setMessage(
+        "Server push for this device was removed. To fully block alerts, use the lock icon in the address bar and turn off notifications.",
+        false,
+        true
+      );
     });
   }
 

@@ -1,6 +1,6 @@
 {
   "name": "sugbocents-functions",
-  "description": "Firebase Cloud Functions — AI proxy for SugboCents",
+  "description": "Firebase Cloud Functions — AI proxy and Web Push for SugboCents",
   "scripts": {
     "serve": "firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions"
@@ -10,7 +10,9 @@
   },
   "main": "index.js",
   "dependencies": {
-    "firebase-functions": "^6.0.0"
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^6.0.0",
+    "web-push": "^3.6.7"
   },
   "private": true
 }

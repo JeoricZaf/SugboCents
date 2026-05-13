@@ -153,10 +153,23 @@
     };
   }
 
+  async function getIdToken() {
+    await window.FirebaseInit.ready;
+    if (!window.FirebaseInit.isFirebaseMode || !window.FirebaseInit.isFirebaseMode()) {
+      return null;
+    }
+    var auth = window.FirebaseInit.getAuth();
+    if (!auth || !auth.currentUser) {
+      return null;
+    }
+    return auth.currentUser.getIdToken();
+  }
+
   window.FirebaseAuthService = {
     registerUser: registerUser,
     loginUser: loginUser,
     logout: logout,
-    onAuthStateChanged: onAuthStateChanged
+    onAuthStateChanged: onAuthStateChanged,
+    getIdToken: getIdToken
   };
 })();

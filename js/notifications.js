@@ -1,4 +1,37 @@
 (function () {
+  var REGISTER_PUSH_URL = "https://us-central1-sugbocents.cloudfunctions.net/registerPush";
+  var UNREGISTER_PUSH_URL = "https://us-central1-sugbocents.cloudfunctions.net/unregisterPush";
+
+  /** Public VAPID key — must match `VAPID_PUBLIC_KEY` in functions/index.js. */
+  var SUGBOCENTS_VAPID_PUBLIC_KEY =
+    "BHK7yVDGF3avSKamFtdbSGW4X-ji34xM78R53OkuKQW_6cQnYP2183CmuX1Yn2GAHx7RhZmspiT2b0S60FGzsKM";
+
+  function urlBase64ToUint8Array(base64String) {
+    var padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    var base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    var rawData = atob(base64);
+    var outputArray = new Uint8Array(rawData.length);
+    for (var i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  function postJsonWithCors(url, body) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    }).then(function (res) {
+      if (!res.ok) {
+        return res.text().then(function (t) {
+          throw new Error(t || res.statusText);
+        });
+      }
+      return res.json();
+    });
+  }
+
   // ── 1. Define your Conditions (Rules) Here ──────────────────────────
   // To add a new notification, just add a new block to this array!
   var NOTIFICATION_RULES =[
@@ -6,6 +39,10 @@
       id: "evening_reminder",
       frequency: "daily", // 'daily', 'weekly', or 'always'
       check: function (now, storage) {
+        var prefs = storage.getPreferences ? storage.getPreferences() : {};
+        if (prefs.streakNotifications !== true) {
+          return false;
+        }
         // Condition: It's past 8 PM (20:00) and no expenses were logged today.
         if (now.getHours() < 20) return false; 
         
@@ -126,14 +163,116 @@
     storeBudgetState(summary);
   }
 
+  function scheduleSubscribeOfflinePush() {
+    setTimeout(function () {
+      subscribeOfflinePushInner().catch(function (e) {
+        console.warn("[SugboCents] Offline push subscribe failed:", e && e.message ? e.message : e);
+      });
+    }, 400);
+  }
+
+  function subscribeOfflinePushInner() {
+    if (!SUGBOCENTS_VAPID_PUBLIC_KEY) {
+      return Promise.resolve();
+    }
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      return Promise.resolve();
+    }
+    if (Notification.permission !== "granted") {
+      return Promise.resolve();
+    }
+    if (!window.FirebaseInit || !window.FirebaseInit.isFirebaseMode || !window.FirebaseInit.isFirebaseMode()) {
+      return Promise.resolve();
+    }
+    if (!window.FirebaseAuthService || typeof window.FirebaseAuthService.getIdToken !== "function") {
+      return Promise.resolve();
+    }
+
+    return window.FirebaseAuthService.getIdToken().then(function (idToken) {
+      if (!idToken) {
+        return null;
+      }
+      var streakPref = false;
+      if (window.StorageAPI && window.StorageAPI.getPreferences) {
+        streakPref = window.StorageAPI.getPreferences().streakNotifications === true;
+      }
+      return navigator.serviceWorker.ready.then(function (registration) {
+        var key = urlBase64ToUint8Array(SUGBOCENTS_VAPID_PUBLIC_KEY);
+        return registration.pushManager.getSubscription().then(function (existing) {
+          if (existing) {
+            return postJsonWithCors(REGISTER_PUSH_URL, {
+              idToken: idToken,
+              subscription: existing.toJSON(),
+              streakNotifications: streakPref
+            });
+          }
+          return registration.pushManager
+            .subscribe({ userVisibleOnly: true, applicationServerKey: key })
+            .then(function (sub) {
+              return postJsonWithCors(REGISTER_PUSH_URL, {
+                idToken: idToken,
+                subscription: sub.toJSON(),
+                streakNotifications: streakPref
+              });
+            });
+        });
+      });
+    });
+  }
+
   var NotificationService = {
     
     requestPermission: function () {
-      if (!("Notification" in window)) return;
-      if (Notification.permission !== "denied" && Notification.permission !== "granted") {
-        return Notification.requestPermission();
+      if (!("Notification" in window)) {
+        return Promise.resolve("denied");
       }
-      return Promise.resolve(Notification.permission);
+      if (Notification.permission === "denied") {
+        return Promise.resolve("denied");
+      }
+      if (Notification.permission === "granted") {
+        scheduleSubscribeOfflinePush();
+        return Promise.resolve("granted");
+      }
+      return Notification.requestPermission().then(function (result) {
+        if (result === "granted") {
+          scheduleSubscribeOfflinePush();
+        }
+        return result;
+      });
+    },
+
+    subscribeOfflinePush: function () {
+      return subscribeOfflinePushInner();
+    },
+
+    unregisterOfflinePush: function () {
+      if (!("serviceWorker" in navigator)) {
+        return Promise.resolve();
+      }
+      if (!window.FirebaseAuthService || typeof window.FirebaseAuthService.getIdToken !== "function") {
+        return Promise.resolve();
+      }
+      return window.FirebaseAuthService.getIdToken().then(function (idToken) {
+        return navigator.serviceWorker.ready.then(function (registration) {
+          return registration.pushManager.getSubscription().then(function (sub) {
+            if (!sub) {
+              return null;
+            }
+            var endpoint = sub.endpoint;
+            var chain = Promise.resolve();
+            if (idToken) {
+              chain = postJsonWithCors(UNREGISTER_PUSH_URL, { idToken: idToken, endpoint: endpoint }).catch(
+                function (e) {
+                  console.warn("[SugboCents] unregisterPush:", e);
+                }
+              );
+            }
+            return chain.then(function () {
+              return sub.unsubscribe();
+            });
+          });
+        });
+      });
     },
 
     send: function (title, options) {
@@ -206,6 +345,9 @@
       _notificationInitDone = true;
       storeBudgetState(window.StorageAPI ? window.StorageAPI.getBudgetSummary() : null);
       this.checkRules(); // Check immediately on load
+      if (Notification.permission === "granted") {
+        scheduleSubscribeOfflinePush();
+      }
       window.addEventListener("sugbocents:budget-changed", function (event) {
         var skipIfRemove = !!(event && event.detail && event.detail.reason === "remove");
         if (!window.StorageAPI || typeof window.StorageAPI.getBudgetSummary !== "function") { return; }
@@ -213,6 +355,9 @@
         NotificationService.checkRules();
       });
       window.addEventListener("sugbocents:synced", function (event) {
+        if (Notification.permission === "granted") {
+          scheduleSubscribeOfflinePush();
+        }
         var skipIfRemove = !!(event && event.detail && event.detail.reason === "remove");
         if (!window.StorageAPI || typeof window.StorageAPI.getBudgetSummary !== "function") { return; }
         syncBudgetState(window.StorageAPI.getBudgetSummary(), false, skipIfRemove);

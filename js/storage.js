@@ -425,6 +425,12 @@
       if (firestoreUser.dailyXpLog && typeof firestoreUser.dailyXpLog === "object") {
         user.dailyXpLog = firestoreUser.dailyXpLog;
       }
+      if (typeof firestoreUser.streakNotifications === "boolean") {
+        if (!user.preferences) {
+          user.preferences = {};
+        }
+        user.preferences.streakNotifications = firestoreUser.streakNotifications;
+      }
     }
 
     var firestoreExpenses = await window.FirestoreService.getExpenseDocs(userId);
@@ -1210,6 +1216,22 @@
       user.preferences[keys[i]] = prefs[keys[i]];
     }
     saveStore(store);
+    if (window.FirestoreService && store.session && prefs.streakNotifications !== undefined) {
+      window.FirestoreService.setUserDoc(store.session.userId, {
+        streakNotifications: prefs.streakNotifications === true
+      });
+    }
+    if (
+      typeof Notification !== "undefined" &&
+      Notification.permission === "granted" &&
+      window.NotificationService &&
+      typeof window.NotificationService.subscribeOfflinePush === "function" &&
+      prefs.streakNotifications !== undefined
+    ) {
+      setTimeout(function () {
+        window.NotificationService.subscribeOfflinePush();
+      }, 0);
+    }
     return { ok: true };
   }
 
