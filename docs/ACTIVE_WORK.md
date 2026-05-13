@@ -1,7 +1,23 @@
 # SugboCents — Active Work Tracker
 
-> **Last updated:** May 5, 2026
+> **Last updated:** May 11, 2026
 > Track ongoing bugs, fixes, and planned features here. Mark items ✅ when done.
+
+---
+
+## Sprint 3 Progress Table
+
+| Sprint | Track | Task | Owner | Start | End | Status |
+|---|---|---|---|---|---|---|
+| Sprint 3 | Dashboard | Dashboard polish and Sprint 3 UI/UX integration updates | Oliver (Dev1) | May 6 | May 9 | In Progress |
+| Sprint 3 | Quests | Weekly quest flow updates and progress-state wiring | Oliver (Dev1) | May 6 | May 10 | In Progress |
+| Sprint 3 | Leaderboard | Leaderboard sorting, rank display, and social consistency pass | Jon (Dev2) | May 7 | May 10 | In Progress |
+| Sprint 3 | AI Chat | AI chat interaction improvements, prompt behavior, and fallback handling | Jon (Dev2) | May 7 | May 10 | In Progress |
+| Sprint 3 | AI Email: Wrapped | Design Wrapped cards + required fields | Savion (PO) | Apr 29 | Apr 30 | Completed |
+| Sprint 3 | AI Email: Wrapped | Send email integration + caps + fallback template | Savion (PO) | May 3 | May 5 | In Progress |
+| Sprint 3 | AI Email: Wrapped | Weekly summary generator (stats + patterns) | Oliver (Dev1) | Apr 29 | May 1 | In Progress |
+| Sprint 3 | AI Email: Wrapped | AI narrative + personality + mission + reward text | Jon (Dev2) | May 1 | May 3 | In Progress |
+| Sprint 3 | AI Email: Wrapped | Settings page trigger + opt-in toggle + cooldown metadata | Oliver (Dev1) | May 10 | May 11 | In Progress |
 
 ---
 

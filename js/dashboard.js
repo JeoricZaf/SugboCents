@@ -1568,6 +1568,9 @@
 
     var xpInfo = window.StorageAPI.getXpInfo ? window.StorageAPI.getXpInfo() : { xp: 0, level: 1, levelName: "Rookie Saver", xpForNext: 50, progressPct: 0 };
     var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
+    var sentimosBalance = window.StorageAPI.getSentimosBalance ? window.StorageAPI.getSentimosBalance() : 0;
+    var sentimosHeroEl = document.getElementById("sentimosHeroVal");
+    if (sentimosHeroEl) { sentimosHeroEl.textContent = "₵" + sentimosBalance; }
 
     if (xpLevelNameEl) { xpLevelNameEl.textContent = xpInfo.levelName || "Rookie Saver"; }
     if (xpLevelBadgeEl) { xpLevelBadgeEl.textContent = "Lv. " + xpInfo.level; }
@@ -1594,16 +1597,16 @@
         if (streakCountEl) { streakCountEl.textContent = "Start"; }
       } else if (streak < 7) {
         greetingStreakEl.classList.add("streak-badge--amber");
-        if (streakCountEl) { streakCountEl.textContent = streak; }
+        if (streakCountEl) { streakCountEl.textContent = streak + " 🔥"; }
       } else if (streak < 14) {
         greetingStreakEl.classList.add("streak-badge--orange");
-        if (streakCountEl) { streakCountEl.textContent = streak; }
+        if (streakCountEl) { streakCountEl.textContent = streak + " 🔥"; }
       } else if (streak < 30) {
         greetingStreakEl.classList.add("streak-badge--orange-glow");
-        if (streakCountEl) { streakCountEl.textContent = streak; }
+        if (streakCountEl) { streakCountEl.textContent = streak + " 🔥"; }
       } else {
         greetingStreakEl.classList.add("streak-badge--crimson");
-        if (streakCountEl) { streakCountEl.textContent = streak; }
+        if (streakCountEl) { streakCountEl.textContent = streak + " 🔥"; }
       }
 
       // At-risk overlay: streak exists but user hasn't logged today and it's after 17:00
@@ -3129,14 +3132,14 @@
 
   // ── Active quest ──────────────────────────────────────────
   function renderActiveQuest() {
-    var titleEl = document.getElementById("activeQuestTitle");
-    var descEl = document.getElementById("activeQuestDesc");
-    var rewardEl = document.getElementById("activeQuestReward");
-    var barEl = document.getElementById("activeQuestBar");
+    var titleEl   = document.getElementById("activeQuestTitle");
+    var descEl    = document.getElementById("activeQuestDesc");
+    var rewardEl  = document.getElementById("activeQuestReward");
+    var barEl     = document.getElementById("activeQuestBar");
     var barLabelEl = document.getElementById("activeQuestBarLabel");
-    if (!titleEl) return;
+    var linkEl    = document.getElementById("activeQuestLink");
+    if (!titleEl) { return; }
 
-    // Primary: read the tracked quest from StorageAPI.getCurrentQuest()
     var activeQuest = null;
     try {
       if (window.StorageAPI && window.StorageAPI.getCurrentQuest) {
@@ -3144,47 +3147,50 @@
       }
     } catch (e) {}
 
-    // Fallback: legacy getActiveQuests / getQuests
     if (!activeQuest) {
-      try {
-        var quests = [];
-        if (window.StorageAPI && window.StorageAPI.getActiveQuests) {
-          quests = window.StorageAPI.getActiveQuests() || [];
-        } else if (window.StorageAPI && window.StorageAPI.getQuests) {
-          quests = (window.StorageAPI.getQuests() || []).filter(function (q) { return !q.completed; });
-        }
-        activeQuest = quests.length > 0 ? quests[0] : null;
-      } catch (e) {}
+      // No quest equipped — show empty state (never show a fake fallback quest)
+      if (titleEl) { titleEl.textContent = "No quest equipped"; titleEl.style.color = "#617063"; }
+      if (descEl) { descEl.textContent = "Browse the quest catalog to track a goal this week."; }
+      if (rewardEl) { rewardEl.textContent = ""; rewardEl.style.display = "none"; }
+      if (barEl) { barEl.style.width = "0%"; barEl.style.background = "#e7e0cf"; }
+      if (barLabelEl) { barLabelEl.textContent = ""; }
+      if (linkEl) { linkEl.textContent = "Browse quests \u2192"; linkEl.style.color = "#164f33"; }
+      return;
     }
 
-    if (activeQuest) {
-      if (titleEl) titleEl.textContent = (activeQuest.icon ? activeQuest.icon + " " : "") + (activeQuest.title || "Active Quest");
-      if (descEl) descEl.textContent = activeQuest.description || "";
-      var reward = activeQuest.xpReward || activeQuest.reward || 50;
-      if (rewardEl) rewardEl.textContent = "\u26A1 +" + reward + " XP";
-      // Use live computed progress from first condition
-      var primaryCond = (activeQuest.conditions && activeQuest.conditions[0]) ? activeQuest.conditions[0] : null;
-      var current = primaryCond ? (primaryCond.progress || 0) : (activeQuest.current || activeQuest.progress || 0);
-      var target  = primaryCond ? (primaryCond.target || 1) : (activeQuest.target || activeQuest.goal || 7);
-      var unit    = primaryCond ? (primaryCond.type === "log_count" ? "expenses" : primaryCond.type === "log_days" || primaryCond.type === "under_budget_days" || primaryCond.type === "no_overspend_days" ? "days" : "") : (activeQuest.unit || "days");
-      var pct = Math.min(Math.round((current / target) * 100), 100);
-      if (barEl) { barEl.style.width = pct + "%"; barEl.style.background = pct >= 100 ? "#2b8259" : "#EAB308"; }
-      if (barLabelEl) barLabelEl.textContent = current + " / " + target + (unit ? " " + unit : "");
-    } else {
-      // No tracked quest — show streak goal as fallback
-      var streak = 0;
-      try {
-        if (window.StorageAPI && window.StorageAPI.getCurrentStreak) {
-          streak = window.StorageAPI.getCurrentStreak() || 0;
-        }
-      } catch (e) {}
-      if (titleEl) titleEl.textContent = "7-Day Streak";
-      if (descEl) descEl.textContent = "Log an expense every day this week.";
-      if (rewardEl) rewardEl.textContent = "\u26A1 +100 XP";
-      var s = Math.min(streak, 7);
-      var spct = Math.round((s / 7) * 100);
-      if (barEl) { barEl.style.width = spct + "%"; barEl.style.background = "#EAB308"; }
-      if (barLabelEl) barLabelEl.textContent = s + " / 7 days";
+    // Restore defaults that may have been set by the empty state
+    if (titleEl) { titleEl.style.color = "#102b1d"; }
+    if (rewardEl) { rewardEl.style.display = ""; }
+
+    if (titleEl) { titleEl.textContent = (activeQuest.icon ? activeQuest.icon + " " : "") + (activeQuest.title || "Active Quest"); }
+    if (descEl) { descEl.textContent = activeQuest.description || ""; }
+    var reward = activeQuest.xpReward || activeQuest.reward || 50;
+    if (rewardEl) { rewardEl.textContent = "\u26A1 +" + reward + " XP"; }
+
+    var primaryCond = (activeQuest.conditions && activeQuest.conditions[0]) ? activeQuest.conditions[0] : null;
+    var current = primaryCond ? (primaryCond.progress || 0) : (activeQuest.current || activeQuest.progress || 0);
+    var target  = primaryCond ? (primaryCond.target || 1)   : (activeQuest.target || activeQuest.goal || 7);
+    var unit    = primaryCond
+      ? (primaryCond.type === "log_count" ? "expenses"
+        : (primaryCond.type === "log_days" || primaryCond.type === "under_budget_days" || primaryCond.type === "no_overspend_days") ? "days" : "")
+      : (activeQuest.unit || "days");
+    var pct        = Math.min(Math.round((current / target) * 100), 100);
+    var isComplete = pct >= 100 || !!activeQuest.completedAt;
+
+    if (barEl) { barEl.style.width = pct + "%"; barEl.style.background = isComplete ? "#2b8259" : "#EAB308"; }
+    if (barLabelEl) {
+      barLabelEl.textContent = isComplete
+        ? "\u2713 Done \u2014 claim your reward!"
+        : (current + " / " + target + (unit ? " " + unit : ""));
+    }
+    if (linkEl) {
+      if (isComplete) {
+        linkEl.textContent = "Claim reward \u2192";
+        linkEl.style.color = "#0D9488";
+      } else {
+        linkEl.textContent = "See quests \u2192";
+        linkEl.style.color = "#164f33";
+      }
     }
   }
 
@@ -3265,6 +3271,123 @@
     }
   }
 
+  // ── Onboarding card ──────────────────────────────────────
+  var _onboardingWired = false;
+
+  function renderOnboardingCard() {
+    var card = document.getElementById("onboardingCard");
+    if (!card) { return; }
+
+    var prefs = window.StorageAPI.getPreferences ? window.StorageAPI.getPreferences() : {};
+    if (prefs.onboardingDismissed) { card.style.display = "none"; return; }
+
+    var user = window.StorageAPI.getCurrentUser ? window.StorageAPI.getCurrentUser() : null;
+    var hasBudget = user && Number(user.weeklyBudget) > 0;
+    var expenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var hasExpense = expenses.length > 0;
+
+    // Both steps done — auto-hide without requiring a dismiss
+    if (hasBudget && hasExpense) { card.style.display = "none"; return; }
+
+    card.style.display = "";
+
+    // Update step 1 visual (budget)
+    var icon1 = document.getElementById("onboardStep1Icon");
+    var cta1  = document.getElementById("onboardStep1Cta");
+    if (icon1) {
+      if (hasBudget) {
+        icon1.textContent = "\u2713";
+        icon1.style.background = "#dcfce7";
+        icon1.style.color = "#164f33";
+      } else {
+        icon1.textContent = "1";
+        icon1.style.background = "#e8dfc6";
+        icon1.style.color = "#9a6b45";
+      }
+    }
+    if (cta1) { cta1.style.display = hasBudget ? "none" : ""; }
+
+    // Update step 2 visual (first expense)
+    var icon2 = document.getElementById("onboardStep2Icon");
+    var btn2  = document.getElementById("onboardLogNowBtn");
+    if (icon2) {
+      if (hasExpense) {
+        icon2.textContent = "\u2713";
+        icon2.style.background = "#dcfce7";
+        icon2.style.color = "#164f33";
+      } else {
+        icon2.textContent = "2";
+        icon2.style.background = "#e8dfc6";
+        icon2.style.color = "#9a6b45";
+      }
+    }
+    if (btn2) { btn2.style.display = hasExpense ? "none" : ""; }
+
+    // Wire buttons once
+    if (!_onboardingWired) {
+      _onboardingWired = true;
+
+      var dismissBtn = document.getElementById("onboardDismissBtn");
+      if (dismissBtn) {
+        dismissBtn.addEventListener("click", function () {
+          if (window.StorageAPI.savePreferences) {
+            window.StorageAPI.savePreferences({ onboardingDismissed: true });
+          }
+          var c = document.getElementById("onboardingCard");
+          if (c) { c.style.display = "none"; }
+        });
+      }
+
+      var logNowBtn = document.getElementById("onboardLogNowBtn");
+      if (logNowBtn) {
+        logNowBtn.addEventListener("click", function () {
+          var grid = document.getElementById("quickAddGrid");
+          if (grid) { grid.scrollIntoView({ behavior: "smooth", block: "center" }); }
+        });
+      }
+    }
+  }
+
+  // ── Savings goals widget ──────────────────────────────────
+  function renderSavingsGoals() {
+    var list = document.getElementById("savingsGoalsList");
+    if (!list) { return; }
+
+    var goals = window.StorageAPI.getGoals ? window.StorageAPI.getGoals() : [];
+    var active = goals.filter(function (g) { return !g.completed; }).slice(0, 2);
+
+    if (active.length === 0) {
+      list.innerHTML =
+        '<p class="py-2 text-sm font-semibold text-center" style="color:#5f6f63">' +
+        'No goals yet. <a href="tigom.html" style="color:#164f33;font-weight:800;text-decoration:none">Set one \u2192</a>' +
+        '</p>';
+      return;
+    }
+
+    var fmt = function (n) {
+      return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+    };
+
+    list.innerHTML = active.map(function (goal) {
+      var saved  = Math.max(0, Number(goal.savedAmount)  || 0);
+      var target = Math.max(1, Number(goal.targetAmount) || 1);
+      var pct    = Math.min(100, Math.round((saved / target) * 100));
+      var barColor = pct >= 100 ? "#164f33" : (pct >= 60 ? "#2b8259" : "#EAB308");
+      return (
+        '<div class="mb-4 last:mb-0">' +
+          '<div class="flex items-center justify-between gap-2 mb-1.5">' +
+            '<p class="text-sm font-extrabold" style="color:#102b1d">' + escapeHtml(goal.name) + '</p>' +
+            '<p class="text-xs font-bold shrink-0" style="color:#617063">' + fmt(saved) + ' / ' + fmt(target) + '</p>' +
+          '</div>' +
+          '<div class="relative overflow-hidden rounded-full h-2.5" style="background:#e7e0cf">' +
+            '<div class="h-full rounded-full transition-all duration-700" style="width:' + pct + '%;background:' + barColor + '"></div>' +
+          '</div>' +
+          '<p class="mt-1 text-xs font-semibold" style="color:#617063">' + pct + '% saved</p>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
   // ── init ─────────────────────────────────────────────────
   document.addEventListener("DOMContentLoaded", function () {
     var page = document.body.getAttribute("data-page");
@@ -3284,6 +3407,8 @@
       renderWeekMap();
       renderActiveQuest();
       updateSidebarUser();
+      renderOnboardingCard();
+      renderSavingsGoals();
 
       initModal();
       initDashboardAccountMenu();
@@ -3312,6 +3437,8 @@
         renderActiveQuest();
         updateHeroGreeting();
         updateSidebarUser();
+        renderOnboardingCard();
+        renderSavingsGoals();
 
         renderQuickAddButtons();
         updateLogOnceXpBadge();
@@ -3330,6 +3457,8 @@
         renderWeekMap();
         renderActiveQuest();
         updateHeroGreeting();
+        renderOnboardingCard();
+        renderSavingsGoals();
 
         renderRecentExpenses();
         updateLogOnceXpBadge();

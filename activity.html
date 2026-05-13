@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -14,98 +14,45 @@
   <link rel="stylesheet" href="css/mascot.css" />
   <link rel="stylesheet" href="css/dark-mode.css" />
   <script>(function () { if (localStorage.getItem("darkModeEnabled") === "true") document.documentElement.classList.add("dark-mode"); }());</script>
+  <script>(function(){if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");}());</script>
 </head>
 <body data-page="activity" data-protected="true" class="antialiased"
   style="background:#f7f3e8;font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;color:#102b1d;min-height:100vh">
 
   <div style="min-height:100vh;background:#f7f3e8">
-    <div class="lg:flex">
+    <div id="appShell" class="lg:flex">
 
-      <!-- DESKTOP SIDEBAR -->
-      <aside class="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-y-auto lg:flex"
-        style="background:#f7f3e8;padding:1.25rem;border-right:1px solid rgba(216,209,189,0.8)"
-        aria-label="Sidebar navigation">
-        <!-- Brand block with Tigom -->
-        <div class="rounded-[2rem] p-5 text-white" style="background:#164f33">
-          <div class="flex items-center gap-3">
-            <div class="relative h-12 w-12 shrink-0 animate-float" aria-hidden="true">
-              <div class="absolute left-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
-              <div class="absolute right-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
-              <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
-                style="background:#2b8259;box-shadow:inset 0 -10px 0 rgba(22,79,51,0.26)"></div>
-              <div class="absolute left-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
-              <div class="absolute right-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
-              <div class="absolute left-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
-              <div class="absolute right-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
-              <div class="absolute bottom-[26%] left-1/2 h-4 w-8 rounded-b-full"
-                style="border-bottom:4px solid #102b1d;transform:translateX(-50%)"></div>
-              <div class="absolute -bottom-1 left-1/2 flex h-6 w-8 items-center justify-center rounded-full text-xs font-black"
-                style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+
+      <main id="mainContent" class="min-w-0 flex-1 pb-28 lg:pb-8">
+
+        <!-- Page skeleton (visible while auth resolves; removed by revealPageContent() in app.js) -->
+        <div id="pageSkeleton" class="mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-6 lg:px-8" aria-hidden="true" style="pointer-events:none">
+          <!-- Summary hero -->
+          <div style="height:8.5rem;border-radius:2rem;background:#1f5e3a;opacity:0.4"></div>
+          <!-- Tab switcher -->
+          <div style="display:flex;gap:0.5rem">
+            <div class="sk" style="width:5rem;height:2.25rem;border-radius:9999px"></div>
+            <div class="sk" style="width:5rem;height:2.25rem;border-radius:9999px"></div>
+            <div class="sk" style="width:5rem;height:2.25rem;border-radius:9999px"></div>
+          </div>
+          <!-- Expense list card -->
+          <div class="sk-card">
+            <div style="display:flex;justify-content:space-between;margin-bottom:1rem">
+              <div class="sk" style="width:7rem;height:0.75rem"></div>
+              <div class="sk" style="width:4rem;height:0.75rem"></div>
             </div>
-            <div>
-              <p class="font-display text-2xl font-black">SugboCents</p>
-              <p class="text-xs font-bold" style="color:rgba(255,255,255,0.65)">Budgeting that feels alive</p>
+            <div style="display:flex;flex-direction:column">
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.7rem 0;border-bottom:1px solid #f5f2eb"><div class="sk sk-circle" style="width:2.75rem;height:2.75rem;flex-shrink:0"></div><div style="flex:1"><div class="sk" style="width:7rem;height:0.7rem;margin-bottom:0.4rem"></div><div class="sk" style="width:5rem;height:0.55rem"></div></div><div class="sk" style="width:4rem;height:0.7rem"></div></div>
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.7rem 0;border-bottom:1px solid #f5f2eb"><div class="sk sk-circle" style="width:2.75rem;height:2.75rem;flex-shrink:0"></div><div style="flex:1"><div class="sk" style="width:5rem;height:0.7rem;margin-bottom:0.4rem"></div><div class="sk" style="width:6rem;height:0.55rem"></div></div><div class="sk" style="width:3.5rem;height:0.7rem"></div></div>
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.7rem 0;border-bottom:1px solid #f5f2eb"><div class="sk sk-circle" style="width:2.75rem;height:2.75rem;flex-shrink:0"></div><div style="flex:1"><div class="sk" style="width:9rem;height:0.7rem;margin-bottom:0.4rem"></div><div class="sk" style="width:4rem;height:0.55rem"></div></div><div class="sk" style="width:5rem;height:0.7rem"></div></div>
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.7rem 0;border-bottom:1px solid #f5f2eb"><div class="sk sk-circle" style="width:2.75rem;height:2.75rem;flex-shrink:0"></div><div style="flex:1"><div class="sk" style="width:6rem;height:0.7rem;margin-bottom:0.4rem"></div><div class="sk" style="width:3.5rem;height:0.55rem"></div></div><div class="sk" style="width:4.5rem;height:0.7rem"></div></div>
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.7rem 0"><div class="sk sk-circle" style="width:2.75rem;height:2.75rem;flex-shrink:0"></div><div style="flex:1"><div class="sk" style="width:8rem;height:0.7rem;margin-bottom:0.4rem"></div><div class="sk" style="width:4.5rem;height:0.55rem"></div></div><div class="sk" style="width:3rem;height:0.7rem"></div></div>
             </div>
           </div>
         </div>
-        <!-- Nav links -->
-        <nav class="mt-6 flex-1 space-y-2" aria-label="Main navigation">
-          <a href="dashboard.html" data-nav="dashboard" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#x2302;</span> Home
-          </a>
-          <a href="quests.html" data-nav="quests" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#9671;</span> Quests
-          </a>
-          <a href="leaderboard.html" data-nav="leaderboard" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#9819;</span> League
-          </a>
-          <a href="profile.html" data-nav="profile" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#9689;</span> Profile
-          </a>
-          <a href="activity.html" data-nav="activity" class="sidebar-new-link sidebar-new-link--active">
-            <span class="sidebar-new-link__icon">&#8776;</span> Activity
-          </a>
-          <a href="tigom.html" data-nav="goals" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#9678;</span> Goals
-          </a>
-          <a href="chat.html" data-nav="chat" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#10022;</span> AI Chat
-          </a>
-          <a href="settings.html" data-nav="settings" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#9776;</span> Settings
-          </a>
-        </nav>
-        <!-- User strip -->
-        <a href="settings.html" class="mt-4 flex items-center gap-3 rounded-2xl px-3 py-3 transition hover:bg-white"
-          style="text-decoration:none">
-          <div id="sidebarAvatar"
-            class="grid h-10 w-10 shrink-0 place-items-center rounded-full font-display text-sm font-black text-white"
-            style="background:#84919a">U</div>
-          <div class="min-w-0 flex-1">
-            <p id="sidebarName" class="truncate text-sm font-extrabold" style="color:#102b1d">Loading&hellip;</p>
-            <p class="text-xs font-semibold" style="color:#617063">Account settings</p>
-          </div>
-          <span style="color:#164f33">&#8594;</span>
-        </a>
-      </aside>
-
-      <!-- MAIN CONTENT -->
-      <main class="min-w-0 flex-1 pb-28 lg:pb-8">
-
-        <!-- Sticky resource bar -->
-        <header class="sticky top-0 z-40 backdrop-blur-xl"
-          style="border-bottom:1px solid rgba(216,209,189,0.7);background:rgba(247,243,232,0.88);padding:0.75rem 1rem">
-          <div class="mx-auto flex max-w-6xl items-center gap-3">
-            <div class="hidden w-[9rem] shrink-0 lg:block">
-              <p class="font-display text-lg font-extrabold tracking-tight" style="color:#164f33">SugboCents</p>
-              <p class="text-xs font-semibold" style="color:#5f6f63">Habit finance game</p>
-            </div>
-            <div id="resourceBar" class="flex-1" aria-label="Your stats" style="min-height:4rem"></div>
-          </div>
-        </header>
 
         <!-- Activity content -->
-        <div class="mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-6 lg:px-8">
+        <div id="pageContent" class="mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-6 lg:px-8" style="display:none">
 
           <!-- ── Weekly Summary Hero ─────────────────────── -->
           <section class="rounded-[2rem] p-5 text-white shadow-lg" style="background:#164f33"
@@ -266,48 +213,13 @@
     </div>
   </a>
 
-  <!-- MOBILE BOTTOM NAV -->
-  <nav class="fixed inset-x-0 bottom-0 z-40 border-t px-2 py-2 lg:hidden"
-    style="background:rgba(251,248,239,0.94);border-color:#d8d1bd;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding-bottom:calc(0.5rem + env(safe-area-inset-bottom))"
-    aria-label="Main navigation">
-    <div class="mx-auto grid max-w-md grid-cols-5 gap-1">
-      <a href="dashboard.html" data-nav="dashboard"
-        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
-        style="color:#607064;text-decoration:none">
-        <span class="block text-lg leading-none">&#x2302;</span>
-        <span class="mt-1 block">Home</span>
-      </a>
-      <a href="quests.html" data-nav="quests"
-        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
-        style="color:#607064;text-decoration:none">
-        <span class="block text-lg leading-none">&#9671;</span>
-        <span class="mt-1 block">Quests</span>
-      </a>
-      <a href="leaderboard.html" data-nav="leaderboard"
-        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
-        style="color:#607064;text-decoration:none">
-        <span class="block text-lg leading-none">&#9819;</span>
-        <span class="mt-1 block">League</span>
-      </a>
-      <a href="profile.html" data-nav="profile"
-        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
-        style="color:#607064;text-decoration:none">
-        <span class="block text-lg leading-none">&#9689;</span>
-        <span class="mt-1 block">Profile</span>
-      </a>
-      <a href="activity.html" data-nav="activity"
-        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition"
-        style="background:#164f33;color:white;text-decoration:none">
-        <span class="block text-lg leading-none">&#8776;</span>
-        <span class="mt-1 block">More</span>
-      </a>
-    </div>
-  </nav>
 
+  <script src="js/chrome.js"></script>
   <script src="js/firebase-init.js"></script>
   <script src="js/firebase-auth-service.js"></script>
   <script src="js/firestore-service.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/motion.js"></script>
   <script src="js/app.js"></script>
   <script src="js/dark-mode.js"></script>
   <script src="js/activity.js"></script>

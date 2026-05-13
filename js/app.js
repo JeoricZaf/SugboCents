@@ -1,4 +1,8 @@
 ﻿(function () {
+  // Prevent browser from restoring previous scroll position — causes visible
+  // bottom-of-page jump when skeleton is replaced by content on load.
+  if (history.scrollRestoration) { history.scrollRestoration = "manual"; }
+
   function isLocalDevelopmentHost() {
     var host = window.location.hostname;
     return host === "localhost" || host === "127.0.0.1";
@@ -360,11 +364,15 @@
       return;
     }
 
+    // Set correct initial title based on persisted state.
+    toggleBtn.title = document.documentElement.classList.contains("sidebar-collapsed") ? "Open sidebar" : "Close sidebar";
+
     // State is already applied by the inline <script> in <head> (no DOMContentLoaded needed).
     // Just wire the click handler to toggle the class on <html>.
     toggleBtn.addEventListener("click", function () {
       var isCollapsed = document.documentElement.classList.toggle("sidebar-collapsed");
       localStorage.setItem("sidebarCollapsed", isCollapsed ? "true" : "false");
+      toggleBtn.title = isCollapsed ? "Open sidebar" : "Close sidebar";
     });
   }
 
@@ -399,7 +407,7 @@
     });
 
     // User row tooltip — only when collapsed.
-    var userRow = document.querySelector(".sidebar-user");
+    var userRow = document.querySelector(".sc-user-strip");
     if (userRow) {
       userRow.addEventListener("mouseenter", function () {
         if (!document.documentElement.classList.contains("sidebar-collapsed")) { return; }
@@ -408,29 +416,125 @@
       userRow.addEventListener("mouseleave", hideTip);
     }
 
-    // Toggle button — always show (collapsed or expanded).
-    var toggleBtn = document.getElementById("sidebarToggle");
-    if (toggleBtn) {
-      toggleBtn.addEventListener("mouseenter", function () {
-        var isCollapsed = document.documentElement.classList.contains("sidebar-collapsed");
-        showTip(isCollapsed ? "Open sidebar" : "Close sidebar", toggleBtn.getBoundingClientRect());
+    // Toggle button — uses native title attribute (set/updated by initSidebarToggle).
+    // No custom tooltip needed here.
+  }
+
+  // Inject quest badge spans into every quests.html nav link (all pages)
+  function injectQuestBadgeSpans() {
+    document.querySelectorAll("a[href='quests.html'], a[href='./quests.html']").forEach(function (link) {
+      if (link.querySelector(".quest-nav-badge")) { return; } // already present (quests.html hardcodes them)
+      var span = document.createElement("span");
+      span.className = "quest-nav-badge is-hidden";
+      link.appendChild(span);
+    });
+  }
+
+  // Refresh badge state from storage — runs on every page on load + data change
+  function refreshQuestBadge() {
+    if (!window.StorageAPI || !window.StorageAPI.checkQuestBadge) { return; }
+    var count = window.StorageAPI.checkQuestBadge();
+    // Also check the cached unclaimed count in localStorage so non-quest pages
+    // reflect quests completed but not tracked (e.g. daily quests outside spotlight)
+    try {
+      var cached = parseInt(localStorage.getItem("sugbocents_unclaimed_quests") || "0", 10);
+      if (cached > count) { count = cached; }
+    } catch (_) {}
+    window.dispatchEvent(new CustomEvent("sugbocents:questBadgeUpdate", { detail: { count: count } }));
+  }
+
+  // Fade out #pageSkeleton and fade in #pageContent after auth resolves.
+  // Called right after await protectRoutes() in the DOMContentLoaded handler.
+  function revealPageContent() {
+    var skeleton = document.getElementById("pageSkeleton");
+    var content  = document.getElementById("pageContent");
+    if (!skeleton && !content) { return; }
+    if (skeleton) {
+      // Pin the skeleton to its current viewport position so it is removed from
+      // normal flow *before* content is displayed.  Without this, content would
+      // render below the skeleton and then jump up when the skeleton is removed,
+      // which is the visible "content at the bottom" flash.
+      var r = skeleton.getBoundingClientRect();
+      skeleton.style.position = "fixed";
+      skeleton.style.top      = r.top  + "px";
+      skeleton.style.left     = r.left + "px";
+      skeleton.style.width    = r.width + "px";
+      skeleton.style.margin   = "0";
+      skeleton.style.zIndex   = "50";
+      skeleton.style.transition = "opacity 0.25s ease";
+      skeleton.style.opacity    = "0";
+      setTimeout(function () {
+        if (skeleton.parentNode) { skeleton.parentNode.removeChild(skeleton); }
+      }, 280);
+    }
+    if (content) {
+      content.style.opacity = "0";
+      content.style.display = "";
+      window.scrollTo(0, 0);
+      requestAnimationFrame(function () {
+        window.scrollTo(0, 0);
+        requestAnimationFrame(function () {
+          content.style.transition = "opacity 0.35s ease";
+          content.style.opacity    = "1";
+        });
       });
-      toggleBtn.addEventListener("mouseleave", hideTip);
     }
   }
 
   document.addEventListener("DOMContentLoaded", async function () {
+    // Immediately reset scroll so the page always starts at the top,
+    // regardless of browser history or late DOM insertions.
+    window.scrollTo(0, 0);
     await protectRoutes();
+    revealPageContent();
     activateBottomNav();
     injectResourceBar();
     renderResourceBar();
     initSidebarToggle();
     initSidebarTooltip();
     registerServiceWorker();
+    injectQuestBadgeSpans();
+    // Apply cached badge count immediately (before async StorageAPI resolves)
+    try {
+      var cachedBadge = parseInt(localStorage.getItem("sugbocents_unclaimed_quests") || "0", 10);
+      if (cachedBadge > 0) {
+        document.querySelectorAll(".quest-nav-badge").forEach(function (el) { el.classList.remove("is-hidden"); });
+      }
+    } catch (_) {}
+    refreshQuestBadge();
 
-    // Re-render resource bar on any data change
+    // Re-render resource bar on any data change; also refresh badge
     window.addEventListener("sugbocents:dataChanged", function () {
       renderResourceBar();
+      refreshQuestBadge();
+    });
+
+    // Quest completion banner (shown on pages other than quests.html)
+    window.addEventListener("sugbocents:questCompleted", function (e) {
+      if (window.location.pathname.indexOf("quests.html") !== -1) { return; }
+      var title = e.detail && e.detail.title ? e.detail.title : "Quest";
+      var existing = document.getElementById("globalQuestBanner");
+      if (existing) { existing.remove(); }
+      var banner = document.createElement("div");
+      banner.id = "globalQuestBanner";
+      banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#0f766e;color:white;padding:0.7rem 1.25rem;font-size:0.85rem;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:0.75rem;box-shadow:0 2px 10px rgba(0,0,0,0.18);";
+      banner.innerHTML =
+        "<span>\uD83C\uDF89 \u201c" + title.replace(/</g, "&lt;") + "\u201d completed!</span>" +
+        "<a href='quests.html' style='color:white;text-decoration:underline;white-space:nowrap'>Claim on Quests \u2192</a>" +
+        "<button id='globalQuestBannerClose' style='background:none;border:none;color:white;font-size:1.2rem;cursor:pointer;padding:0 0.25rem;line-height:1'>&times;</button>";
+      document.body.prepend(banner);
+      document.getElementById("globalQuestBannerClose").addEventListener("click", function () { banner.remove(); });
+    });
+
+    // Quest badge dot — uses querySelectorAll so it works on every page
+    window.addEventListener("sugbocents:questBadgeUpdate", function (e) {
+      var count = e.detail && e.detail.count ? e.detail.count : 0;
+      // Persist the count so other pages can read it on initial load
+      try { localStorage.setItem("sugbocents_unclaimed_quests", String(count)); } catch (_) {}
+      document.querySelectorAll(".quest-nav-badge").forEach(function (el) {
+        if (count > 0) { el.classList.remove("is-hidden"); }
+        else           { el.classList.add("is-hidden"); }
+      });
     });
   });
 })();

@@ -1,4 +1,6 @@
 ﻿(function () {
+  var WRAPPED_EMAIL_URL = "https://us-central1-sugbocents.cloudfunctions.net/sendWrappedEmail";
+
   function showMessage(elId, text, isError) {
     var el = document.getElementById(elId);
     if (!el) { return; }
@@ -6,6 +8,131 @@
     el.className = "text-sm mt-2 font-semibold " + (isError ? "text-red-600" : "text-emerald-700");
     el.classList.remove("hidden");
     setTimeout(function () { el.classList.add("hidden"); }, 3200);
+  }
+
+  function formatPhp(amount) {
+    return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(Number(amount) || 0);
+  }
+
+  function getCurrentWeekRange() {
+    var today = new Date();
+    var day = today.getDay();
+    var mondayOffset = (day + 6) % 7;
+    var monday = new Date(today);
+    monday.setDate(today.getDate() - mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+
+    var sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return { monday: monday, sunday: sunday };
+  }
+
+  function buildWeekLabel(monday, sunday) {
+    var start = monday.toLocaleDateString("en-PH", { month: "short", day: "numeric" });
+    var end = sunday.toLocaleDateString("en-PH", { month: "short", day: "numeric" });
+    return start + " - " + end;
+  }
+
+  function toCategoryLabel(categoryId) {
+    var map = {
+      transport: "Transport",
+      food: "Food",
+      groceries: "Groceries",
+      health: "Health",
+      education: "Education",
+      utilities: "Utilities",
+      personal_care: "Personal Care",
+      shopping: "Shopping",
+      entertainment: "Entertainment",
+      others: "Others",
+      other: "Others"
+    };
+    var clean = String(categoryId || "others").toLowerCase();
+    return map[clean] || "Others";
+  }
+
+  function buildWeeklyReportData() {
+    if (!window.StorageAPI) { return null; }
+    var expenses = window.StorageAPI.getExpenses();
+    var weekRange = getCurrentWeekRange();
+
+    var weeklyExpenses = expenses.filter(function (entry) {
+      var ts = new Date(entry.timestamp);
+      return ts >= weekRange.monday && ts <= weekRange.sunday;
+    });
+
+    var totalSpent = 0;
+    var categoryCounts = {};
+    weeklyExpenses.forEach(function (entry) {
+      var amount = Number(entry.amount) || 0;
+      if (amount < 0) { amount = 0; }
+      totalSpent += amount;
+      var cat = String(entry.category || "others").toLowerCase();
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    });
+
+    var topCategoryKey = "others";
+    Object.keys(categoryCounts).forEach(function (key) {
+      if ((categoryCounts[key] || 0) > (categoryCounts[topCategoryKey] || 0)) {
+        topCategoryKey = key;
+      }
+    });
+
+    var user = window.StorageAPI.getCurrentUser() || {};
+    var xpInfo = window.StorageAPI.getXpInfo ? window.StorageAPI.getXpInfo() : { levelName: "Rookie Saver" };
+
+    return {
+      totalSpent: Number(totalSpent.toFixed(2)),
+      weeklyBudget: Number(Number(user.weeklyBudget || 0).toFixed(2)),
+      topCategory: toCategoryLabel(topCategoryKey),
+      expenseCount: weeklyExpenses.length,
+      streak: Number(window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0),
+      level: String(xpInfo.levelName || "Rookie Saver"),
+      weekLabel: buildWeekLabel(weekRange.monday, weekRange.sunday)
+    };
+  }
+
+  function setSendButtonState(button, isLoading) {
+    if (!button) { return; }
+    button.disabled = isLoading;
+    button.textContent = isLoading ? "Sending report..." : "📩 Send me this week's report";
+    button.style.opacity = isLoading ? "0.7" : "1";
+    button.style.cursor = isLoading ? "not-allowed" : "pointer";
+  }
+
+  function renderWeeklyReportMeta() {
+    if (!window.StorageAPI) { return; }
+    var metaEl = document.getElementById("weeklyReportMeta");
+    var coolEl = document.getElementById("weeklyReportCooldown");
+    if (!metaEl || !coolEl) { return; }
+
+    var lastSentAt = window.StorageAPI.getLastEmailSentAt ? window.StorageAPI.getLastEmailSentAt() : null;
+    if (!lastSentAt) {
+      metaEl.textContent = "Last sent: Never";
+      coolEl.textContent = "Tip: Server limit is up to 5 sends/day per network.";
+      return;
+    }
+
+    var sentDate = new Date(lastSentAt);
+    if (Number.isNaN(sentDate.getTime())) {
+      metaEl.textContent = "Last sent: Unknown";
+      coolEl.textContent = "Tip: Server limit is up to 5 sends/day per network.";
+      return;
+    }
+
+    metaEl.textContent = "Last sent: " + sentDate.toLocaleString("en-PH", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    });
+
+    var todayKey = new Date().toDateString();
+    coolEl.textContent = sentDate.toDateString() === todayKey
+      ? "Cooldown hint: You already sent a report today. Daily max is 5 sends per network."
+      : "Tip: Server limit is up to 5 sends/day per network.";
   }
 
   // ── Profile basics ───────────────────────────────────────
@@ -140,6 +267,74 @@
     }
   }
 
+  function initWeeklyReportSection() {
+    var sendBtn = document.getElementById("sendReportBtn");
+    var toggleInput = document.getElementById("emailOptInToggle");
+
+    if (!sendBtn || !toggleInput || !window.StorageAPI) { return; }
+
+    toggleInput.checked = window.StorageAPI.getEmailOptIn ? window.StorageAPI.getEmailOptIn() : false;
+    wireVisualToggle("emailOptInTrack", "emailOptInThumb", "emailOptInToggle", true, false, function (checked) {
+      var result = window.StorageAPI.setEmailOptIn
+        ? window.StorageAPI.setEmailOptIn(checked)
+        : window.StorageAPI.savePreferences({ emailOptIn: checked });
+      if (!result || result.ok === false) {
+        showMessage("weeklyReportMsg", (result && result.error) || "Couldn't save report preference.", true);
+        return;
+      }
+      showMessage("weeklyReportMsg", "Weekly report preference saved.", false);
+    });
+
+    renderWeeklyReportMeta();
+
+    sendBtn.addEventListener("click", async function () {
+      var user = window.StorageAPI.getCurrentUser ? window.StorageAPI.getCurrentUser() : null;
+      if (!user || !user.email) {
+        showMessage("weeklyReportMsg", "No email found on your account.", true);
+        return;
+      }
+
+      var weeklyData = buildWeeklyReportData();
+      if (!weeklyData) {
+        showMessage("weeklyReportMsg", "Unable to prepare weekly report data.", true);
+        return;
+      }
+
+      setSendButtonState(sendBtn, true);
+      try {
+        var response = await fetch(WRAPPED_EMAIL_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: user.email,
+            firstName: user.firstName || "Saver",
+            weeklyData: weeklyData
+          })
+        });
+
+        var data = {};
+        try {
+          data = await response.json();
+        } catch (_) {}
+
+        if (!response.ok || !data.success) {
+          showMessage("weeklyReportMsg", data.error || "Couldn't send - try again.", true);
+          return;
+        }
+
+        if (window.StorageAPI.setLastEmailSentAt) {
+          window.StorageAPI.setLastEmailSentAt(new Date().toISOString());
+        }
+        renderWeeklyReportMeta();
+        showMessage("weeklyReportMsg", "Report sent to your email \u2713", false);
+      } catch (e) {
+        showMessage("weeklyReportMsg", "Couldn't send - try again.", true);
+      } finally {
+        setSendButtonState(sendBtn, false);
+      }
+    });
+  }
+
   function initBudgetAndAccountSection() {
     if (!window.StorageAPI) { return; }
     var form = document.getElementById("budgetForm");
@@ -249,6 +444,7 @@
     initProfileSection();
     initStreakSection();
     initDisplaySection();
+    initWeeklyReportSection();
     initBudgetAndAccountSection();
 
     // ── Demo seed button ─────────────────────────────────────

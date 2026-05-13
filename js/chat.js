@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   // Mood → data-mood mapping for CSS TigomFace
   var MOOD_MAP = {
     happy:      "happy",
@@ -141,19 +141,25 @@
     block.id = "chatWelcomeBlock";
     block.className = "chat-welcome-block";
 
-    var msg = document.createElement("div");
-    msg.className = "chat-msg chat-msg--bot";
-    msg.appendChild(makeTigomFace("happy"));
+    // Tigom face — medium size for the welcome state
+    var face = makeTigomFace("happy");
+    face.classList.replace("tigom-face--sm", "tigom-face--md");
+    block.appendChild(face);
 
-    var inner = document.createElement("div");
-    var bubble = document.createElement("div");
-    bubble.className = "chat-bubble chat-bubble--welcome";
-    bubble.id = "chatWelcomeText";
-    bubble.textContent = "Hi! I\u2019m Tigom, your personal budgeting buddy. Ask me anything about your finances.";
-    inner.appendChild(bubble);
-    msg.appendChild(inner);
-    block.appendChild(msg);
+    // Heading
+    var heading = document.createElement("h2");
+    heading.className = "chat-welcome-heading";
+    heading.textContent = "Hi! I\u2019m Tigom \uD83D\uDC4B";
+    block.appendChild(heading);
 
+    // Sub-text (personalized by updateWelcomePersonalization later)
+    var sub = document.createElement("p");
+    sub.className = "chat-welcome-sub";
+    sub.id = "chatWelcomeText";
+    sub.textContent = "Your personal budgeting buddy. Ask me anything about your finances.";
+    block.appendChild(sub);
+
+    // Suggestion chips
     var suggestions = document.createElement("div");
     suggestions.className = "chat-suggestions";
     SUGGESTIONS.forEach(function (item) {
@@ -170,7 +176,6 @@
     block.appendChild(suggestions);
 
     container.appendChild(block);
-    scrollToBottom();
   }
 
   function updateWelcomePersonalization() {
@@ -367,14 +372,14 @@
     bubble.className = "chat-bubble";
     bubble.textContent = text;
 
+    inner.appendChild(bubble);
     if (timestamp) {
       var time = document.createElement("span");
       time.className = "chat-bubble-time";
       time.textContent = fmtTime(timestamp);
-      bubble.appendChild(time);
+      inner.appendChild(time);
     }
 
-    inner.appendChild(bubble);
     msg.appendChild(inner);
     container.appendChild(msg);
     scrollToBottom();
@@ -629,47 +634,48 @@
     }
   }
 
+  function handleNewChat() {
+    if (!window.StorageAPI) { return; }
+    var currentThread = window.StorageAPI.getActiveChatThread
+      ? window.StorageAPI.getActiveChatThread()
+      : null;
+    var currentHasMessages = currentThread && currentThread.messages && currentThread.messages.length > 0;
+    if (!currentHasMessages && !isPendingNewThread) {
+      closeThreadDrawer();
+      return;
+    }
+    var threads = window.StorageAPI.getChatThreads ? window.StorageAPI.getChatThreads() : [];
+    if (threads.length >= 20) {
+      showInfoToast("You\u2019ve reached the 20-chat limit. Delete an older conversation to start a new one.");
+      closeThreadDrawer();
+      return;
+    }
+    isPendingNewThread = true;
+    activeThreadId = null;
+    var container = getMessageContainer();
+    if (container) { container.innerHTML = ""; }
+    renderWelcomeBlock();
+    renderThreadSidebar();
+    closeThreadDrawer();
+  }
+
   function initThreadActions() {
     initThreadDrawer();
 
     var newBtn = document.getElementById("chatNewThreadBtn");
-    if (!newBtn) { return; }
-    newBtn.addEventListener("click", function () {
-      if (!window.StorageAPI) { return; }
-      // Don't navigate away if already on an empty (unsaved) thread
-      var currentThread = window.StorageAPI.getActiveChatThread
-        ? window.StorageAPI.getActiveChatThread()
-        : null;
-      var currentHasMessages = currentThread && currentThread.messages && currentThread.messages.length > 0;
-      if (!currentHasMessages && !isPendingNewThread) {
-        closeThreadDrawer();
-        return;
-      }
-      // Enforce 20-thread limit
-      var threads = window.StorageAPI.getChatThreads ? window.StorageAPI.getChatThreads() : [];
-      if (threads.length >= 20) {
-        showInfoToast("You've reached the 20-chat limit. Delete an older conversation to start a new one.");
-        closeThreadDrawer();
-        return;
-      }
-      // Defer actual thread creation until the user sends their first message
-      isPendingNewThread = true;
-      activeThreadId = null;
-      var container = getMessageContainer();
-      if (container) { container.innerHTML = ""; }
-      renderWelcomeBlock();
-      renderThreadSidebar();
-      closeThreadDrawer();
-    });
+    if (newBtn) { newBtn.addEventListener("click", handleNewChat); }
+
+    var newHeaderBtn = document.getElementById("chatNewChatHeaderBtn");
+    if (newHeaderBtn) { newHeaderBtn.addEventListener("click", handleNewChat); }
   }
 
   function initEmbeddedMode() {
     if (window.self === window.top) { return; }
     document.body.classList.add("chat-embedded");
 
-    // Hide the non-functional thread hamburger (sidebar is hidden in embedded mode)
-    var toggle = document.getElementById("chatSidebarToggle");
-    if (toggle) { toggle.style.display = "none"; }
+    // Hide history/new-chat controls (sidebar is hidden in embedded mode)
+    var headerActions = document.getElementById("chatHeaderActions");
+    if (headerActions) { headerActions.style.display = "none"; }
 
     var backBtn = document.getElementById("chatBackBtn");
     if (!backBtn) { return; }

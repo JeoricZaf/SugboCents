@@ -318,23 +318,31 @@
     var myUid   = session && session.userId ? session.userId : null;
     if (!myUid) { return; }
 
-    // Show friend code
+    // Show friend code (NAME#NNNN) — fallback to raw UID for legacy users
     var codeEl = document.getElementById("friendCodeValue");
-    if (codeEl) { codeEl.textContent = myUid; }
+    if (codeEl) {
+      var selfUser = window.StorageAPI && window.StorageAPI.getCurrentUser ? window.StorageAPI.getCurrentUser() : null;
+      var displayCode = (selfUser && selfUser.friendCode) ? selfUser.friendCode : myUid;
+      // Capitalise the name portion for display (carlos#4821 → Carlos#4821)
+      displayCode = displayCode.replace(/^([a-z])/i, function (c) { return c.toUpperCase(); });
+      codeEl.textContent = displayCode;
+    }
 
-    // Copy button
+    // Copy button — copy the friendly code, not the raw UID
     var copyBtn = document.getElementById("friendCodeCopy");
     if (copyBtn) {
       copyBtn.addEventListener("click", function () {
+        var selfUser = window.StorageAPI && window.StorageAPI.getCurrentUser ? window.StorageAPI.getCurrentUser() : null;
+        var codeToCopy = (selfUser && selfUser.friendCode) ? selfUser.friendCode : myUid;
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(myUid).then(function () {
+          navigator.clipboard.writeText(codeToCopy).then(function () {
             copyBtn.textContent = "\u2713 Copied!";
             setTimeout(function () { copyBtn.textContent = "\uD83D\uDCCB Copy"; }, 2000);
           });
         } else {
           // Fallback
           var ta = document.createElement("textarea");
-          ta.value = myUid;
+          ta.value = codeToCopy;
           document.body.appendChild(ta);
           ta.select();
           document.execCommand("copy");
@@ -370,10 +378,23 @@
   async function handleSendRequest(myUid) {
     var input = document.getElementById("friendAddInput");
     if (!input) { return; }
-    var targetUid = (input.value || "").trim();
-    if (!targetUid) { setAddStatus("Please enter a friend code.", "error"); return; }
-    if (targetUid === myUid) { setAddStatus("That\u2019s your own code!", "error"); return; }
+    var rawInput = (input.value || "").trim();
+    if (!rawInput) { setAddStatus("Please enter a friend code.", "error"); return; }
     if (!window.FirestoreService) { setAddStatus("Firebase not available.", "error"); return; }
+
+    // Resolve NAME#NNNN shortcode to UID before proceeding
+    var targetUid = rawInput;
+    if (/^[a-zA-Z]+#\d{4}$/.test(rawInput)) {
+      setAddStatus("Looking up code\u2026", "");
+      var resolved = await window.FirestoreService.findUserByCode(rawInput);
+      if (!resolved || !resolved.uid) {
+        setAddStatus("No user found with that code. Double-check and try again.", "error");
+        return;
+      }
+      targetUid = resolved.uid;
+    }
+
+    if (targetUid === myUid) { setAddStatus("That\u2019s your own code!", "error"); return; }
 
     setAddStatus("Sending\u2026", "");
     try {

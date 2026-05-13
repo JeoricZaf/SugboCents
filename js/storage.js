@@ -175,6 +175,16 @@
   ];
 
   var XP_LOG_DAILY_CAP = 25;
+
+  // Minimal daily quest specs for cross-page badge computation.
+  // Mirrors DAILY_QUEST_STORAGE_CONDITIONS in quests.js — keep in sync if daily quests change.
+  var DAILY_QUEST_SPECS_INTERNAL = [
+    { id: "daily-first-log",    condType: "log_count_today",      target: 1 },
+    { id: "daily-triple-log",   condType: "log_count_today",      target: 3 },
+    { id: "daily-categories",   condType: "category_count_today", target: 3 },
+    { id: "daily-under-budget", condType: "under_daily_budget",   target: 1 }
+  ];
+
   var XP_LEVELS = [
     { level: 1, name: "Rookie Saver", minXp: 0 },
     { level: 2, name: "Budget Aware", minXp: 50 },
@@ -322,6 +332,13 @@
         bestMonthSaved: { value: 0, month: null }
       };
     }
+    if (!user.preferences || typeof user.preferences !== "object") {
+      user.preferences = {};
+    }
+    if (user.clearedQuestAt === undefined) { user.clearedQuestAt = null; }
+    if (!Array.isArray(user.claimedQuestIds)) { user.claimedQuestIds = []; }
+    // Holds a completed-but-unclaimed daily quest that expired at midnight so reward is never lost
+    if (user.pendingDailyReward === undefined) { user.pendingDailyReward = null; }
   }
 
   function getLevelFromXp(xp) {
@@ -517,13 +534,23 @@
       return;
     }
 
+    // Fetch all Firestore data FIRST (before touching localStorage).
+    // This is critical: loading the store before the awaits captures a stale
+    // snapshot that can be seconds old by the time Firestore returns, silently
+    // overwriting any local quest progress, expense additions, or XP changes
+    // the user made while the round-trip was in flight.
+    var firestoreUser     = await window.FirestoreService.getUserDoc(userId);
+    var firestoreExpenses = await window.FirestoreService.getExpenseDocs(userId);
+    var firestoreQuickAdd = await window.FirestoreService.getQuickAddItemDocs(userId);
+
+    // Load the store NOW — after all awaits — so we get the freshest local
+    // state (including any quest completions triggered during the fetch).
     var store = loadStore();
     var user = getUserById(store, userId);
     if (!user) {
       return;
     }
 
-    var firestoreUser = await window.FirestoreService.getUserDoc(userId);
     if (firestoreUser) {
       if (typeof firestoreUser.weeklyBudget === "number") {
         user.weeklyBudget = sanitizeAmount(firestoreUser.weeklyBudget);
@@ -549,9 +576,16 @@
       if (firestoreUser.dailyXpLog && typeof firestoreUser.dailyXpLog === "object") {
         user.dailyXpLog = firestoreUser.dailyXpLog;
       }
+      if (typeof firestoreUser.emailOptIn === "boolean") {
+        user.preferences = user.preferences || {};
+        user.preferences.emailOptIn = firestoreUser.emailOptIn;
+      }
+      if (typeof firestoreUser.lastEmailSentAt === "string") {
+        user.preferences = user.preferences || {};
+        user.preferences.lastEmailSentAt = firestoreUser.lastEmailSentAt;
+      }
     }
 
-    var firestoreExpenses = await window.FirestoreService.getExpenseDocs(userId);
     if (Array.isArray(firestoreExpenses) && firestoreExpenses.length > 0) {
       // Smart merge: Firestore is ground truth for confirmed records.
       // Also preserve any local-only entries (pending cloud writes from offline
@@ -564,7 +598,6 @@
       user.expenses = firestoreExpenses.concat(pendingLocal);
     }
 
-    var firestoreQuickAdd = await window.FirestoreService.getQuickAddItemDocs(userId);
     if (Array.isArray(firestoreQuickAdd) && firestoreQuickAdd.length > 0) {
       user.quickAddItems = firestoreQuickAdd;
     }
@@ -591,6 +624,7 @@
     }
 
     if (!existing) {
+      var newFriendCode = generateFriendCode(firstName || sessionUser.id);
       store.users.push({
         id: sessionUser.id,
         firstName: firstName,
@@ -608,6 +642,7 @@
         dailyXpLog: { dateKey: getLocalDateKey(), xpFromLogging: 0 },
         goals: [],
         preferences: {},
+        friendCode: newFriendCode,
         createdAt: nowIso()
       });
 
@@ -624,8 +659,17 @@
       dailyXpLog: { dateKey: getLocalDateKey(), xpFromLogging: 0 },
           createdAt: nowIso()
         });
+        // Claim the friend code in Firestore (fire-and-forget, non-blocking)
+        window.FirestoreService.claimFriendCode(sessionUser.id, newFriendCode).catch(function () {});
       }
     } else {
+      // Ensure existing Firebase users who pre-date shortcodes get a code assigned
+      if (!existing.friendCode) {
+        existing.friendCode = generateFriendCode(existing.firstName || firstName || "user");
+        if (window.FirestoreService && window.FirestoreService.claimFriendCode) {
+          window.FirestoreService.claimFriendCode(sessionUser.id, existing.friendCode).catch(function () {});
+        }
+      }
       if (sessionUser.email) {
         existing.email = sanitizeEmail(sessionUser.email);
       }
@@ -739,8 +783,22 @@
       expenses: Array.isArray(user.expenses) ? user.expenses : [],
       xp: user.xp || 0,
       level: user.level || 1,
-      unlockedAchievements: user.unlockedAchievements.slice()
+      unlockedAchievements: user.unlockedAchievements.slice(),
+      friendCode: user.friendCode || null,
+      // Gamification fields required by leaderboard.js getSelf()
+      questsCompleted: user.questsCompleted || 0,
+      weeklyXpStart: typeof user.weeklyXpStart === "number" ? user.weeklyXpStart : 0,
+      weeklyXpStartDate: user.weeklyXpStartDate || null
     };
+  }
+
+  // ── Friend Code ─────────────────────────────────────────────────────
+  // Generates a NAME#NNNN friend shortcode (e.g. carlos#4821)
+  // Stored all-lowercase; displayed with first letter capitalized in the UI.
+  function generateFriendCode(firstName) {
+    var name = String(firstName || "user").toLowerCase().replace(/[^a-z]/g, "").slice(0, 10) || "user";
+    var digits = String(1000 + Math.floor(Math.random() * 9000));
+    return name + "#" + digits;
   }
 
   function registerUserLocal(input, legacyPassword) {
@@ -793,6 +851,7 @@
       dailyXpLog: { dateKey: getLocalDateKey(), xpFromLogging: 0 },
       goals: [],
       preferences: {},
+      friendCode: generateFriendCode(firstName),
       createdAt: nowIso()
     };
 
@@ -984,9 +1043,13 @@
       return beforeUnlockable.indexOf(id) === -1;
     });
     saveStore(store);
-    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
-    // Sprint 3: Update quest progress after each expense
+    // Sprint 3: Update quest progress BEFORE dispatching so the UI always sees
+    // accurate quest state in the single dataChanged event that follows.
     updateQuestProgress();
+    updateDailyQuestProgressInternal(store, user);
+    // Update cross-page badge count for ALL quests (not just the tracked one).
+    _computeAndCacheQuestBadge(user);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
 
     if (window.FirestoreService) {
       window.FirestoreService.addExpenseDoc(store.session.userId, entry);
@@ -1002,8 +1065,26 @@
         weeklyXpStart: user.weeklyXpStart || 0,
         weeklyXpStartDate: user.weeklyXpStartDate || null,
         level: xpInfoForSync.level,
-        levelName: xpInfoForSync.levelName
+        levelName: xpInfoForSync.levelName,
+        friendCode: user.friendCode || null
       });
+      // Write a feed entry so friends see this activity on the leaderboard live feed
+      if (window.FirestoreService.writeGlobalFeedEntry) {
+        var CAT_EMOJI = {
+          food: "🍜", transport: "🚌", coffee: "☕", groceries: "🛒",
+          shopping: "🛍️", bills: "💡", entertainment: "🎮", health: "💊",
+          education: "📚", others: "📊"
+        };
+        var catEmoji = CAT_EMOJI[entry.category] || "📊";
+        var firstName = user.firstName || "Someone";
+        window.FirestoreService.writeGlobalFeedEntry(store.session.userId, {
+          type:          "expense",
+          emoji:         catEmoji,
+          message:       firstName + " logged an expense",
+          authorName:    [user.firstName, user.lastName].filter(Boolean).join(" ") || "Friend",
+          authorInitial: (user.firstName || "?").charAt(0).toUpperCase()
+        });
+      }
     }
 
     return {
@@ -1340,6 +1421,10 @@
     user.dailyXpLog = { dateKey: getLocalDateKey(), xpFromLogging: 0 };
     user.streakCount = 0;
     user.lastMilestone = null;
+    user.activeQuest = null;
+    user.questHistory = [];
+    user.questsCompleted = 0;
+    user.clearedQuestAt = null;
     saveStore(store);
 
     if (window.FirestoreService) {
@@ -1392,6 +1477,12 @@
 
     user.expenses.splice(idx, 1);
     saveStore(store);
+    // Re-compute quest progress after deletion to prevent ghost progress
+    // (stored progress counters must reflect the current expense list).
+    updateQuestProgress();
+    updateDailyQuestProgressInternal(store, user);
+    // Update cross-page badge count for ALL quests after deletion.
+    _computeAndCacheQuestBadge(user);
     window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
 
     if (window.FirestoreService && window.FirestoreService.deleteExpenseDoc) {
@@ -1504,7 +1595,51 @@
       user.preferences[keys[i]] = prefs[keys[i]];
     }
     saveStore(store);
+
+    if (window.FirestoreService) {
+      var cloudPatch = { preferences: user.preferences };
+      if (Object.prototype.hasOwnProperty.call(prefs, "emailOptIn")) {
+        cloudPatch.emailOptIn = user.preferences.emailOptIn === true;
+      }
+      if (Object.prototype.hasOwnProperty.call(prefs, "lastEmailSentAt")) {
+        cloudPatch.lastEmailSentAt = typeof user.preferences.lastEmailSentAt === "string"
+          ? user.preferences.lastEmailSentAt
+          : null;
+      }
+      window.FirestoreService.setUserDoc(store.session.userId, cloudPatch);
+    }
+
     return { ok: true };
+  }
+
+  // ── Sprint 3 Phase 5: Weekly Email Preferences ──────────
+
+  function getEmailOptIn() {
+    var prefs = getPreferences();
+    return prefs.emailOptIn === true;
+  }
+
+  function setEmailOptIn(enabled) {
+    var next = enabled === true;
+    var result = savePreferences({ emailOptIn: next });
+    if (!result.ok) { return result; }
+    return { ok: true, emailOptIn: next };
+  }
+
+  function getLastEmailSentAt() {
+    var prefs = getPreferences();
+    return typeof prefs.lastEmailSentAt === "string" ? prefs.lastEmailSentAt : null;
+  }
+
+  function setLastEmailSentAt(isoString) {
+    var parsed = new Date(isoString);
+    if (Number.isNaN(parsed.getTime())) {
+      return { ok: false, error: "Invalid timestamp." };
+    }
+    var normalized = parsed.toISOString();
+    var result = savePreferences({ lastEmailSentAt: normalized });
+    if (!result.ok) { return result; }
+    return { ok: true, lastEmailSentAt: normalized };
   }
 
   // ── Sprint 2: Goals ──────────────────────────────────────
@@ -2037,10 +2172,71 @@
     if (snapshot.dailyXpLog && typeof snapshot.dailyXpLog === "object") {
       user.dailyXpLog = snapshot.dailyXpLog;
     }
+    if (typeof snapshot.weeklyXpStart === "number") { user.weeklyXpStart = Math.max(0, snapshot.weeklyXpStart); }
+    if (typeof snapshot.weeklyXpStartDate === "string") { user.weeklyXpStartDate = snapshot.weeklyXpStartDate; }
     saveStore(store);
     if (window.FirestoreService) {
       syncGamificationFields(store.session.userId, user);
     }
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    return { ok: true };
+  }
+
+  // ── Dev-only: reset ALL quest state — slot + ALL claim locks ─────────────
+  function devResetAllQuests() {
+    var store = loadStore();
+    if (!store.session) { return { ok: false }; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return { ok: false }; }
+    ensureGamificationFields(user);
+    user.activeQuest     = null;
+    user.claimedQuestIds = [];   // wipe ALL claim locks (daily + weekly) so every quest can be re-tested
+    delete user.clearedQuestAt;
+    saveStore(store);
+    localStorage.setItem("sugbocents_unclaimed_quests", "0");
+    window.dispatchEvent(new CustomEvent("sugbocents:questBadgeUpdate", { detail: { count: 0 } }));
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    return { ok: true };
+  }
+
+  // ── Dev-only: reset quest slot (clears active quest + claim locks) ─────────
+  function devResetQuestSlot() {
+    var store = loadStore();
+    if (!store.session) { return { ok: false }; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return { ok: false }; }
+    ensureGamificationFields(user);
+    user.activeQuest     = null;
+    user.claimedQuestIds = [];
+    user.clearedQuestAt  = null;
+    saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    return { ok: true };
+  }
+
+  // ── Dev-only: set sentimos balance directly ───────────────────────────────
+  function devSetSentimos(amount) {
+    var store = loadStore();
+    if (!store.session) { return { ok: false }; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return { ok: false }; }
+    ensureGamificationFields(user);
+    user.sentimos = Math.max(0, Number(amount) || 0);
+    saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    return { ok: true };
+  }
+
+  // ── Dev-only: give streak freeze charges ─────────────────────────────────
+  function devGiveStreakFreezes(count) {
+    var store = loadStore();
+    if (!store.session) { return { ok: false }; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return { ok: false }; }
+    ensureGamificationFields(user);
+    user.streakFreezeCount  = Math.min(2, Math.max(0, Number(count) || 2));
+    user.streakFreezeActive = user.streakFreezeCount > 0;
+    saveStore(store);
     window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
     return { ok: true };
   }
@@ -2100,21 +2296,57 @@
     var weekNum = getIsoWeekNumber(now);
     var mondayKey = getLocalDateKey(getWeekMondayDate(now));
 
+    // Check if active daily quest has expired (different day)
+    if (user.activeQuest && user.activeQuest.type === "daily") {
+      var todayKey = getLocalDateKey(now);
+      var assignedKey = getLocalDateKey(new Date(user.activeQuest.assignedAt));
+      if (assignedKey !== todayKey) {
+        var expiredDailyQuest = user.activeQuest;
+        // If completed but not yet claimed, preserve in pending slot so the reward is never silently lost
+        if (expiredDailyQuest.completedAt) {
+          var expiredClaimKey = expiredDailyQuest.id + ":" + getLocalDateKey(new Date(expiredDailyQuest.assignedAt));
+          if (user.claimedQuestIds.indexOf(expiredClaimKey) === -1) {
+            user.pendingDailyReward = expiredDailyQuest;
+          }
+        }
+        user.questHistory.unshift(expiredDailyQuest);
+        user.activeQuest = null;
+        user.clearedQuestAt = null;
+        saveStore(store);
+        return null;
+      }
+      return user.activeQuest;
+    }
+
     // Check if active quest is valid for this week
     if (user.activeQuest) {
-      var questMondayKey = getLocalDateKey(new Date(user.activeQuest.assignedAt));
+      // Use getWeekMondayDate so a quest tracked on Tuesday/Wednesday/etc. maps to
+      // the same Monday key as the current week — without this, any non-Monday
+      // assignedAt would never equal mondayKey and the quest gets immediately archived.
+      var questMondayKey = getLocalDateKey(getWeekMondayDate(new Date(user.activeQuest.assignedAt)));
       if (questMondayKey === mondayKey) {
         return user.activeQuest;
       }
-      // Quest is from a previous week — archive it
+      // Quest is from a previous week — archive it, clear slot, reset cleared flag
       user.questHistory.unshift(user.activeQuest);
       user.activeQuest = null;
+      user.clearedQuestAt = null;
+      saveStore(store);
+      return null; // Let user choose from the new week's pool
     }
 
-    // Assign a fresh quest for this week
-    user.activeQuest = _buildFreshQuest(weekNum);
-    saveStore(store);
-    return user.activeQuest;
+    // User explicitly cleared/abandoned their quest — respect that, don't auto-assign
+    if (user.clearedQuestAt) { return null; }
+
+    // First-ever use: no active quest, no cleared flag, no history — auto-assign once
+    if (!user.questHistory || user.questHistory.length === 0) {
+      user.activeQuest = _buildFreshQuest(weekNum);
+      saveStore(store);
+      return user.activeQuest;
+    }
+
+    // Has history but no active quest and no cleared flag — slot is intentionally empty
+    return null;
   }
 
   function getQuestHistory() {
@@ -2124,6 +2356,120 @@
     if (!user) { return []; }
     ensureGamificationFields(user);
     return user.questHistory.slice();
+  }
+
+  function setCurrentQuest(questObj) {
+    var store = loadStore();
+    if (!store.session) { return; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return; }
+    ensureGamificationFields(user);
+
+    if (questObj === null || questObj === undefined) {
+      user.activeQuest = null;
+      user.clearedQuestAt = new Date().toISOString();
+    } else {
+      // Guard: preserve completedAt when the same quest is being re-saved without it
+      // (e.g., a stale UI copy is passed in). Only allow completedAt to be cleared
+      // when a brand-new quest with a different id is being tracked.
+      if (user.activeQuest &&
+          user.activeQuest.completedAt &&
+          user.activeQuest.id === questObj.id &&
+          !questObj.completedAt) {
+        questObj = Object.assign({}, questObj, { completedAt: user.activeQuest.completedAt });
+      }
+      user.activeQuest = questObj;
+      delete user.clearedQuestAt;
+    }
+    saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+  }
+
+  // Generate a per-period claim key for a quest (daily resets daily, weekly resets weekly)
+  function getQuestClaimKey(questId, questType) {
+    var now = new Date();
+    if (questType === "daily") {
+      return questId + ":" + getLocalDateKey(now);
+    }
+    // Weekly key — use Monday date of current week
+    var monday = getWeekMondayDate(now);
+    return questId + ":" + getLocalDateKey(monday);
+  }
+
+  function isQuestClaimed(questId, questType) {
+    var store = loadStore();
+    if (!store.session) { return false; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return false; }
+    ensureGamificationFields(user);
+    var key = getQuestClaimKey(questId, questType || "weekly");
+    return user.claimedQuestIds.indexOf(key) !== -1;
+  }
+
+  function claimQuestReward(questId, questDef) {
+    var store = loadStore();
+    if (!store.session) { return { ok: false, error: "No session" }; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return { ok: false, alreadyClaimed: true }; }
+    ensureGamificationFields(user);
+
+    // Backward-compat: called with no args → use activeQuest
+    if (!questId && user.activeQuest) {
+      questId  = user.activeQuest.id;
+      questDef = user.activeQuest;
+    }
+    if (!questId || !questDef) { return { ok: false, error: "No quest specified" }; }
+
+    var questType = questDef.type || "weekly";
+    // For daily quests, use the quest's own assignedAt date for the claim key so that
+    // a completed-but-unclaimed quest that expired at midnight can still be claimed the
+    // next day (the key is tied to when the quest ran, not when the user claims).
+    var claimKey;
+    if (questType === "daily" && questDef.assignedAt) {
+      claimKey = questId + ":" + getLocalDateKey(new Date(questDef.assignedAt));
+    } else {
+      claimKey = getQuestClaimKey(questId, questType);
+    }
+
+    // Prevent double-claim
+    if (user.claimedQuestIds.indexOf(claimKey) !== -1) { return { ok: false, alreadyClaimed: true }; }
+
+    // Mark claimed BEFORE awarding — prevents double-grant on rapid clicks
+    user.claimedQuestIds.push(claimKey);
+    // Clear pending slot if this was the pending daily reward
+    if (user.pendingDailyReward && user.pendingDailyReward.id === questId) {
+      user.pendingDailyReward = null;
+    }
+    saveStore(store);
+
+    var defaultSentimos = questType === "daily" ? 10 : 25;
+    var result = {
+      ok: true,
+      title: questDef.title || "",
+      xpReward: questDef.xpReward || 0,
+      sentimosReward: questDef.sentimosReward !== undefined ? questDef.sentimosReward : defaultSentimos
+    };
+
+    // Award XP and Sentimos
+    addXpInternal(user, result.xpReward, "quest-complete");
+    addSentimosInternal(user, result.sentimosReward, "quest-" + questId);
+    user.questsCompleted = (user.questsCompleted || 0) + 1;
+
+    // Archive and clear activeQuest slot if this was the tracked quest
+    if (user.activeQuest && user.activeQuest.id === questId) {
+      var questArchive = Object.assign({}, user.activeQuest, {
+        completedAt: user.activeQuest.completedAt || new Date().toISOString(),
+        rewardClaimed: true
+      });
+      user.questHistory.unshift(questArchive);
+      user.activeQuest = null;
+    }
+
+    saveStore(store);
+    // Re-compute badge count immediately so the nav badge reflects the claim.
+    _computeAndCacheQuestBadge(user);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+    return result;
   }
 
   function _completeQuestInternal(store, user, quest) {
@@ -2148,6 +2494,83 @@
     }
   }
 
+  function updateDailyQuestProgressInternal(store, user) {
+    if (!user.activeQuest) { return; }
+    if (user.activeQuest.type !== "daily") { return; }
+    if (user.activeQuest.completedAt) { return; }
+
+    var now = new Date();
+    var todayKey = getLocalDateKey(now);
+    var assignedKey = getLocalDateKey(new Date(user.activeQuest.assignedAt));
+    if (assignedKey !== todayKey) {
+      // Expired daily — archive and clear (getCurrentQuest will also handle this)
+      user.questHistory.unshift(user.activeQuest);
+      user.activeQuest = null;
+      user.clearedQuestAt = null;
+      saveStore(store);
+      return;
+    }
+
+    var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    var todayEnd   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+    var expenses   = Array.isArray(user.expenses) ? user.expenses : [];
+
+    // Forward-looking: only count expenses logged after the quest was assigned
+    var assignedCutoff = user.activeQuest.assignedAt ? new Date(user.activeQuest.assignedAt) : todayStart;
+    if (assignedCutoff < todayStart) { assignedCutoff = todayStart; }
+
+    var todayExp   = expenses.filter(function (e) {
+      var d = new Date(e.timestamp);
+      return d >= assignedCutoff && d < todayEnd;
+    });
+
+    var cond = user.activeQuest.conditions && user.activeQuest.conditions[0];
+    if (!cond) { return; }
+
+    var newProgress = 0;
+    switch (cond.type) {
+      case "log_count_today":
+        newProgress = Math.min(cond.target, todayExp.length);
+        break;
+      case "category_count_today": {
+        var cats = {};
+        todayExp.forEach(function (e) { cats[e.category || "others"] = true; });
+        newProgress = Math.min(cond.target, Object.keys(cats).length);
+        break;
+      }
+      case "under_daily_budget": {
+        var weeklyBudget = user.weeklyBudget || 0;
+        if (weeklyBudget <= 0) { break; }
+        var dailyLimit = weeklyBudget / 7;
+        var spent = todayExp.reduce(function (s, e) { return s + (Number(e.amount) || 0); }, 0);
+        newProgress = spent <= dailyLimit ? 1 : 0;
+        break;
+      }
+      default:
+        newProgress = cond.progress || 0;
+    }
+
+    cond.progress = newProgress;
+
+    if (cond.progress >= cond.target) {
+      // Note: caller (addExpense / removeExpense) dispatches dataChanged after this returns.
+      user.activeQuest.completedAt = new Date().toISOString();
+      saveStore(store);
+      window.dispatchEvent(new CustomEvent("sugbocents:questCompleted", {
+        detail: {
+          title: user.activeQuest.title,
+          xpReward: user.activeQuest.xpReward || 0,
+          sentimosReward: user.activeQuest.sentimosReward || 10,
+          questId: user.activeQuest.id
+        }
+      }));
+    } else {
+      // If progress dropped below target (e.g., an expense was deleted), un-complete the quest.
+      if (user.activeQuest.completedAt) { user.activeQuest.completedAt = null; }
+      saveStore(store);
+    }
+  }
+
   function updateQuestProgress() {
     var store = loadStore();
     if (!store.session) { return; }
@@ -2155,22 +2578,26 @@
     if (!user) { return; }
     ensureGamificationFields(user);
 
-    // Ensure quest is assigned
-    var now = new Date();
-    var weekNum = getIsoWeekNumber(now);
-    var mondayKey = getLocalDateKey(getWeekMondayDate(now));
+    // Only update if user has an active, incomplete quest for this week
+    if (!user.activeQuest) { return; }
 
-    if (!user.activeQuest) {
-      user.activeQuest = _buildFreshQuest(weekNum);
-    } else {
-      var questMondayKey = getLocalDateKey(new Date(user.activeQuest.assignedAt));
-      if (questMondayKey !== mondayKey) {
-        user.questHistory.unshift(user.activeQuest);
-        user.activeQuest = _buildFreshQuest(weekNum);
-      }
+    var now = new Date();
+    var mondayKey = getLocalDateKey(getWeekMondayDate(now));
+    // Use getWeekMondayDate so a quest tracked on Tuesday/Wednesday/etc. maps to
+    // the same Monday key as the current week.
+    var questMondayKey = getLocalDateKey(getWeekMondayDate(new Date(user.activeQuest.assignedAt)));
+
+    if (questMondayKey !== mondayKey) {
+      // Quest is from a previous week — archive it
+      user.questHistory.unshift(user.activeQuest);
+      user.activeQuest = null;
+      user.clearedQuestAt = null;
+      saveStore(store);
+      return;
     }
 
-    if (user.activeQuest.completedAt) { return; }
+    if (user.activeQuest.completedAt) { return; } // Already complete, waiting for claim
+    if (user.activeQuest.type === "daily") { return; } // Daily quests handled by updateDailyQuestProgressInternal
 
     var expenses = Array.isArray(user.expenses) ? user.expenses : [];
     var weeklyBudget = user.weeklyBudget || 0;
@@ -2179,9 +2606,13 @@
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
+    // Forward-looking: only count expenses logged after the quest was assigned
+    var questAssignedAt = user.activeQuest.assignedAt ? new Date(user.activeQuest.assignedAt) : monday;
+    var weekCutoff = questAssignedAt > monday ? questAssignedAt : monday;
+
     var weekExpenses = expenses.filter(function (e) {
       var d = new Date(e.timestamp);
-      return d >= monday && d <= sunday;
+      return d >= weekCutoff && d <= sunday;
     });
 
     // Count unique log days
@@ -2220,15 +2651,12 @@
         var dk = getLocalDateKey(e.timestamp);
         spendByDay[dk] = (spendByDay[dk] || 0) + (Number(e.amount) || 0);
       });
-      var allGood = true;
       Object.keys(spendByDay).forEach(function (dk) {
         if (spendByDay[dk] <= dailySlice) {
           underBudgetDays += 1;
-        } else {
-          allGood = false;
+          noOverspendDays += 1;
         }
       });
-      noOverspendDays = allGood ? logDaysCount : 0;
     }
 
     // Frugal week: total spent ≤ 50% of weekly budget
@@ -2243,10 +2671,10 @@
     // XP earned this week — reset weekly snapshot on new week
     var weekMondayKey = getLocalDateKey(monday);
     if (user.weeklyXpStartDate !== weekMondayKey) {
-      user.weeklyXpStart = user.totalXp || user.xp || 0;
+      user.weeklyXpStart = user.xp || 0;
       user.weeklyXpStartDate = weekMondayKey;
     }
-    var xpEarnedThisWeek = Math.max(0, ((user.totalXp || user.xp || 0) - (user.weeklyXpStart || 0)));
+    var xpEarnedThisWeek = Math.max(0, (user.xp || 0) - (user.weeklyXpStart || 0));
 
     var progressMap = {
       "log_days": logDaysCount,
@@ -2274,14 +2702,81 @@
     });
 
     if (allMet) {
-      _completeQuestInternal(store, user, user.activeQuest);
+      // Mark as completed — user claims rewards via claimQuestReward()
+      // Note: caller (addExpense / removeExpense) dispatches dataChanged after this returns.
+      user.activeQuest.completedAt = new Date().toISOString();
+      saveStore(store);
+      window.dispatchEvent(new CustomEvent("sugbocents:questCompleted", {
+        detail: {
+          title: user.activeQuest.title,
+          xpReward: user.activeQuest.xpReward || 0,
+          sentimosReward: user.activeQuest.sentimosReward || 25,
+          questId: user.activeQuest.id
+        }
+      }));
     } else {
+      // If progress dropped below target (e.g., an expense was deleted), un-complete the quest.
+      if (user.activeQuest.completedAt) { user.activeQuest.completedAt = null; }
       saveStore(store);
       if (anyTick) {
         var questSnap = JSON.parse(JSON.stringify(user.activeQuest));
         window.dispatchEvent(new CustomEvent("sugbocents:questProgressTick", { detail: questSnap }));
       }
     }
+  }
+
+  // Returns the most recent completed-but-unclaimed daily quest that expired at midnight,
+  // so the UI can still show a Claim button the next day.
+  function getPendingDailyReward() {
+    var store = loadStore();
+    if (!store.session) { return null; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return null; }
+    ensureGamificationFields(user);
+    if (!user.pendingDailyReward) { return null; }
+    var q = user.pendingDailyReward;
+    // Verify not already claimed (uses the assignedAt date so it matches claimQuestReward's key)
+    var claimKey = q.id + ":" + getLocalDateKey(new Date(q.assignedAt));
+    if (user.claimedQuestIds.indexOf(claimKey) !== -1) {
+      user.pendingDailyReward = null;
+      saveStore(store);
+      return null;
+    }
+    return q;
+  }
+
+  function checkQuestBadge() {
+    var store = loadStore();
+    if (!store.session) { return 0; }
+    var user = getUserById(store, store.session.userId);
+    if (!user) { return 0; }
+    ensureGamificationFields(user);
+    var count = 0;
+
+    // Check active quest (completed but not yet claimed)
+    if (user.activeQuest && user.activeQuest.completedAt) {
+      var qt = user.activeQuest.type || "weekly";
+      var questId = user.activeQuest.id;
+      var now = new Date();
+      var periodKey;
+      if (qt === "daily") {
+        // Use assignedAt date to match claimQuestReward's key
+        var assignedDate = user.activeQuest.assignedAt ? new Date(user.activeQuest.assignedAt) : now;
+        periodKey = questId + ":" + getLocalDateKey(assignedDate);
+      } else {
+        periodKey = questId + ":" + getLocalDateKey(getWeekMondayDate(now));
+      }
+      if (user.claimedQuestIds.indexOf(periodKey) === -1) { count += 1; }
+    }
+
+    // Also count a pending daily reward that expired without being claimed
+    if (user.pendingDailyReward && user.pendingDailyReward.completedAt) {
+      var pr = user.pendingDailyReward;
+      var prKey = pr.id + ":" + getLocalDateKey(new Date(pr.assignedAt));
+      if (user.claimedQuestIds.indexOf(prKey) === -1) { count += 1; }
+    }
+
+    return count;
   }
 
   function creditDailyMission() {
@@ -2307,6 +2802,110 @@
     });
   }
 
+  // Computes the completed+unclaimed quest count across ALL daily and weekly pool quests
+  // and writes it to localStorage so the nav badge is accurate on every page — not just
+  // when the user visits quests.html (where dispatchQuestBadge runs).
+  function _computeAndCacheQuestBadge(user) {
+    try {
+      ensureGamificationFields(user);
+      var now = new Date();
+      var todayKey = getLocalDateKey(now);
+      var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      var todayEnd = new Date(todayStart); todayEnd.setDate(todayEnd.getDate() + 1);
+      var expenses = Array.isArray(user.expenses) ? user.expenses : [];
+      var weeklyBudget = user.weeklyBudget || 0;
+      var dailyLimit = weeklyBudget > 0 ? weeklyBudget / 7 : 0;
+
+      var todayExp = expenses.filter(function (e) {
+        var d = new Date(e.timestamp); return d >= todayStart && d < todayEnd;
+      });
+      var todayCount = todayExp.length;
+      var todayCats = {};
+      todayExp.forEach(function (e) { todayCats[e.category || "others"] = true; });
+      var todayCatCount = Object.keys(todayCats).length;
+      var todaySpent = todayExp.reduce(function (s, e) { return s + (Number(e.amount) || 0); }, 0);
+
+      var count = 0;
+
+      // ── Daily quests ──────────────────────────────────────
+      DAILY_QUEST_SPECS_INTERNAL.forEach(function (spec) {
+        var met = false;
+        if (spec.condType === "log_count_today")      { met = todayCount >= spec.target; }
+        else if (spec.condType === "category_count_today") { met = todayCatCount >= spec.target; }
+        else if (spec.condType === "under_daily_budget") { met = dailyLimit > 0 && todaySpent <= dailyLimit; }
+        if (met) {
+          var claimKey = spec.id + ":" + todayKey;
+          if (user.claimedQuestIds.indexOf(claimKey) === -1) { count++; }
+        }
+      });
+
+      // ── Weekly quests (5-quest rotating pool) ─────────────
+      var monday = getWeekMondayDate(now);
+      var mondayKey = getLocalDateKey(monday);
+      var weekExp = expenses.filter(function (e) { return new Date(e.timestamp) >= monday; });
+
+      var logDays = {};
+      weekExp.forEach(function (e) { logDays[getLocalDateKey(e.timestamp)] = true; });
+      var logDaysCount = Object.keys(logDays).length;
+      var logCount = weekExp.length;
+
+      var daysBeforeNoon = {};
+      weekExp.forEach(function (e) {
+        var h = new Date(e.timestamp).getHours();
+        if (h < 12) { daysBeforeNoon[getLocalDateKey(e.timestamp)] = true; }
+      });
+      var logDaysBeforeNoon = Object.keys(daysBeforeNoon).length;
+
+      var daysAfter9pm = {};
+      weekExp.forEach(function (e) {
+        var h = new Date(e.timestamp).getHours();
+        if (h >= 21) { daysAfter9pm[getLocalDateKey(e.timestamp)] = true; }
+      });
+      var logDaysAfter9pm = Object.keys(daysAfter9pm).length;
+
+      var underBudgetDays = 0; var noOverspendDays = 0;
+      if (weeklyBudget > 0) {
+        var dailySlice = weeklyBudget / 7;
+        var spendByDay = {};
+        weekExp.forEach(function (e) {
+          var dk = getLocalDateKey(e.timestamp);
+          spendByDay[dk] = (spendByDay[dk] || 0) + (Number(e.amount) || 0);
+        });
+        Object.keys(spendByDay).forEach(function (dk) {
+          if (spendByDay[dk] <= dailySlice) { underBudgetDays++; noOverspendDays++; }
+        });
+      }
+
+      var totalSpent = weekExp.reduce(function (s, e) { return s + (Number(e.amount) || 0); }, 0);
+      var frugalMet = weeklyBudget > 0 && totalSpent <= weeklyBudget * 0.5 ? 1 : 0;
+      var weekCats = {};
+      weekExp.forEach(function (e) { weekCats[e.category || "others"] = true; });
+      var catCount = Object.keys(weekCats).length;
+      var xpEarned = Math.max(0, (user.xp || 0) - (user.weeklyXpStart || 0));
+
+      var wMap = {
+        "log_days": logDaysCount, "log_count": logCount,
+        "under_budget_days": underBudgetDays, "no_overspend_days": noOverspendDays,
+        "log_days_before_noon": logDaysBeforeNoon, "log_days_after_9pm": logDaysAfter9pm,
+        "frugal_week": frugalMet, "category_diversity_week": catCount, "xp_earned_week": xpEarned
+      };
+
+      var weekIndex = Math.floor(monday.getTime() / (7 * 24 * 3600 * 1000));
+      var offset = (weekIndex * 5) % QUESTS.length;
+      for (var qi = 0; qi < 5; qi++) {
+        var q = QUESTS[(offset + qi) % QUESTS.length];
+        var allMet = q.conditions.every(function (c) { return (wMap[c.type] || 0) >= c.target; });
+        if (allMet) {
+          var wClaimKey = q.id + ":" + mondayKey;
+          if (user.claimedQuestIds.indexOf(wClaimKey) === -1) { count++; }
+        }
+      }
+
+      try { localStorage.setItem("sugbocents_unclaimed_quests", String(count)); } catch (_) {}
+      window.dispatchEvent(new CustomEvent("sugbocents:questBadgeUpdate", { detail: { count: count } }));
+    } catch (_) {}
+  }
+
   window.StorageAPI = {
     resolveAuthState: resolveAuthState,
     getSession: getSession,
@@ -2326,6 +2925,10 @@
     updateUserProfile: updateUserProfile,
     getPreferences: getPreferences,
     savePreferences: savePreferences,
+    getEmailOptIn: getEmailOptIn,
+    setEmailOptIn: setEmailOptIn,
+    getLastEmailSentAt: getLastEmailSentAt,
+    setLastEmailSentAt: setLastEmailSentAt,
     getGoals: getGoals,
     addGoal: addGoal,
     updateGoalProgress: updateGoalProgress,
@@ -2352,6 +2955,11 @@
     updateChatThreadTitle: updateChatThreadTitle,
     getCurrentQuest: getCurrentQuest,
     getQuestHistory: getQuestHistory,
+    setCurrentQuest: setCurrentQuest,
+    claimQuestReward: claimQuestReward,
+    isQuestClaimed: isQuestClaimed,
+    checkQuestBadge: checkQuestBadge,
+    getPendingDailyReward: getPendingDailyReward,
     updateQuestProgress: updateQuestProgress,
     creditDailyMission: creditDailyMission,
     // Sprint 3 Phase 4: Sentimos
@@ -2365,7 +2973,12 @@
     // Sprint 3 Phase 2: Records
     getRecords: getRecords,
     seedDemoData: seedDemoData,
-    __devRestoreGamState: devRestoreGamState
+    __devRestoreGamState:  devRestoreGamState,
+    __devResetQuestSlot:   devResetQuestSlot,
+    __devResetAllQuests:   devResetAllQuests,
+    __devSetSentimos:      devSetSentimos,
+    __devGiveStreakFreezes: devGiveStreakFreezes
   };
 })();
+
 

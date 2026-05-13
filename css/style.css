@@ -1,4 +1,7 @@
-﻿:root {
+﻿/* Motion token system & animation utilities — must be first in cascade */
+@import url("./motion.css");
+
+:root {
   --brand-900: #164f33;
   --brand-800: #1f6b46;
   --brand-700: #2b8259;
@@ -20,6 +23,10 @@ html,
 body {
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   color: var(--ink-900);
+  /* Disable scroll anchoring so that revealing #pageContent (which grows page
+     height) never causes the browser to scroll down to "keep an element in view".
+     This is the primary cause of the bottom-of-page jump on initial load. */
+  overflow-anchor: none;
 }
 
 .bg-mist {
@@ -3428,30 +3435,28 @@ body.edit-mode .qa-add-new-btn {
   color: var(--brand-800);
   border-color: var(--brand-800);
 }
+/* ── Sidebar collapse toggle — inline button in header row ── */
 .sidebar-toggle-btn {
-  display: none; /* hidden on mobile; sidebar itself is hidden on mobile anyway */
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: #94a3b8;
-  padding: 0.35rem;
-  border-radius: 0.5rem;
-  align-items: center;
-  justify-content: center;
-  transition: color 140ms ease, background 140ms ease;
+  display: none; /* hidden on mobile */
   flex-shrink: 0;
   width: 2rem;
   height: 2rem;
-  position: relative;
+  border-radius: 0.5rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  color: #7a8e83;
+  padding: 0;
+  transition: color 140ms ease;
 }
 
 .sidebar-toggle-btn:hover {
-  background: #f1f5f9;
-  color: #475569;
+  color: #164f33;
 }
 
 .sidebar-toggle-btn svg {
-  /* mirror horizontally in collapsed state to show "expand" direction */
   transition: transform 220ms ease;
   flex-shrink: 0;
 }
@@ -3470,6 +3475,51 @@ body.edit-mode .qa-add-new-btn {
   min-width: 0;
   overflow: hidden;
   transition: opacity 160ms ease, max-width 220ms ease;
+}
+
+/* ── Collapsible sidebar (sc-sidebar) ───────────────────────────────────────
+ * .sc-sidebar       — the <aside>: owns the width transition
+ * .sc-sidebar-inner — full-height flex column, owns scroll + padding
+ * .sc-sidebar-header — top row: mascot + wordmark + toggle button
+ */
+.sc-sidebar {
+  transition: width 220ms ease, min-width 220ms ease;
+}
+
+.sc-sidebar-inner {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  /* consistent left + right padding establishes the alignment rail */
+  padding: 1.25rem 0.25rem 1.25rem 0.25rem;
+  transition: padding 220ms ease;
+}
+
+/* Header row — matches the ChatGPT/Claude/Arena compact pattern */
+.sc-sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* inherits horizontal spacing from sc-sidebar-inner — no extra left offset */
+  padding: 0.25rem 0.25rem 0.875rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.sc-sidebar-logo {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  overflow: visible;
+  transition: opacity 180ms ease, max-width 220ms ease;
+}
+
+.sc-sidebar-wordmark {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
 }
 
 @media (min-width: 1024px) {
@@ -3491,26 +3541,44 @@ body.edit-mode .qa-add-new-btn {
     min-width: 64px;
   }
 
-  /* Collapse the brand link smoothly — max-width drives the width animation */
-  html.sidebar-collapsed .sidebar-brand {
-    opacity: 0;
-    pointer-events: none;
-    max-width: 0;
-    flex: 0;
+  /* sc-sidebar (current layout) width collapse */
+  html.sidebar-collapsed .sc-sidebar {
+    width: 4rem;
+    min-width: 4rem;
   }
 
-  /* Center the toggle button in the 64px header when collapsed */
-  html.sidebar-collapsed .sidebar-header {
+  /* Collapse inner padding */
+  html.sidebar-collapsed .sc-sidebar-inner {
+    padding: 0.75rem 0 0.75rem 0;
+  }
+
+  /* Center nav icons in their row */
+  html.sidebar-collapsed .sidebar-nav-link {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
     justify-content: center;
-    padding: 0.75rem 0;
+    gap: 0;
   }
 
-  /* Flip the panel icon to indicate "expand" direction */
+  /* Center avatar in user strip */
+  html.sidebar-collapsed .sc-user-strip {
+    justify-content: center;
+    gap: 0;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Panel-left icon has no directional meaning — no flip needed */
   html.sidebar-collapsed .sidebar-toggle-btn svg {
-    transform: scaleX(-1);
+    transform: none;
   }
 
-  /* Fade out nav labels and collapse them so the icon centres correctly */
+  /* Fade + collapse wordmark, nav labels, user info, arrow
+     (all use .nav-link-label or explicit classes) */
   html.sidebar-collapsed .nav-link-label {
     opacity: 0;
     pointer-events: none;
@@ -3519,7 +3587,6 @@ body.edit-mode .qa-add-new-btn {
     flex: 0;
   }
 
-  /* Collapse user info and arrow so avatar centres smoothly */
   html.sidebar-collapsed .sidebar-user-info {
     opacity: 0;
     pointer-events: none;
@@ -3532,16 +3599,57 @@ body.edit-mode .qa-add-new-btn {
     max-width: 0;
   }
 
-  /* Center nav links — keep same padding/margin so icon slot size is unchanged */
-  html.sidebar-collapsed .sidebar-nav-link {
+  /* Hide mascot when collapsed — toggle button takes center stage */
+  html.sidebar-collapsed .sc-sidebar-logo {
+    opacity: 0;
+    pointer-events: none;
+    max-width: 0;
+    overflow: hidden;
+    flex-shrink: 1;
+  }
+
+  /* Center the toggle button in the now-empty header row */
+  html.sidebar-collapsed .sc-sidebar-header {
     justify-content: center;
-    gap: 0;
-    border-left-color: transparent;
+    padding-left: 0;  
+    padding-right: 0;
+  }
+
+  /* Make the toggle button larger when collapsed so it's easy to tap */
+  html.sidebar-collapsed .sidebar-toggle-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: transparent;
+    color: #4a6054;
+  }
+
+  /* Collapse the brand link smoothly — legacy rule kept for old pages */
+  html.sidebar-collapsed .sidebar-brand {
+    opacity: 0;
+    pointer-events: none;
+    max-width: 0;
+    flex: 0;
   }
 
   /* Slide avatar to centre via padding-left — no justify-content/gap involved */
   html.sidebar-collapsed .sidebar-user {
     padding-left: 1rem;
+  }
+
+  /* Dev button — icon-only pill when sidebar is collapsed */
+  html.sidebar-collapsed .dev-toggle-btn {
+    padding: 0.5rem;
+    border-radius: 50%;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  html.sidebar-collapsed .dev-toggle-label {
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
   }
 }
 
@@ -4915,6 +5023,7 @@ body.edit-mode .qa-add-new-btn {
   font-weight: 700;
   color: #64748b;
 }
+.lb-v3-stat--score  { color: #164f33; font-weight: 900; }
 .lb-v3-stat--streak { color: #ea580c; }
 .lb-v3-stat--quests { color: #0891B2; }
 .lb-v3-stat--xp     { color: var(--brand-700, #2b8259); }
@@ -8105,24 +8214,31 @@ html { background: #f7f3e8; }
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  width: 100%;
-  border-radius: 1rem;
-  padding: 0.75rem 1rem;
+  /* symmetric horizontal padding so pill has equal gap on both sides */
+  padding: 0.58rem 0.75rem;
+  margin: 0 0.5rem;
+  border-radius: 0.75rem;
   font-size: 0.875rem;
-  font-weight: 800;
+  font-weight: 500;          /* inactive: medium weight */
   color: #516054;
   text-decoration: none;
   transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
 }
 .sidebar-new-link:hover { background: white; color: #102b1d; }
-.sidebar-new-link--active { background: #164f33; color: white; box-shadow: 0 4px 12px rgba(22,79,51,0.15); }
+.sidebar-new-link--active {
+  background: #164f33;
+  color: white;
+  font-weight: 700;          /* active: bold */
+  box-shadow: 0 4px 12px rgba(22,79,51,0.15);
+}
 .sidebar-new-link--active:hover { background: #1d6843; color: white; }
 .sidebar-new-link__icon {
-  display: grid;
-  place-items: center;
-  width: 1.5rem;
-  text-align: center;
-  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
   flex-shrink: 0;
 }
 
@@ -8301,6 +8417,9 @@ html { background: #f7f3e8; }
 [data-page="dashboard"] h1,
 [data-page="dashboard"] h2,
 [data-page="dashboard"] .font-display,
+[data-page="chat"] h1,
+[data-page="chat"] h2,
+[data-page="chat"] .font-display,
 [data-page="settings"] h1,
 [data-page="settings"] h2,
 [data-page="settings"] .font-display,
@@ -8310,6 +8429,24 @@ html { background: #f7f3e8; }
 [data-page="leaderboard"] h1,
 [data-page="leaderboard"] h2,
 [data-page="leaderboard"] .font-display,
+[data-page="profile"] h1,
+[data-page="profile"] h2,
+[data-page="profile"] .font-display,
+[data-page="activity"] h1,
+[data-page="activity"] h2,
+[data-page="activity"] .font-display,
+[data-page="goals"] h1,
+[data-page="goals"] h2,
+[data-page="goals"] .font-display,
+[data-page="achievements"] h1,
+[data-page="achievements"] h2,
+[data-page="achievements"] .font-display,
+[data-page="shop"] h1,
+[data-page="shop"] h2,
+[data-page="shop"] .font-display,
+[data-page="stats"] h1,
+[data-page="stats"] h2,
+[data-page="stats"] .font-display,
 #remainingAmount,
 #budgetDonutPct,
 #streakBadgeCount,
@@ -8335,6 +8472,42 @@ html { background: #f7f3e8; }
 [data-page="settings"] button,
 [data-page="settings"] label,
 [data-page="settings"] input,
+[data-page="profile"] p,
+[data-page="profile"] span,
+[data-page="profile"] a,
+[data-page="profile"] button,
+[data-page="profile"] label,
+[data-page="profile"] input,
+[data-page="activity"] p,
+[data-page="activity"] span,
+[data-page="activity"] a,
+[data-page="activity"] button,
+[data-page="activity"] label,
+[data-page="activity"] input,
+[data-page="goals"] p,
+[data-page="goals"] span,
+[data-page="goals"] a,
+[data-page="goals"] button,
+[data-page="goals"] label,
+[data-page="goals"] input,
+[data-page="achievements"] p,
+[data-page="achievements"] span,
+[data-page="achievements"] a,
+[data-page="achievements"] button,
+[data-page="achievements"] label,
+[data-page="achievements"] input,
+[data-page="shop"] p,
+[data-page="shop"] span,
+[data-page="shop"] a,
+[data-page="shop"] button,
+[data-page="shop"] label,
+[data-page="shop"] input,
+[data-page="stats"] p,
+[data-page="stats"] span,
+[data-page="stats"] a,
+[data-page="stats"] button,
+[data-page="stats"] label,
+[data-page="stats"] input,
 [data-page="quests"] p,
 [data-page="quests"] span,
 [data-page="quests"] a,
@@ -8354,5 +8527,89 @@ html { background: #f7f3e8; }
 .pace-banner__msg,
 .pace-banner__stat {
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ── Centered Modal (Change Quest) ──────────────────────── */
+.center-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 860;
+  background: rgba(0, 0, 0, 0.5);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.center-modal-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.center-modal-card {
+  background: #ffffff;
+  border-radius: 1.5rem;
+  max-width: 32rem;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+  transform: scale(0.92);
+  opacity: 0;
+  transition: transform 220ms ease-out, opacity 220ms ease-out;
+}
+.center-modal-overlay.is-open .center-modal-card {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* ── Bottom nav active state (set by activateBottomNav() in app.js) ─────── */
+[data-nav].active,
+[data-nav].active:hover {
+  background: #164f33;
+  color: #ffffff;
+}
+
+/* ── Quest Nav Badge (dot indicator) ────────────────────── */
+.quest-nav-badge {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #0D9488;
+  vertical-align: middle;
+  margin-left: 0.35rem;
+  flex-shrink: 0;
+}
+.quest-nav-badge.is-hidden {
+  display: none;
+}
+
+/* ── Global Page Skeleton / Shimmer ─────────────────────────────────────────
+   .sk          — shimmer shimmer block (text/bar/number placeholders)
+   .sk-circle   — circular variant (avatars, icon buttons)
+   .sk-card     — white card container matching app card style
+   Skeleton divs (#pageSkeleton) are hidden/removed by revealPageContent()
+   in js/app.js once auth resolves and the real #pageContent is shown.
+   ────────────────────────────────────────────────────────────────────────── */
+@keyframes sk-shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+.sk {
+  display: block;
+  background: linear-gradient(90deg, #ece7da 25%, #f5f2eb 50%, #ece7da 75%);
+  background-size: 400% 100%;
+  animation: sk-shimmer 1.6s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+.sk-circle { border-radius: 9999px !important; }
+.sk-card {
+  background: #fff;
+  border-radius: 2rem;
+  padding: 1.5rem;
+  outline: 1px solid #ded7c6;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 

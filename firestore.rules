@@ -1,0 +1,150 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (matches auth.uid)
+    // Fields:
+    //   - quickAddItems: list (optional) - Cached items for quick addition
+    //   - publicProfile: map (optional) - Denormalized public user data
+    //     - displayName: string
+    //     - firstName: string
+    //     - streak: number
+    //     - questsCompleted: number
+    //     - weeklyXP: number
+    //     - level: number
+    //     - levelName: string
+    //     - friendCode: string
+    //     - lastSyncedAt: string
+    //
+    // Collection: users/{userId}/expenses
+    // Document ID: expenseId
+    // Fields:
+    //   - amount: number
+    //   - category: string
+    //   - title: string
+    //   - timestamp: string
+    //   - type: string
+    //
+    // Collection: friends/{userId}/requests
+    // Document ID: requesterId
+    // Fields:
+    //   - sentAt: string
+    //   - displayName: string
+    //
+    // Collection: friends/{userId}/friends
+    // Document ID: friendId
+    // Fields:
+    //   - addedAt: string
+    //   - displayName: string
+    //   - publicProfile: map
+    //
+    // Collection: feed/{userId}/entries
+    // Document ID: entryId
+    // Fields:
+    //   - type: string
+    //   - message: string
+    //   - emoji: string
+    //   - authorName: string
+    //   - authorInitial: string
+    //   - timestamp: string
+    //
+    // Collection: global_feed
+    // Document ID: auto-generated
+    // Fields:
+    //   - type: string
+    //   - message: string
+    //   - emoji: string
+    //   - authorName: string
+    //   - authorInitial: string
+    //   - authorUid: string
+    //   - audience: list
+    //   - timestamp: string
+    //
+    // Collection: friendCodes
+    // Document ID: string code (e.g., "name#1234")
+    // Fields:
+    //   - uid: string
+    //   - createdAt: string
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Users Collection
+    match /users/{userId} {
+      // Allow authenticated users to read profiles (since public profiles are stored here)
+      allow read: if isAuthenticated();
+      // Only the user themselves can write their data
+      allow create, update: if isOwner(userId);
+      allow delete: if false;
+
+      // User Expenses
+      match /expenses/{expenseId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Friends Architecture
+    match /friends/{userId} {
+      // The parent doc itself isn't generally queried, but allowed for owner
+      allow read, write: if isOwner(userId);
+
+      match /requests/{requesterId} {
+        // Owner of the inbox and the requester can read and delete
+        allow read, delete: if isOwner(userId) || isOwner(requesterId);
+        // Only the requester can create the request in the target's inbox
+        allow create: if isOwner(requesterId);
+        allow update: if false;
+      }
+
+      match /friends/{friendId} {
+        // Both the owner and the friend can read
+        allow read: if isOwner(userId) || isOwner(friendId);
+        // During acceptance, both parties write to each other's friend subcollections
+        allow create, update: if isOwner(userId) || isOwner(friendId);
+        // Both can delete (unfriend)
+        allow delete: if isOwner(userId) || isOwner(friendId);
+      }
+    }
+
+    // Personal Feed
+    match /feed/{userId}/entries/{entryId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Global Feed (Shared)
+    match /global_feed/{entryId} {
+      // Can read if my uid is in the audience array
+      allow read: if isAuthenticated() && (request.auth.uid in resource.data.audience);
+      // Can create if I am the author
+      allow create: if isAuthenticated() && request.resource.data.authorUid == request.auth.uid;
+      // Feed entries are immutable
+      allow update, delete: if false;
+    }
+
+    // Friend Codes
+    match /friendCodes/{code} {
+      allow read: if isAuthenticated();
+      // Can claim if not exists and the requested uid is me
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      // Codes are immutable right now
+      allow update, delete: if false;
+    }
+  }
+}

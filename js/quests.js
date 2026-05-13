@@ -12,7 +12,10 @@
     "log_days_after_9pm":     "Log after 9 PM on",
     "frugal_week":            "Spend \u226450% of weekly budget",
     "category_diversity_week":"Log in at least",
-    "xp_earned_week":         "Earn"
+    "xp_earned_week":         "Earn",
+    "log_count_today":        "Log expenses",
+    "category_count_today":   "Log in categories",
+    "under_daily_budget":     "Stay under daily budget"
   };
 
   var COND_UNITS = {
@@ -24,7 +27,10 @@
     "log_days_after_9pm":     "days",
     "frugal_week":            "",
     "category_diversity_week":"categories",
-    "xp_earned_week":         "XP"
+    "xp_earned_week":         "XP",
+    "log_count_today":        "today",
+    "category_count_today":   "today",
+    "under_daily_budget":     ""
   };
 
   // ── Daily Quest Definitions ────────────────────────────────
@@ -36,6 +42,7 @@
       description: "Log at least 1 expense today",
       icon: "\uD83D\uDCDD",
       xpReward: 10,
+      sentimosReward: 10,
       compute: function (todayExp) {
         return { progress: Math.min(1, todayExp.length), target: 1 };
       }
@@ -46,6 +53,7 @@
       description: "Log 3 expenses today",
       icon: "\uD83D\uDCCB",
       xpReward: 20,
+      sentimosReward: 10,
       compute: function (todayExp) {
         return { progress: Math.min(3, todayExp.length), target: 3 };
       }
@@ -56,6 +64,7 @@
       description: "Log in 3 different categories today",
       icon: "\uD83C\uDFAF",
       xpReward: 25,
+      sentimosReward: 10,
       compute: function (todayExp) {
         var cats = {};
         todayExp.forEach(function (e) { cats[e.category || "others"] = true; });
@@ -68,6 +77,7 @@
       description: "Stay under your daily budget today",
       icon: "\uD83D\uDEE1\uFE0F",
       xpReward: 20,
+      sentimosReward: 10,
       compute: function (todayExp, weeklyBudget) {
         if (!weeklyBudget || weeklyBudget <= 0) { return { progress: 0, target: 1, unavailable: true }; }
         var dailyLimit = weeklyBudget / 7;
@@ -76,6 +86,43 @@
       }
     }
   ];
+
+  // ── Daily quest storage condition map ─────────────────────
+
+  var DAILY_QUEST_STORAGE_CONDITIONS = {
+    "daily-first-log":    { type: "log_count_today",      target: 1 },
+    "daily-triple-log":   { type: "log_count_today",      target: 3 },
+    "daily-categories":   { type: "category_count_today", target: 3 },
+    "daily-under-budget": { type: "under_daily_budget",   target: 1 }
+  };
+
+  function trackDailyQuest(def) {
+    if (!window.StorageAPI || !window.StorageAPI.setCurrentQuest) { return; }
+    var cond = DAILY_QUEST_STORAGE_CONDITIONS[def.id] || { type: "log_count_today", target: 1 };
+    var now = new Date();
+    // Use 23:59:59.999 (end-of-day) rather than the following midnight so quest
+    // completion that fires just before midnight doesn't race against expiry.
+    var endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    var questObj = {
+      id: def.id, type: "daily", title: def.title, description: def.description,
+      icon: def.icon, xpReward: def.xpReward, sentimosReward: def.sentimosReward || 10,
+      conditions: [{ type: cond.type, target: cond.target, progress: 0 }],
+      assignedAt: now.toISOString(), expiresAt: endOfDay.toISOString(), completedAt: null
+    };
+    window.StorageAPI.setCurrentQuest(questObj);
+    if (window.AppShell && window.AppShell.closeAllSheets) { window.AppShell.closeAllSheets(); }
+    showSimpleToast("\uD83D\uDCCC Tracking: " + def.title);
+    renderQuestPage();
+  }
+
+  function maybeTrackDailyQuest(def) {
+    var current = window.StorageAPI && window.StorageAPI.getCurrentQuest ? window.StorageAPI.getCurrentQuest() : null;
+    if (current && current.id !== def.id) {
+      openReplaceQuestSheet(current, def, function () { trackDailyQuest(def); });
+    } else {
+      trackDailyQuest(def);
+    }
+  }
 
   // ── Locked quests (Coming next section) ───────────────────
 
@@ -172,6 +219,8 @@
     var expenses = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
     var summary  = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
     var weeklyBudget = summary.weeklyBudget || 0;
+    var activeQuest  = window.StorageAPI.getCurrentQuest ? window.StorageAPI.getCurrentQuest() : null;
+    var trackedDailyId = (activeQuest && activeQuest.type === "daily") ? activeQuest.id : null;
 
     var now      = new Date();
     var today    = new Date(now); today.setHours(0, 0, 0, 0);
@@ -182,9 +231,14 @@
       return d >= today && d < tomorrow;
     });
 
-    var msLeft = tomorrow.getTime() - now.getTime();
-    var hLeft  = Math.ceil(msLeft / 3600000);
+    // Forward-looking cutoff: only count expenses logged after the quest was assigned
+    var assignedAtCutoff = (activeQuest && activeQuest.type === "daily" && activeQuest.assignedAt)
+      ? new Date(activeQuest.assignedAt)
+      : today;
+
     var allDone = DAILY_QUEST_DEFS.every(function (def) {
+      var isCl = window.StorageAPI.isQuestClaimed ? window.StorageAPI.isQuestClaimed(def.id, "daily") : false;
+      if (isCl) { return true; }
       var r = def.compute(todayExp, weeklyBudget);
       return (r.progress >= r.target) || r.unavailable;
     });
@@ -195,153 +249,138 @@
 
     container.innerHTML = "";
 
-    DAILY_QUEST_DEFS.forEach(function (def) {
-      var result        = def.compute(todayExp, weeklyBudget);
-      var isDone        = !result.unavailable && result.progress >= result.target;
-      var isUnavailable = Boolean(result.unavailable);
-      var pct           = isUnavailable ? 0 : Math.min(100, Math.round((result.progress / result.target) * 100));
-
-      var card = document.createElement("div");
-      card.className = "relative rounded-[2rem] p-5" + (isUnavailable ? " opacity-50" : "");
-      card.style.background = isDone ? "#f0fdf4" : "#ffffff";
-      card.style.boxShadow  = isDone
-        ? "0 1px 4px rgba(0,0,0,0.05), 0 0 0 2px rgba(43,130,89,0.25)"
-        : "0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px #ded7c6";
-
-      var rewardHtml;
-      if (isDone) {
-        rewardHtml =
-          "<div class=\"shrink-0 rounded-full px-3 py-2 text-sm font-black\" style=\"background:#edf7ef;color:#164f33;box-shadow:0 0 0 1px rgba(43,130,89,0.3)\">\u2713</div>";
-      } else {
-        rewardHtml =
-          "<div class=\"shrink-0 rounded-full px-3 py-2 text-center text-sm font-black\" style=\"background:#f0fdfa;color:#0f766e;box-shadow:0 0 0 1px rgba(13,148,136,0.25);line-height:1.3\">" +
-            "\u26A1<br><span style=\"font-size:0.6rem\">+" + def.xpReward + "</span><br><span style=\"font-size:0.58rem\">XP</span>" +
+    // ── Pending daily reward (completed yesterday, not yet claimed) ────────────
+    // If the user completed a daily quest but closed the app before claiming,
+    // the reward is preserved in storage and shown here so it is never lost.
+    if (window.StorageAPI.getPendingDailyReward) {
+      var pendingReward = window.StorageAPI.getPendingDailyReward();
+      if (pendingReward) {
+        var pendingCard = document.createElement("div");
+        pendingCard.style.cssText = "margin-bottom:0.85rem;background:#fffbeb;border-radius:1.5rem;padding:1rem 1.25rem;outline:2px solid #fbbf24;";
+        pendingCard.innerHTML =
+          "<p style=\"font-size:0.68rem;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#92400e;margin:0 0 0.5rem 0\">&#127381; Unclaimed Reward</p>" +
+          "<div style=\"display:flex;align-items:center;justify-content:space-between;gap:1rem\">" +
+            "<div style=\"min-width:0\">" +
+              "<p style=\"font-size:0.95rem;font-weight:800;color:#102b1d;margin:0\">" +
+                (pendingReward.icon || "\u26A1") + " " + escapeHtml(pendingReward.title || "") +
+              "</p>" +
+              "<p style=\"font-size:0.78rem;color:#617063;margin:0.15rem 0 0 0\">" +
+                "Completed yesterday \u00B7 +" + (pendingReward.xpReward || 0) + " XP \u00B7 +\u20B5" + (pendingReward.sentimosReward || 10) +
+              "</p>" +
+            "</div>" +
+            "<button type=\"button\" class=\"pending-daily-claim-btn\" style=\"flex-shrink:0;background:#d97706;color:white;border:none;border-radius:999px;padding:0.5rem 1.1rem;font-size:0.82rem;font-weight:800;cursor:pointer\">Claim</button>" +
           "</div>";
+        var pendingClaimBtn = pendingCard.querySelector(".pending-daily-claim-btn");
+        if (pendingClaimBtn) {
+          (function (pr) {
+            pendingClaimBtn.addEventListener("click", function () {
+              if (!window.StorageAPI || !window.StorageAPI.claimQuestReward) { return; }
+              var claimResult = window.StorageAPI.claimQuestReward(pr.id, pr);
+              if (claimResult && claimResult.ok) {
+                dispatchQuestBadge();
+                showQuestCelebrationModal({ title: claimResult.title, xpReward: claimResult.xpReward, sentimosReward: claimResult.sentimosReward, claimedQuestId: pr.id });
+              } else if (claimResult && claimResult.alreadyClaimed) {
+                showSimpleToast("\u2713 Already claimed!", "#475569");
+                renderQuestPage();
+              }
+            });
+          }(pendingReward));
+        }
+        container.appendChild(pendingCard);
+      }
+    }
+
+    DAILY_QUEST_DEFS.forEach(function (def) {
+      var isTracked = def.id === trackedDailyId;
+      var isClaimed = window.StorageAPI.isQuestClaimed ? window.StorageAPI.isQuestClaimed(def.id, "daily") : false;
+      var isUnavailable = false;
+      var progress, target, result;
+
+      if (isClaimed) {
+        // Permanently lock into completed visual state
+        result   = def.compute(todayExp, weeklyBudget);
+        target   = result.target;
+        progress = target;
+      } else if (isTracked) {
+        if (activeQuest.completedAt) {
+          // Quest already marked complete in storage — trust the stored progress rather than
+          // recomputing. The forward-looking filter can desync when expenses span the
+          // assignedAt boundary, producing a lower count and hiding the Claim button.
+          var storedCond = activeQuest.conditions && activeQuest.conditions[0];
+          target   = storedCond ? storedCond.target : 3;
+          progress = target;
+        } else {
+          // Forward-looking: only expenses logged at or after assignedAt count
+          var trackedExp = expenses.filter(function (e) {
+            var d = new Date(e.timestamp);
+            return d >= assignedAtCutoff && d < tomorrow;
+          });
+          result        = def.compute(trackedExp, weeklyBudget);
+          isUnavailable = Boolean(result.unavailable);
+          progress      = result.progress;
+          target        = result.target;
+        }
+      } else {
+        result        = def.compute(todayExp, weeklyBudget);
+        isUnavailable = Boolean(result.unavailable);
+        progress      = result.progress;
+        target        = result.target;
       }
 
-      var barLabel = isUnavailable ? "Set budget first" : (result.progress + " / " + result.target);
-      var barColor = isDone ? "#2b8259" : "#EAB308";
+      var isDone = isClaimed || (!isUnavailable && progress >= target);
+      var computedCond  = [{ type: (DAILY_QUEST_STORAGE_CONDITIONS[def.id] || {}).type || "log_count_today", target: target, progress: progress }];
 
-      card.innerHTML =
-        "<div class=\"grid items-start gap-4\" style=\"grid-template-columns:3rem 1fr auto\">" +
-          "<div class=\"grid h-12 w-12 place-items-center rounded-2xl text-2xl\" style=\"background:#edf7ef;box-shadow:0 0 0 1px #cfe2d3\" aria-hidden=\"true\">" + def.icon + "</div>" +
-          "<div class=\"min-w-0\">" +
-            "<h3 class=\"text-lg font-black\" style=\"font-family:'Sora',sans-serif;color:#102b1d\">" + def.title + "</h3>" +
-            "<p class=\"mt-1 text-sm font-semibold\" style=\"color:#617063\">" + def.description + "</p>" +
-          "</div>" +
-          rewardHtml +
-        "</div>" +
-        "<div class=\"mt-5\">" +
-          "<div class=\"relative overflow-hidden rounded-full\" style=\"height:1.25rem;background:#e7e0cf\">" +
-            "<div class=\"h-full rounded-full\" style=\"width:" + pct + "%;background:" + barColor + ";transition:width 0.7s\"></div>" +
-            "<span class=\"absolute inset-0 flex items-center justify-center text-xs font-black\" style=\"color:#102b1d\">" + barLabel + "</span>" +
-          "</div>" +
-        "</div>" +
-        "<div class=\"mt-4 flex items-center justify-between gap-3\">" +
-          "<p class=\"text-xs font-extrabold uppercase\" style=\"letter-spacing:0.16em;color:#6b756c\">+" + def.xpReward + " XP</p>" +
-        "</div>";
+      // Build a qDef-compatible object for buildQuestCardHtml
+      var qDefForCard = {
+        id: def.id,
+        icon: def.icon,
+        title: def.title,
+        description: def.description,
+        xpReward: def.xpReward,
+        sentimosReward: def.sentimosReward || 10
+      };
 
-      if (!isDone && !isUnavailable) {
-        card.style.cursor = "pointer";
-        card.addEventListener("click", function () { window.location.href = "dashboard.html"; });
-        card.title = "Tap to log on the dashboard";
+      var showTrackBtn = !isClaimed && !isTracked && !isDone && !isUnavailable;
+      var showClaimBtn = !isClaimed && isDone;
+
+      var cardHtml = buildQuestCardHtml(qDefForCard, computedCond, {
+        tracked: isTracked,
+        showTrackBtn: showTrackBtn,
+        showClaimBtn: showClaimBtn,
+        claimed: isClaimed
+      });
+
+      var wrapper = document.createElement("div");
+      if (isUnavailable) { wrapper.style.opacity = "0.5"; }
+      wrapper.innerHTML = cardHtml;
+      var card = wrapper.firstChild;
+      if (!card) { container.appendChild(wrapper); return; }
+
+      var trackBtn = card.querySelector(".quest-track-btn");
+      if (trackBtn) {
+        trackBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          maybeTrackDailyQuest(def);
+        });
+      }
+
+      var claimBtn = card.querySelector(".quest-claim-btn");
+      if (claimBtn) {
+        claimBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (!window.StorageAPI || !window.StorageAPI.claimQuestReward) { return; }
+          var result2 = window.StorageAPI.claimQuestReward(qDefForCard.id, Object.assign({ type: "daily" }, qDefForCard));
+          if (!result2 || !result2.ok) {
+            if (result2 && result2.alreadyClaimed) { showSimpleToast("\u2713 Reward already claimed!", "#475569"); }
+            return;
+          }
+          dispatchQuestBadge();
+          showQuestCelebrationModal({ title: result2.title, xpReward: result2.xpReward, sentimosReward: result2.sentimosReward, claimedQuestId: def.id });
+        });
       }
 
       container.appendChild(card);
     });
-  }
-
-  // ── Weekly Quest Section ───────────────────────────────────
-
-  function renderWeeklyQuestSection() {
-    var container = document.getElementById("weeklyQuestSection");
-    if (!container || !window.StorageAPI) { return; }
-    container.innerHTML = "";
-
-    var quest  = window.StorageAPI.getCurrentQuest ? window.StorageAPI.getCurrentQuest() : null;
-    var now    = new Date();
-    var isDone = Boolean(quest && quest.completedAt);
-
-    if (!quest) {
-      var loading = document.createElement("div");
-      loading.className = "relative rounded-[2rem] p-5 opacity-60";
-      loading.style.background = "#ffffff";
-      loading.style.boxShadow  = "0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px #ded7c6";
-      loading.innerHTML =
-        "<div class=\"grid items-center gap-4\" style=\"grid-template-columns:3rem 1fr\">" +
-          "<div class=\"grid h-12 w-12 place-items-center rounded-2xl text-2xl\" style=\"background:#f1f5f9;box-shadow:0 0 0 1px #e2e8f0\">\uD83D\uDD12</div>" +
-          "<div>" +
-            "<p class=\"text-lg font-black\" style=\"font-family:'Sora',sans-serif;color:#94a3b8\">Loading quest\u2026</p>" +
-            "<div class=\"mt-3 relative overflow-hidden rounded-full\" style=\"height:1.25rem;background:#e7e0cf\">" +
-              "<span class=\"absolute inset-0 flex items-center justify-center text-xs font-black\" style=\"color:#94a3b8\">0 / 1</span>" +
-            "</div>" +
-          "</div>" +
-        "</div>";
-      container.appendChild(loading);
-      return;
-    }
-
-    // Build condition progress bars
-    var condsBarHtml = "";
-    quest.conditions.forEach(function (c) {
-      var pct  = Math.min(100, Math.round((c.progress / c.target) * 100));
-      var done = c.progress >= c.target;
-      var labelBase = COND_LABELS[c.type] || c.type;
-      var unit      = COND_UNITS[c.type] || "";
-      var label     = (c.target > 1 && unit) ? (labelBase + " " + c.target + " " + unit) : labelBase;
-      condsBarHtml +=
-        "<div style=\"margin-top:0.75rem\">" +
-          "<p class=\"text-xs font-semibold\" style=\"color:#475569;margin-bottom:0.3rem\">" + label.trim() + "</p>" +
-          "<div class=\"relative overflow-hidden rounded-full\" style=\"height:1.25rem;background:#e7e0cf\">" +
-            "<div class=\"h-full rounded-full\" style=\"width:" + pct + "%;background:" + (done ? "#2b8259" : "#EAB308") + ";transition:width 0.7s\"></div>" +
-            "<span class=\"absolute inset-0 flex items-center justify-center text-xs font-black\" style=\"color:#102b1d\">" + c.progress + " / " + c.target + "</span>" +
-          "</div>" +
-        "</div>";
-    });
-
-    var rewardHtml;
-    if (isDone) {
-      rewardHtml = "<div class=\"shrink-0 rounded-full px-3 py-2 text-sm font-black\" style=\"background:#edf7ef;color:#164f33;box-shadow:0 0 0 1px rgba(43,130,89,0.3)\">\u2713 Done</div>";
-    } else {
-      rewardHtml = "<div class=\"shrink-0 rounded-full px-3 py-2 text-sm font-black\" style=\"background:#f0fdfa;color:#0f766e;box-shadow:0 0 0 1px rgba(13,148,136,0.25)\">\u20B5" + quest.sentimosReward + "</div>";
-    }
-
-    var claimBtnHtml = "";
-    if (isDone) {
-      claimBtnHtml =
-        "<button type=\"button\" class=\"animate-glow rounded-full text-sm font-black text-white\" " +
-        "style=\"background:#0D9488;padding:0.5rem 1.25rem;box-shadow:0 8px 16px rgba(13,148,136,0.2)\">" +
-        "Claim</button>";
-    }
-
-    var card = document.createElement("div");
-    card.className = "relative rounded-[2rem] p-5";
-    card.style.background = isDone ? "#f0fdf4" : "#ffffff";
-    card.style.boxShadow  = isDone
-      ? "0 1px 4px rgba(0,0,0,0.05), 0 0 0 2px rgba(43,130,89,0.25)"
-      : "0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px #ded7c6";
-    card.style.cursor = "pointer";
-    card.setAttribute("role", "button");
-    card.setAttribute("tabindex", "0");
-    card.setAttribute("aria-label", "Open quest details");
-
-    card.innerHTML =
-      "<div class=\"grid items-start gap-4\" style=\"grid-template-columns:3rem 1fr auto\">" +
-        "<div class=\"grid h-12 w-12 place-items-center rounded-2xl text-2xl\" style=\"background:#edf7ef;box-shadow:0 0 0 1px #cfe2d3\" aria-hidden=\"true\">" + (quest.icon || "\u26A1") + "</div>" +
-        "<div class=\"min-w-0\">" +
-          "<h3 class=\"text-lg font-black\" style=\"font-family:'Sora',sans-serif;color:#102b1d\">" + quest.title + "</h3>" +
-          condsBarHtml +
-        "</div>" +
-        rewardHtml +
-      "</div>" +
-      "<div class=\"mt-4 flex items-center justify-between gap-3\">" +
-        "<p class=\"text-xs font-extrabold uppercase\" style=\"letter-spacing:0.16em;color:#6b756c\">+" + quest.xpReward + " XP</p>" +
-        claimBtnHtml +
-      "</div>";
-
-    card.addEventListener("click", function () { openQuestDetailSheet(quest); });
-    card.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { openQuestDetailSheet(quest); } });
-    container.appendChild(card);
   }
 
   // ── Locked Quests Section ─────────────────────────────────
@@ -499,13 +538,20 @@
     return pool;
   }
 
-  function computeAllQuestProgress(expenses, weeklyBudget) {
+  function computeAllQuestProgress(expenses, weeklyBudget, assignedAt) {
     var weekStart = getWeekStart();
     var now       = new Date();
 
-    // Filter to this week's expenses
+    // Use assignedAt as the cutoff if it is more recent than weekStart (forward-looking)
+    var cutoff = weekStart;
+    if (assignedAt) {
+      var atDate = new Date(assignedAt);
+      if (!isNaN(atDate.getTime()) && atDate > weekStart) { cutoff = atDate; }
+    }
+
+    // Filter to this week's expenses (or from assignedAt if it's more recent)
     var weekExp = expenses.filter(function (e) {
-      return new Date(e.timestamp) >= weekStart;
+      return new Date(e.timestamp) >= cutoff;
     });
 
     // Build per-day buckets
@@ -571,9 +617,9 @@
   // ── Quest card HTML builder (shared between spotlight + catalog) ─────────────
 
   function buildQuestCardHtml(qDef, computedConditions, opts) {
-    // opts: { tracked, showTrackBtn, showClaimBtn, compact }
+    // opts: { tracked, showTrackBtn, showClaimBtn, compact, claimed }
     opts = opts || {};
-    var allDone = computedConditions.every(function (c) { return c.progress >= c.target; });
+    var allDone = opts.claimed || computedConditions.every(function (c) { return c.progress >= c.target; });
 
     // Overall progress for the first / primary condition
     var primaryCond = computedConditions[0] || { progress: 0, target: 1 };
@@ -583,14 +629,16 @@
     ));
     var barColor = allDone ? "#2b8259" : "#EAB308";
 
-    // Reward badge
-    var rewardHtml;
-    if (allDone && opts.tracked) {
-      rewardHtml = "<div class=\"shrink-0 rounded-full px-3 py-2 text-sm font-black\" style=\"background:#edf7ef;color:#164f33;outline:1px solid rgba(43,130,89,0.3)\">\u2713 Done</div>";
+    // Reward badge removed from header grid (now grouped in footer)
+
+    // Inline tracking state chip (below description)
+    var trackingChip = "";
+    if (opts.claimed) {
+      trackingChip = "<span style=\"display:inline-block;margin-top:0.4rem;background:#edf7ef;color:#164f33;outline:1px solid rgba(43,130,89,0.3);border-radius:999px;padding:0.15rem 0.6rem;font-size:0.7rem;font-weight:900\">\u2713 Claimed</span>";
+    } else if (opts.tracked && allDone) {
+      trackingChip = "<span style=\"display:inline-block;margin-top:0.4rem;background:#edf7ef;color:#164f33;outline:1px solid rgba(43,130,89,0.3);border-radius:999px;padding:0.15rem 0.6rem;font-size:0.7rem;font-weight:900\">\u2713 Done</span>";
     } else if (opts.tracked) {
-      rewardHtml = "<div class=\"shrink-0 rounded-full px-3 py-1 text-xs font-black\" style=\"background:#edf7ef;color:#164f33;outline:1px solid rgba(43,130,89,0.4)\">\uD83D\uDCCC TRACKING</div>";
-    } else {
-      rewardHtml = "<div class=\"shrink-0 rounded-full px-3 py-2 text-sm font-black\" style=\"background:#f0fdfa;color:#0f766e;outline:1px solid rgba(13,148,136,0.25)\">\u20B5" + qDef.sentimosReward + "</div>";
+      trackingChip = "<span style=\"display:inline-block;margin-top:0.4rem;background:#edf7ef;color:#164f33;outline:1px solid rgba(43,130,89,0.3);border-radius:999px;padding:0.15rem 0.6rem;font-size:0.7rem;font-weight:900\">\uD83D\uDCCC Tracking</span>";
     }
 
     // Condition bars
@@ -614,19 +662,27 @@
     });
 
     // Footer row
+    var claimedBadgeHtml = "";
+    if (opts.claimed) {
+      claimedBadgeHtml = "<span class=\"rounded-full text-sm font-black\" style=\"background:#edf7ef;color:#164f33;padding:0.4rem 1rem;outline:1px solid rgba(43,130,89,0.3)\">\u2713 Claimed</span>";
+    }
     var claimHtml = "";
-    if (allDone && opts.showClaimBtn) {
-      claimHtml = "<button type=\"button\" class=\"quest-claim-btn rounded-full text-sm font-black text-white\" style=\"background:#0D9488;padding:0.5rem 1.25rem;outline:none;cursor:pointer\">\u20B5 Claim " + qDef.sentimosReward + "</button>";
+    if (!opts.claimed && allDone && opts.showClaimBtn) {
+      claimHtml = "<button type=\"button\" class=\"quest-claim-btn rounded-full text-sm font-black text-white\" style=\"background:#0D9488;padding:0.5rem 1.25rem;outline:none;cursor:pointer;border:none\">Claim</button>";
     }
     var trackHtml = "";
-    if (!opts.tracked && opts.showTrackBtn) {
-      trackHtml = "<button type=\"button\" class=\"quest-track-btn rounded-full text-sm font-black\" style=\"background:transparent;color:#164f33;padding:0.4rem 1rem;outline:1px solid #164f33;cursor:pointer\" data-quest-id=\"" + qDef.id + "\">Track \u2192</button>";
+    if (!opts.claimed && !opts.tracked && opts.showTrackBtn) {
+      trackHtml = "<button type=\"button\" class=\"quest-track-btn rounded-full text-sm font-black\" style=\"background:transparent;color:#164f33;padding:0.4rem 1rem;outline:1px solid #164f33;cursor:pointer;border:none\" data-quest-id=\"" + qDef.id + "\">Track \u2192</button>";
     }
 
-    var footerRight = claimHtml || trackHtml;
+    var footerRight = claimedBadgeHtml || claimHtml || trackHtml;
     var footerHtml =
       "<div class=\"mt-4 flex items-center justify-between gap-3\">" +
-        "<p class=\"text-xs font-extrabold uppercase\" style=\"letter-spacing:0.16em;color:#6b756c\">+" + qDef.xpReward + " XP</p>" +
+        "<div class=\"flex items-center gap-2\">" +
+          "<p class=\"text-xs font-extrabold uppercase\" style=\"letter-spacing:0.16em;color:#6b756c\">\u26A1 +" + qDef.xpReward + " XP</p>" +
+          "<span style=\"color:#d1d5db;font-size:0.75rem\">\u00B7</span>" +
+          "<p class=\"text-xs font-extrabold\" style=\"color:#0f766e\">+\u20B5" + qDef.sentimosReward + "</p>" +
+        "</div>" +
         footerRight +
       "</div>";
 
@@ -637,14 +693,14 @@
 
     return (
       "<div class=\"relative rounded-[2rem] p-5\" style=\"background:" + bgColor + ";box-shadow:" + shadow + "\">" +
-        "<div class=\"grid items-start gap-4\" style=\"grid-template-columns:3rem 1fr auto\">" +
+        "<div class=\"grid items-start gap-4\" style=\"grid-template-columns:3rem 1fr\">" +
           "<div class=\"grid h-12 w-12 place-items-center rounded-2xl text-2xl\" style=\"background:#edf7ef;outline:1px solid #cfe2d3\" aria-hidden=\"true\">" + qDef.icon + "</div>" +
           "<div class=\"min-w-0\">" +
             "<h3 class=\"font-display text-lg font-black\" style=\"color:#102b1d\">" + qDef.title + "</h3>" +
             "<p class=\"mt-1 text-sm font-semibold\" style=\"color:#617063\">" + qDef.description + "</p>" +
+            trackingChip +
             condsHtml +
           "</div>" +
-          rewardHtml +
         "</div>" +
         footerHtml +
       "</div>"
@@ -708,7 +764,7 @@
     var expenses     = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
     var summary      = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
     var weeklyBudget = summary.weeklyBudget || 0;
-    var progressMap  = computeAllQuestProgress(expenses, weeklyBudget);
+    var progressMap  = computeAllQuestProgress(expenses, weeklyBudget, activeQuest ? activeQuest.assignedAt : null);
 
     var headerHtml =
       "<div class=\"mb-4\">" +
@@ -740,20 +796,66 @@
     }
 
     // Find definition
+    var isDaily = activeQuest.type === "daily";
     var qDef = null;
-    for (var i = 0; i < WEEKLY_QUEST_DEFS.length; i++) {
-      if (WEEKLY_QUEST_DEFS[i].id === activeQuest.id) { qDef = WEEKLY_QUEST_DEFS[i]; break; }
+    if (isDaily) {
+      // Daily quest — use data from activeQuest directly (already has progress).
+      // Include type:"daily" and assignedAt so claimQuestReward uses the correct
+      // daily claim key (questId:today) instead of defaulting to "weekly" (questId:monday).
+      qDef = { type: "daily", assignedAt: activeQuest.assignedAt, id: activeQuest.id, title: activeQuest.title, icon: activeQuest.icon || "\u26A1", description: activeQuest.description || "", conditions: activeQuest.conditions || [], xpReward: activeQuest.xpReward || 0, sentimosReward: activeQuest.sentimosReward !== undefined ? activeQuest.sentimosReward : 10 };
+    } else {
+      for (var i = 0; i < WEEKLY_QUEST_DEFS.length; i++) {
+        if (WEEKLY_QUEST_DEFS[i].id === activeQuest.id) { qDef = WEEKLY_QUEST_DEFS[i]; break; }
+      }
+      if (!qDef) { qDef = { id: activeQuest.id, title: activeQuest.title, icon: activeQuest.icon || "\u26A1", description: activeQuest.description || "", conditions: activeQuest.conditions || [], xpReward: activeQuest.xpReward || 0, sentimosReward: activeQuest.sentimosReward || 0 }; }
     }
-    if (!qDef) { qDef = { id: activeQuest.id, title: activeQuest.title, icon: activeQuest.icon || "\u26A1", description: activeQuest.description || "", conditions: activeQuest.conditions || [], xpReward: activeQuest.xpReward || 0, sentimosReward: activeQuest.sentimosReward || 0 }; }
 
-    var computedConds = progressMap[qDef.id] || (activeQuest.conditions || []).map(function (c) {
-      return { type: c.type, target: c.target, progress: c.progress || 0 };
-    });
+    var computedConds;
+    if (isDaily) {
+      // Forward-looking: recompute daily progress from assignedAt cutoff
+      var dailyDef = null;
+      for (var di = 0; di < DAILY_QUEST_DEFS.length; di++) {
+        if (DAILY_QUEST_DEFS[di].id === activeQuest.id) { dailyDef = DAILY_QUEST_DEFS[di]; break; }
+      }
+      if (dailyDef && activeQuest.assignedAt) {
+        var assignedAtDate = new Date(activeQuest.assignedAt);
+        var todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+        var fwdExp = expenses.filter(function (e) {
+          var d = new Date(e.timestamp);
+          return d >= assignedAtDate && d <= todayEnd;
+        });
+        var dRes = dailyDef.compute(fwdExp, weeklyBudget);
+        computedConds = [{ type: (activeQuest.conditions[0] || {}).type || "log_count_today", target: dRes.target, progress: dRes.progress }];
+      } else {
+        computedConds = (activeQuest.conditions || []).map(function (c) {
+          return { type: c.type, target: c.target, progress: c.progress || 0 };
+        });
+      }
+    } else {
+      computedConds = progressMap[qDef.id] || (activeQuest.conditions || []).map(function (c) {
+        return { type: c.type, target: c.target, progress: c.progress || 0 };
+      });
+    }
     var allDone = computedConds.every(function (c) { return c.progress >= c.target; });
+    if (activeQuest.completedAt) { allDone = true; }
+
+    // Claimed-state lock: permanently override to 100% if already claimed
+    var isClaimed = window.StorageAPI.isQuestClaimed ? window.StorageAPI.isQuestClaimed(qDef.id, isDaily ? "daily" : "weekly") : false;
+    if (isClaimed) {
+      computedConds = computedConds.map(function (c) { return { type: c.type, target: c.target, progress: c.target }; });
+      allDone = true;
+    }
+    // completedAt lock: lock bars to 100% so the display matches authoritative storage state
+    // (recomputed progress can desync from stored progress when the forward-looking filter
+    // excludes expenses that storage counted, producing a lower number in the bars).
+    if (activeQuest.completedAt && !isClaimed) {
+      computedConds = computedConds.map(function (c) { return { type: c.type, target: c.target, progress: c.target }; });
+    }
 
     var nextMon = new Date(getWeekStart());
     nextMon.setDate(nextMon.getDate() + 7);
     var daysLeft = Math.ceil((nextMon.getTime() - new Date().getTime()) / 86400000);
+    var timeLeftLabel = isDaily ? "Resets tonight" : (daysLeft <= 1 ? "Resets tomorrow" : daysLeft + " days left");
 
     // Build condition bars (page-style — matching daily quests)
     var condsHtml = "";
@@ -777,7 +879,13 @@
 
     var cardHtml;
     if (allDone) {
-      // Completed — green-tinted card matching page style
+      // Completed — green-tinted card; show Claimed badge if already claimed
+      var spotlightDoneChip = isClaimed
+        ? "<div class=\"shrink-0 rounded-full px-3 py-2 text-sm font-black\" style=\"background:#edf7ef;color:#164f33;outline:1px solid rgba(43,130,89,0.3)\">\u2713 Claimed</div>"
+        : "<div class=\"shrink-0 rounded-full px-3 py-2 text-sm font-black\" style=\"background:#edf7ef;color:#164f33;outline:1px solid rgba(43,130,89,0.3)\">\u2713 Done</div>";
+      var spotlightActionHtml = isClaimed
+        ? "<span class=\"rounded-full text-sm font-black\" style=\"background:#edf7ef;color:#164f33;padding:0.4rem 1.25rem;outline:1px solid rgba(43,130,89,0.3)\">\u2713 Claimed</span>"
+        : "<button type=\"button\" id=\"questClaimBtn\" class=\"rounded-full text-sm font-black text-white\" style=\"background:#164f33;padding:0.5rem 1.25rem;border:none;cursor:pointer\">\u26A1 Claim Reward</button>";
       cardHtml =
         "<div class=\"relative rounded-[2rem] p-5\" style=\"background:#f0fdf4;box-shadow:0 1px 4px rgba(0,0,0,0.05),0 0 0 2px rgba(43,130,89,0.25)\">" +
           "<div class=\"grid items-start gap-4\" style=\"grid-template-columns:3rem 1fr auto\">" +
@@ -787,11 +895,11 @@
               "<p class=\"mt-1 text-sm font-semibold\" style=\"color:#617063\">" + qDef.description + "</p>" +
               condsHtml +
             "</div>" +
-            "<div class=\"shrink-0 rounded-full px-3 py-2 text-sm font-black\" style=\"background:#edf7ef;color:#164f33;outline:1px solid rgba(43,130,89,0.3)\">\u2713 Done</div>" +
+            spotlightDoneChip +
           "</div>" +
           "<div class=\"mt-4 flex items-center justify-between gap-3\">" +
-            "<p class=\"text-xs font-extrabold uppercase\" style=\"letter-spacing:0.16em;color:#6b756c\">+" + qDef.xpReward + " XP</p>" +
-            "<button type=\"button\" id=\"questClaimBtn\" class=\"rounded-full text-sm font-black text-white\" style=\"background:#164f33;padding:0.5rem 1.25rem;border:none;cursor:pointer\">\u26A1 Claim Reward</button>" +
+            "<p class=\"text-xs font-extrabold uppercase\" style=\"letter-spacing:0.16em;color:#6b756c\">+" + qDef.xpReward + " XP \u00B7 +\u20B5" + qDef.sentimosReward + "</p>" +
+            spotlightActionHtml +
           "</div>" +
         "</div>";
     } else {
@@ -800,19 +908,22 @@
         "<div class=\"relative rounded-[2rem] p-5\" style=\"background:#ffffff;box-shadow:0 1px 4px rgba(0,0,0,0.06),0 0 0 1px #ded7c6;cursor:pointer\" role=\"button\" tabindex=\"0\" id=\"activeQuestCard\">" +
           "<div class=\"mb-3 flex items-center gap-2\">" +
             "<span class=\"text-xs font-black\" style=\"background:#edf7ef;color:#164f33;padding:0.2rem 0.6rem;border-radius:999px;outline:1px solid rgba(43,130,89,0.3)\">\uD83D\uDCCC Tracking</span>" +
-            "<span class=\"text-xs font-semibold\" style=\"color:#617063\">" + (daysLeft <= 1 ? "Resets tomorrow" : daysLeft + " days left") + "</span>" +
+            "<span class=\"text-xs font-semibold\" style=\"color:#617063\">" + timeLeftLabel + "</span>" +
           "</div>" +
-          "<div class=\"grid items-start gap-4\" style=\"grid-template-columns:3rem 1fr auto\">" +
+          "<div class=\"grid items-start gap-4\" style=\"grid-template-columns:3rem 1fr\">" +
             "<div class=\"grid h-12 w-12 place-items-center rounded-2xl text-2xl\" style=\"background:#edf7ef;outline:1px solid #cfe2d3\" aria-hidden=\"true\">" + qDef.icon + "</div>" +
             "<div class=\"min-w-0\">" +
               "<h3 class=\"text-lg font-black\" style=\"font-family:'Sora',sans-serif;color:#102b1d\">" + qDef.title + "</h3>" +
               "<p class=\"mt-1 text-sm font-semibold\" style=\"color:#617063\">" + qDef.description + "</p>" +
               condsHtml +
             "</div>" +
-            "<div class=\"shrink-0 rounded-full px-3 py-2 text-sm font-black\" style=\"background:#f0fdfa;color:#0f766e;outline:1px solid rgba(13,148,136,0.25)\">\u20B5" + qDef.sentimosReward + "</div>" +
           "</div>" +
           "<div class=\"mt-4 flex items-center justify-between gap-3\">" +
-            "<p class=\"text-xs font-extrabold uppercase\" style=\"letter-spacing:0.16em;color:#6b756c\">+" + qDef.xpReward + " XP</p>" +
+            "<div class=\"flex items-center gap-2\">" +
+              "<p class=\"text-xs font-extrabold uppercase\" style=\"letter-spacing:0.16em;color:#6b756c\">\u26A1 +" + qDef.xpReward + " XP</p>" +
+              "<span style=\"color:#d1d5db;font-size:0.75rem\">&middot;</span>" +
+              "<p class=\"text-xs font-extrabold\" style=\"color:#0f766e\">+\u20B5" + qDef.sentimosReward + "</p>" +
+            "</div>" +
             "<div class=\"flex items-center gap-2\">" +
               "<button type=\"button\" id=\"questAbandonBtn\" class=\"rounded-full text-xs font-black\" style=\"background:transparent;color:#617063;padding:0.4rem 0.85rem;outline:1px solid #d1d5db;cursor:pointer;border:none\">Abandon</button>" +
               "<button type=\"button\" id=\"questChangeBtn\" class=\"rounded-full text-xs font-black\" style=\"background:transparent;color:#164f33;padding:0.4rem 0.85rem;outline:1px solid #164f33;cursor:pointer;border:none\">Change \u2192</button>" +
@@ -832,13 +943,11 @@
     if (changeBtn) {
       changeBtn.addEventListener("click", function (e) {
         e.stopPropagation();
-        var exp2 = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
-        var sum2 = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
-        openChangeQuestSheet(computeAllQuestProgress(exp2, sum2.weeklyBudget || 0), sum2.weeklyBudget || 0);
+        openChangeQuestSheet();
       });
     }
     var activeCard = document.getElementById("activeQuestCard");
-    if (activeCard) {
+    if (activeCard && !isDaily) {
       activeCard.addEventListener("click", function () {
         var questForSheet = Object.assign({}, qDef, { conditions: computedConds, expiresAt: nextMon.toISOString(), completedAt: null });
         openQuestDetailSheet(questForSheet);
@@ -848,43 +957,195 @@
     var claimBtn = document.getElementById("questClaimBtn");
     if (claimBtn) {
       claimBtn.addEventListener("click", function () {
-        if (window.StorageAPI && window.StorageAPI.claimQuestReward) {
-          window.StorageAPI.claimQuestReward();
+        if (!window.StorageAPI || !window.StorageAPI.claimQuestReward) { return; }
+        var result = window.StorageAPI.claimQuestReward(qDef.id, qDef);
+        if (!result || !result.ok) {
+          if (result && result.alreadyClaimed) {
+            showSimpleToast("\u2713 Reward already claimed!", "#475569");
+          }
+          return;
         }
-        window.StorageAPI.setCurrentQuest(null);
-        window.dispatchEvent(new Event("sugbocents:dataChanged"));
-        // Auto-assign next uncompleted quest from this week's pool
-        var pool  = getWeeklyQuestPool();
-        var exp3  = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
-        var sum3  = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
-        var pMap  = computeAllQuestProgress(exp3, sum3.weeklyBudget || 0);
-        var nextQ = null;
-        for (var pi = 0; pi < pool.length; pi++) {
-          if (pool[pi].id === qDef.id) { continue; }
-          var pconds = pMap[pool[pi].id] || pool[pi].conditions.map(function (c) { return { type: c.type, target: c.target, progress: 0 }; });
-          if (!pconds.every(function (c) { return c.progress >= c.target; })) { nextQ = pool[pi]; break; }
-        }
-        if (nextQ) {
-          trackQuest(nextQ);
-        } else {
-          renderQuestPage();
-        }
-        var ex = document.getElementById("questCompleteToast");
-        if (ex) { ex.remove(); }
-        var toast = document.createElement("div");
-        toast.id = "questCompleteToast";
-        toast.style.cssText = "position:fixed;bottom:5.5rem;left:50%;transform:translateX(-50%);background:#164f33;color:white;padding:0.65rem 1.25rem;border-radius:999px;font-size:0.85rem;font-weight:800;z-index:9999;box-shadow:0 8px 24px rgba(22,79,51,0.3);white-space:nowrap;transition:opacity 0.4s;";
-        toast.textContent = "\uD83C\uDF89 Quest complete! " + (nextQ ? "Now tracking \u201C" + nextQ.title + "\u201D" : "Slot is open for a new quest");
-        document.body.appendChild(toast);
-        setTimeout(function () { toast.style.opacity = "0"; setTimeout(function () { toast.remove(); }, 450); }, 3500);
+        dispatchQuestBadge();
+        // Show the celebration modal — auto-suggest next quest is handled inside "Continue"
+        showQuestCelebrationModal({
+          title: result.title,
+          xpReward: result.xpReward,
+          sentimosReward: result.sentimosReward,
+          claimedQuestId: qDef.id
+        });
       });
     }
+  }
+
+  // ── Utility helpers ─────────────────────────────────────────────────────────
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function showSimpleToast(message, bgColor) {
+    bgColor = bgColor || "#164f33";
+    var existing = document.getElementById("questSimpleToast");
+    if (existing) { existing.remove(); }
+    var toast = document.createElement("div");
+    toast.id = "questSimpleToast";
+    toast.style.cssText = "position:fixed;bottom:5.5rem;left:50%;transform:translateX(-50%);background:" + bgColor + ";color:white;padding:0.65rem 1.25rem;border-radius:999px;font-size:0.85rem;font-weight:800;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.2);white-space:nowrap;transition:opacity 0.4s;";
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(function () { toast.style.opacity = "0"; setTimeout(function () { toast.remove(); }, 450); }, 3000);
+  }
+
+  // ── Quest Celebration Modal (1:1 match with App.tsx CelebrationModal) ────────
+
+  function showQuestCelebrationModal(data) {
+    // data: { title, xpReward, sentimosReward, claimedQuestId }
+    var existing = document.getElementById("questCelebrationModal");
+    if (existing) { existing.remove(); }
+
+    // Inject keyframes once (confetti bounce + Tigom float)
+    if (!document.getElementById("questConfettiStyles")) {
+      var styleEl = document.createElement("style");
+      styleEl.id = "questConfettiStyles";
+      styleEl.textContent =
+        "@keyframes questConfettiBounce{" +
+          "0%,100%{transform:translateY(0) scale(1);opacity:1}" +
+          "50%{transform:translateY(-14px) scale(1.15);opacity:0.9}" +
+        "}" +
+        "@keyframes questTigomFloat{" +
+          "0%,100%{transform:translateY(0)}" +
+          "50%{transform:translateY(-8px)}" +
+        "}";
+      document.head.appendChild(styleEl);
+    }
+
+    var modal = document.createElement("div");
+    modal.id = "questCelebrationModal";
+    // z-index 9990 ensures it sits above all overlays (center-modal-overlay is 860)
+    modal.style.cssText = "position:fixed;inset:0;z-index:9990;background:#164f33;display:grid;place-items:center;padding:1.5rem;text-align:center;color:white;overflow:auto;";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-label", "Quest complete celebration");
+
+    var dotBase = "position:absolute;border-radius:50%;animation:questConfettiBounce 1.8s ease-in-out infinite;";
+
+    // Tigom mascot at lg size (6rem × 6rem) with float animation — matches TigomFace size="lg"
+    var tigomInnerHtml = buildTigomHtml("happy");
+    var tigomWrapHtml =
+      "<div style=\"display:flex;justify-content:center;margin:0 auto 1.5rem auto\">" +
+        "<div style=\"" +
+          "width:6rem;height:6rem;" +
+          "position:relative;" +
+          "animation:questTigomFloat 3s ease-in-out infinite;" +
+          "flex-shrink:0" +
+        "\">" +
+          // Re-render at the correct size by scaling the 3.5rem Tigom up to fill 6rem
+          "<div style=\"" +
+            "transform:scale(" + (96 / 56).toFixed(4) + ");" +
+            "transform-origin:top left;" +
+            "position:absolute;top:0;left:0;width:3.5rem;height:3.5rem" +
+          "\">" +
+            tigomInnerHtml +
+          "</div>" +
+        "</div>" +
+      "</div>";
+
+    modal.innerHTML =
+      // 3 confetti dots matching brief: yellow top-left, teal top-right, white bottom-left
+      "<div style=\"" + dotBase + "top:2.5rem;left:2rem;width:1.25rem;height:1.25rem;background:#EAB308;animation-delay:0s\"></div>" +
+      "<div style=\"" + dotBase + "top:6rem;right:2.5rem;width:1rem;height:1rem;background:#0D9488;animation-delay:0.3s\"></div>" +
+      "<div style=\"" + dotBase + "bottom:5rem;left:3.5rem;width:1rem;height:1rem;background:white;animation-delay:0.6s\"></div>" +
+      // Content (max-w-md = 28rem)
+      "<div style=\"max-width:28rem;width:100%\">" +
+        tigomWrapHtml +
+        // Label — 0.875rem, tracking-[0.28em] matches brief `text-sm font-extrabold uppercase tracking-[0.28em]`
+        "<p style=\"font-size:0.875rem;font-weight:800;letter-spacing:0.28em;text-transform:uppercase;color:rgba(255,255,255,0.6);margin:0 0 0.75rem 0\">" +
+          "Celebration moment" +
+        "</p>" +
+        // Title — font-display text-5xl (3rem) font-black tracking-tight
+        "<h2 style=\"font-family:'Sora',sans-serif;font-size:3rem;font-weight:900;letter-spacing:-0.02em;line-height:1.1;margin:0 0 1rem 0\">" +
+          "Quest complete!" +
+        "</h2>" +
+        // Subtitle — text-lg (1.125rem) font-semibold text-white/78
+        "<p style=\"font-size:1.125rem;font-weight:600;color:rgba(255,255,255,0.78);margin:0 0 1.5rem 0\">" +
+          escapeHtml(data.title) + " is claimed. Tigom added the reward to your shop balance." +
+        "</p>" +
+        // Reward — font-display text-4xl (2.25rem) font-black text-[#EAB308]; format: +XP XP · +₵N
+        "<p style=\"font-family:'Sora',sans-serif;font-size:2.25rem;font-weight:900;color:#EAB308;margin:0 0 2rem 0\">" +
+          "+" + data.xpReward + " XP \u00B7 +\u20B5" + data.sentimosReward +
+        "</p>" +
+        // Continue button — rounded-2xl (1rem) bg-white text-[#164f33] px-5 py-4
+        "<button type=\"button\" id=\"celebrationContinueBtn\" " +
+          "style=\"display:block;width:100%;background:white;color:#164f33;border:none;border-radius:1rem;padding:1rem 1.25rem;font-size:0.875rem;font-weight:900;cursor:pointer;font-family:inherit;\">" +
+          "Continue" +
+        "</button>" +
+      "</div>";
+
+    document.body.appendChild(modal);
+
+    document.getElementById("celebrationContinueBtn").addEventListener("click", function () {
+      modal.remove();
+
+      // Auto-suggest next quest: daily first, then weekly
+      var freshExp = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+      var freshSum = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
+      var wb = freshSum.weeklyBudget || 0;
+      var now = new Date();
+      var todayKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+      var todayE = freshExp.filter(function (e) { return e.timestamp && e.timestamp.slice(0, 10) === todayKey; });
+
+      // Search daily quests first
+      var nextQ = null;
+      var nextQType = null;
+      for (var di = 0; di < DAILY_QUEST_DEFS.length; di++) {
+        var dDef = DAILY_QUEST_DEFS[di];
+        if (dDef.id === data.claimedQuestId) { continue; }
+        var dResult = dDef.compute(todayE, wb);
+        var isDone = (dResult.progress || 0) >= (dResult.target || 1);
+        var isClaimed = window.StorageAPI.isQuestClaimed ? window.StorageAPI.isQuestClaimed(dDef.id, "daily") : false;
+        if (!isDone && !isClaimed) { nextQ = dDef; nextQType = "daily"; break; }
+      }
+
+      // Fallback to weekly pool
+      if (!nextQ) {
+        var pool = getWeeklyQuestPool();
+        var pMap = computeAllQuestProgress(freshExp, wb);
+        for (var pi = 0; pi < pool.length; pi++) {
+          if (pool[pi].id === data.claimedQuestId) { continue; }
+          var pconds = pMap[pool[pi].id] || pool[pi].conditions.map(function (c) {
+            return { type: c.type, target: c.target, progress: 0 };
+          });
+          var wDone = pconds.every(function (c) { return c.progress >= c.target; });
+          var wClaimed = window.StorageAPI.isQuestClaimed ? window.StorageAPI.isQuestClaimed(pool[pi].id, "weekly") : false;
+          if (!wDone && !wClaimed) { nextQ = pool[pi]; nextQType = "weekly"; break; }
+        }
+      }
+
+      if (nextQ) {
+        if (nextQType === "daily") {
+          trackDailyQuest(nextQ);
+        } else {
+          trackQuest(nextQ);
+        }
+      } else {
+        renderQuestPage();
+      }
+    });
+
+    // Focus the continue button for accessibility
+    setTimeout(function () {
+      var btn = document.getElementById("celebrationContinueBtn");
+      if (btn) { btn.focus(); }
+    }, 50);
   }
 
   // ── Abandon Quest ───────────────────────────────────────────────────────────
 
   function abandonQuest() {
-    if (!window.StorageAPI || !window.StorageAPI.setCurrentQuest) { return; }
+    if (!window.StorageAPI || !window.StorageAPI.setCurrentQuest) { return; } // guard — setCurrentQuest is now exported
     var existing = document.getElementById("questAbandonToast");
     if (existing) { existing.remove(); }
     window.StorageAPI.setCurrentQuest(null);
@@ -904,64 +1165,95 @@
     // If another quest is already tracked, show replace-confirmation sheet first
     var current = window.StorageAPI && window.StorageAPI.getCurrentQuest ? window.StorageAPI.getCurrentQuest() : null;
     if (current && current.id !== questDef.id) {
-      openReplaceQuestSheet(current, questDef);
+      openReplaceQuestSheet(current, questDef, function () { trackQuest(questDef); });
     } else {
       trackQuest(questDef);
     }
   }
 
-  function openReplaceQuestSheet(currentQuest, newQDef) {
-    if (!window.AppShell) { trackQuest(newQDef); return; }
-    var sheetId = "replaceQuestSheet";
-    var existing = document.getElementById(sheetId);
-    if (existing) { existing.remove(); }
+  function closeReplaceQuestModal() {
+    var ov = document.getElementById("replaceQuestModal");
+    if (!ov) { return; }
+    ov.classList.remove("is-open");
+    setTimeout(function () { if (ov.parentNode) { ov.parentNode.removeChild(ov); } }, 230);
+  }
 
-    var sheet = document.createElement("div");
-    sheet.id = sheetId;
-    sheet.className = "bottom-sheet";
-    sheet.setAttribute("role", "dialog");
-    sheet.setAttribute("aria-modal", "true");
-    sheet.setAttribute("aria-label", "Replace quest confirmation");
-    sheet.innerHTML =
-      "<div class=\"sheet-handle\"></div>" +
-      "<div class=\"sheet-header\">" +
-        "<h2 class=\"sheet-title\">Switch quests?</h2>" +
-        "<button type=\"button\" class=\"sheet-close-btn\" aria-label=\"Close\">&times;</button>" +
+  function openReplaceQuestSheet(currentQuest, newQDef, onConfirmFn) {
+    // Remove any stale instance (center modal or old bottom-sheet)
+    var stale = document.getElementById("replaceQuestModal") || document.getElementById("replaceQuestSheet");
+    if (stale) { stale.parentNode.removeChild(stale); }
+
+    var overlay = document.createElement("div");
+    overlay.id = "replaceQuestModal";
+    overlay.className = "center-modal-overlay";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-label", "Replace quest confirmation");
+
+    var card = document.createElement("div");
+    card.className = "center-modal-card";
+
+    var reassuranceText = currentQuest.completedAt
+      ? "Your reward for \u201c" + escapeHtml(currentQuest.title) + "\u201d is still claimable from the Quests page after switching."
+      : "Your progress is saved \u2014 you can re-track any time.";
+
+    card.innerHTML =
+      // Header
+      "<div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem\">" +
+        "<h2 style=\"font-family:'Sora',sans-serif;font-size:1.15rem;font-weight:800;color:#102b1d;margin:0\">Switch quest?</h2>" +
+        "<button type=\"button\" id=\"replaceQuestCloseBtn\" style=\"background:none;border:none;font-size:1.4rem;color:#94a3b8;cursor:pointer;padding:0.25rem 0.5rem;border-radius:999px;line-height:1\">&times;</button>" +
       "</div>" +
-      "<div class=\"sheet-body\">" +
-        "<div class=\"rounded-[1.25rem] p-4 mb-4\" style=\"background:#fef9ec;outline:1px solid #f3e2a0\">" +
-          "<p class=\"text-sm font-extrabold\" style=\"color:#92400e\">Replace \u201C" + currentQuest.title + "\u201D with \u201C" + newQDef.title + "\u201D?</p>" +
-          "<p class=\"mt-1 text-xs font-semibold\" style=\"color:#b45309\">Progress on your current quest will be paused until you re-equip it.</p>" +
+      // Currently tracking
+      "<p style=\"font-size:0.7rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:#617063;margin-bottom:0.5rem\">Currently tracking</p>" +
+      "<div style=\"border-radius:1.25rem;padding:1rem;display:flex;align-items:center;gap:0.875rem;background:#ffffff;outline:1px solid #ded7c6;margin-bottom:0.875rem\">" +
+        "<span style=\"font-size:1.4rem;flex-shrink:0\">" + (currentQuest.icon || "\u26A1") + "</span>" +
+        "<div style=\"min-width:0\">" +
+          "<p style=\"font-size:0.875rem;font-weight:800;color:#102b1d;margin:0\">" + escapeHtml(currentQuest.title) + "</p>" +
+          "<p style=\"font-size:0.78rem;font-weight:600;color:#617063;margin:0.15rem 0 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">" + escapeHtml(currentQuest.description || "") + "</p>" +
         "</div>" +
-        "<div class=\"flex flex-col gap-3\">" +
-          "<button type=\"button\" id=\"replaceQuestConfirmBtn\" class=\"w-full rounded-full text-sm font-black text-white\" style=\"background:#0D9488;padding:0.75rem;border:none;cursor:pointer\">Yes, track \u201C" + newQDef.title + "\u201D</button>" +
-          "<button type=\"button\" id=\"replaceQuestCancelBtn\" class=\"w-full rounded-full text-sm font-black\" style=\"background:transparent;color:#617063;padding:0.75rem;border:1.5px solid #ded7c6;cursor:pointer\">Keep current quest</button>" +
+      "</div>" +
+      "<div style=\"text-align:center;color:#9ca3af;font-size:1.2rem;margin-bottom:0.875rem;line-height:1\">&#8595;</div>" +
+      // Switch to
+      "<p style=\"font-size:0.7rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:#617063;margin-bottom:0.5rem\">Switch to</p>" +
+      "<div style=\"border-radius:1.25rem;padding:1rem;display:flex;align-items:center;gap:0.875rem;background:#f0fdf4;outline:1px solid rgba(43,130,89,0.3);margin-bottom:1rem\">" +
+        "<span style=\"font-size:1.4rem;flex-shrink:0\">" + (newQDef.icon || "\u26A1") + "</span>" +
+        "<div style=\"min-width:0\">" +
+          "<p style=\"font-size:0.875rem;font-weight:800;color:#102b1d;margin:0\">" + escapeHtml(newQDef.title) + "</p>" +
+          "<p style=\"font-size:0.78rem;font-weight:600;color:#617063;margin:0.15rem 0 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">" + escapeHtml(newQDef.description || "") + "</p>" +
         "</div>" +
+      "</div>" +
+      "<p style=\"font-size:0.78rem;font-weight:500;color:#9ca3af;font-style:italic;text-align:center;margin-bottom:1.25rem\">" + reassuranceText + "</p>" +
+      "<div style=\"display:flex;flex-direction:column;gap:0.75rem\">" +
+        "<button type=\"button\" id=\"replaceQuestConfirmBtn\" class=\"w-full rounded-full text-sm font-black text-white\" style=\"background:#164f33;padding:0.75rem;border:none;cursor:pointer\">Yes, switch to \u201C" + escapeHtml(newQDef.title) + "\u201D \u2192</button>" +
+        "<button type=\"button\" id=\"replaceQuestCancelBtn\" class=\"w-full rounded-full text-sm font-black\" style=\"background:transparent;color:#617063;padding:0.75rem;border:1.5px solid #ded7c6;cursor:pointer\">Keep tracking \u201C" + escapeHtml(currentQuest.title) + "\u201D</button>" +
       "</div>";
-    document.body.appendChild(sheet);
 
-    sheet.querySelector(".sheet-close-btn").addEventListener("click", function () { window.AppShell.closeAllSheets(); });
-    document.getElementById("replaceQuestCancelBtn").addEventListener("click", function () { window.AppShell.closeAllSheets(); });
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    // Wire buttons
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) { closeReplaceQuestModal(); } });
+    document.getElementById("replaceQuestCloseBtn").addEventListener("click", closeReplaceQuestModal);
+    document.getElementById("replaceQuestCancelBtn").addEventListener("click", closeReplaceQuestModal);
     document.getElementById("replaceQuestConfirmBtn").addEventListener("click", function () {
-      window.AppShell.closeAllSheets();
-      trackQuest(newQDef);
+      closeReplaceQuestModal();
+      if (onConfirmFn) { onConfirmFn(); } else { trackQuest(newQDef); }
     });
 
-    window.AppShell.openSheet(sheetId);
+    // Entrance animation
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { overlay.classList.add("is-open"); });
+    });
   }
 
   function trackQuest(questDef) {
     if (!window.StorageAPI || !window.StorageAPI.setCurrentQuest) { return; }
-    // Attach progress data before setting
-    var expenses     = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
-    var summary      = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
-    var weeklyBudget = summary.weeklyBudget || 0;
-    var progressMap  = computeAllQuestProgress(expenses, weeklyBudget);
-    var computedConds = progressMap[questDef.id] || questDef.conditions.map(function (c) { return { type: c.type, target: c.target, progress: 0 }; });
-
+    // Use the Monday of the current week as assignedAt so that all expenses logged
+    // this week count toward the quest — tracking mid-week must NOT silently discard
+    // Mon/Tue/Wed progress just because the user only picked the quest on Thursday.
     var questToSave = Object.assign({}, questDef, {
-      conditions: computedConds,
-      assignedAt: new Date().toISOString(),
+      conditions: questDef.conditions.map(function (c) { return { type: c.type, target: c.target, progress: 0 }; }),
+      assignedAt: getWeekStart().toISOString(),
       expiresAt: (function () { var m = getWeekStart(); m.setDate(m.getDate() + 7); return m.toISOString(); }()),
       completedAt: null
     });
@@ -991,76 +1283,158 @@
 
   // ── Change Quest Bottom Sheet ───────────────────────────────────────────────
 
-  function openChangeQuestSheet(progressMap, weeklyBudget) {
-    if (!window.AppShell) { return; }
-    var sheetId = "changeQuestSheet";
+  function closeChangeQuestModal() {
+    var overlay = document.getElementById("changeQuestModal");
+    if (!overlay) { return; }
+    overlay.classList.remove("is-open");
+    setTimeout(function () { if (overlay.parentNode) { overlay.parentNode.removeChild(overlay); } }, 230);
+  }
 
-    if (!document.getElementById(sheetId)) {
-      var sheet = document.createElement("div");
-      sheet.id = sheetId;
-      sheet.className = "bottom-sheet";
-      sheet.setAttribute("role", "dialog");
-      sheet.setAttribute("aria-modal", "true");
-      sheet.setAttribute("aria-label", "Choose a quest to track");
-      sheet.innerHTML =
-        "<div class=\"sheet-handle\"></div>" +
-        "<div class=\"sheet-header\">" +
-          "<h2 class=\"sheet-title\">Choose a quest</h2>" +
-          "<button type=\"button\" class=\"sheet-close-btn\" aria-label=\"Close\">&times;</button>" +
-        "</div>" +
-        "<p class=\"sheet-body\" style=\"font-size:0.8rem;color:#617063;margin-bottom:0.75rem;padding-bottom:0\">Progress counts for all quests \u2014 tracking pins one to your dashboard.</p>" +
-        "<div id=\"changeQuestList\" class=\"sheet-body\" style=\"padding-top:0;display:flex;flex-direction:column;gap:0.75rem\"></div>";
-      document.body.appendChild(sheet);
-      sheet.querySelector(".sheet-close-btn").addEventListener("click", function () { window.AppShell.closeAllSheets(); });
+  function buildChangeQuestRow(icon, title, description, pct, barColor, isTracking, onTrackFn) {
+    var row = document.createElement("div");
+    row.style.cssText = "background:" + (isTracking ? "#f0fdf4" : "#ffffff") + ";border-radius:1.25rem;padding:0.875rem 1rem;outline:1px solid " + (isTracking ? "rgba(43,130,89,0.35)" : "#ded7c6") + ";display:flex;align-items:center;gap:0.875rem;";
+
+    var actionHtml;
+    if (isTracking) {
+      actionHtml = "<span style=\"flex-shrink:0;font-size:0.75rem;font-weight:800;background:#edf7ef;color:#164f33;padding:0.3rem 0.7rem;border-radius:999px;white-space:nowrap;outline:1px solid rgba(43,130,89,0.3)\">\uD83D\uDCCC Tracking</span>";
+    } else {
+      actionHtml = "<button type=\"button\" class=\"change-quest-track-btn\" style=\"flex-shrink:0;font-size:0.75rem;font-weight:800;background:transparent;color:#164f33;padding:0.3rem 0.7rem;border-radius:999px;outline:1px solid #164f33;cursor:pointer;white-space:nowrap\">Track \u2192</button>";
     }
 
-    var activeQuest = window.StorageAPI.getCurrentQuest ? window.StorageAPI.getCurrentQuest() : null;
-    var activeId    = activeQuest ? activeQuest.id : null;
-    var listEl      = document.getElementById("changeQuestList");
-    if (!listEl) { return; }
-    listEl.innerHTML = "";
+    row.innerHTML =
+      "<div style=\"font-size:1.5rem;flex-shrink:0\">" + icon + "</div>" +
+      "<div style=\"min-width:0;flex:1\">" +
+        "<p style=\"font-size:0.875rem;font-weight:800;color:#102b1d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">" + escapeHtml(title) + "</p>" +
+        "<p style=\"font-size:0.72rem;font-weight:600;color:#617063;margin-top:0.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">" + escapeHtml(description) + "</p>" +
+        "<div style=\"margin-top:0.4rem;overflow:hidden;border-radius:999px;height:0.5rem;background:#e7e0cf\">" +
+          "<div style=\"height:100%;border-radius:999px;background:" + barColor + ";width:" + pct + "%;transition:width 0.7s\"></div>" +
+        "</div>" +
+      "</div>" +
+      actionHtml;
+
+    if (!isTracking && onTrackFn) {
+      var btn = row.querySelector(".change-quest-track-btn");
+      if (btn) { btn.addEventListener("click", function (e) { e.stopPropagation(); onTrackFn(); }); }
+    }
+    return row;
+  }
+
+  function openChangeQuestSheet() {
+    // Remove any stale instance
+    var stale = document.getElementById("changeQuestModal");
+    if (stale) { stale.parentNode.removeChild(stale); }
+
+    // Always fetch fresh data
+    var freshExp     = window.StorageAPI && window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var freshSummary = window.StorageAPI && window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
+    var weeklyBudget = freshSummary.weeklyBudget || 0;
+    var progressMap  = computeAllQuestProgress(freshExp, weeklyBudget);
+    var activeQuest  = window.StorageAPI && window.StorageAPI.getCurrentQuest ? window.StorageAPI.getCurrentQuest() : null;
+    var activeId     = activeQuest ? activeQuest.id : null;
+
+    // Build today's expenses for daily progress
+    var todayKey = (function () {
+      var n = new Date();
+      return n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0");
+    }());
+    var todayExp = freshExp.filter(function (e) {
+      return e.timestamp && e.timestamp.slice(0, 10) === todayKey;
+    });
+
+    // Build overlay + card
+    var overlay = document.createElement("div");
+    overlay.id = "changeQuestModal";
+    overlay.className = "center-modal-overlay";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-label", "Choose a quest to track");
+
+    var card = document.createElement("div");
+    card.className = "center-modal-card";
+
+    // Header
+    var header = document.createElement("div");
+    header.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:0.25rem;";
+    header.innerHTML =
+      "<h2 style=\"font-family:'Sora',sans-serif;font-size:1.15rem;font-weight:800;color:#102b1d;margin:0\">Choose a quest</h2>" +
+      "<button type=\"button\" id=\"changeQuestCloseBtn\" style=\"background:none;border:none;font-size:1.4rem;color:#94a3b8;cursor:pointer;padding:0.25rem 0.5rem;border-radius:999px;line-height:1\">&times;</button>";
+    card.appendChild(header);
+
+    var subtitle = document.createElement("p");
+    subtitle.style.cssText = "font-size:0.8rem;font-weight:500;color:#617063;margin:0 0 1.25rem 0;";
+    subtitle.textContent = "Progress counts for all quests \u2014 tracking pins one to your dashboard.";
+    card.appendChild(subtitle);
+
+    // ── Daily Quests Section ──
+    var dailyLabel = document.createElement("p");
+    dailyLabel.style.cssText = "font-size:0.68rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:#617063;margin:0 0 0.6rem 0;";
+    dailyLabel.textContent = "Daily Quests";
+    card.appendChild(dailyLabel);
+
+    var dailyList = document.createElement("div");
+    dailyList.style.cssText = "display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1.25rem;";
+
+    DAILY_QUEST_DEFS.forEach(function (def) {
+      var result   = def.compute(todayExp, weeklyBudget);
+      var progress = result.progress || 0;
+      var target   = result.target || 1;
+      var pct      = Math.min(100, Math.round((progress / target) * 100));
+      var allDone  = progress >= target;
+      var isTracking = def.id === activeId;
+      var barColor = allDone ? "#2b8259" : "#EAB308";
+
+      var onTrack = (function (d) {
+        return function () {
+          closeChangeQuestModal();
+          maybeTrackDailyQuest(d);
+        };
+      }(def));
+
+      dailyList.appendChild(buildChangeQuestRow(def.icon, def.title, def.description, pct, barColor, isTracking, allDone ? null : onTrack));
+    });
+    card.appendChild(dailyList);
+
+    // ── Weekly Quests Section ──
+    var weeklyLabel = document.createElement("p");
+    weeklyLabel.style.cssText = "font-size:0.68rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:#617063;margin:0 0 0.6rem 0;";
+    weeklyLabel.textContent = "Weekly Quests";
+    card.appendChild(weeklyLabel);
+
+    var weeklyList = document.createElement("div");
+    weeklyList.style.cssText = "display:flex;flex-direction:column;gap:0.6rem;";
 
     getWeeklyQuestPool().forEach(function (qDef) {
       var computedConds = progressMap[qDef.id] || qDef.conditions.map(function (c) { return { type: c.type, target: c.target, progress: 0 }; });
       var allDone    = computedConds.every(function (c) { return c.progress >= c.target; });
       var isTracking = qDef.id === activeId;
-      var overallPct = Math.min(100, Math.round(
+      var pct        = Math.min(100, Math.round(
         (computedConds.reduce(function (s, c) { return s + c.progress; }, 0) /
          computedConds.reduce(function (s, c) { return s + c.target;   }, 0)) * 100
       ));
       var barColor = allDone ? "#2b8259" : "#EAB308";
 
-      var row = document.createElement("div");
-      row.style.cssText = "background:" + (isTracking ? "#f0fdf4" : "#ffffff") + ";border-radius:1.25rem;padding:0.875rem 1rem;outline:1px solid " + (isTracking ? "rgba(43,130,89,0.35)" : "#ded7c6") + ";display:flex;align-items:center;gap:0.875rem;";
+      var onTrack = (function (q) {
+        return function () {
+          closeChangeQuestModal();
+          maybeTrackQuest(q);
+        };
+      }(qDef));
 
-      var actionHtml;
-      if (isTracking) {
-        actionHtml = "<span style=\"font-size:0.75rem;font-weight:800;background:#edf7ef;color:#164f33;padding:0.3rem 0.7rem;border-radius:999px;white-space:nowrap;outline:1px solid rgba(43,130,89,0.3)\">\uD83D\uDCCC Tracking</span>";
-      } else {
-        actionHtml = "<button type=\"button\" style=\"font-size:0.75rem;font-weight:800;background:transparent;color:#164f33;padding:0.3rem 0.7rem;border-radius:999px;outline:1px solid #164f33;cursor:pointer;white-space:nowrap\" data-quest-id=\"" + qDef.id + "\">Track \u2192</button>";
-      }
-
-      row.innerHTML =
-        "<div style=\"font-size:1.5rem;flex-shrink:0\">" + qDef.icon + "</div>" +
-        "<div style=\"min-width:0;flex:1\">" +
-          "<p style=\"font-size:0.875rem;font-weight:800;color:#102b1d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">" + qDef.title + "</p>" +
-          "<p style=\"font-size:0.72rem;font-weight:600;color:#617063;margin-top:0.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">" + qDef.description + "</p>" +
-          "<div style=\"margin-top:0.4rem;position:relative;overflow:hidden;border-radius:999px;height:0.625rem;background:#e7e0cf\">" +
-            "<div style=\"height:100%;border-radius:999px;background:" + barColor + ";width:" + overallPct + "%;transition:width 0.7s\"></div>" +
-          "</div>" +
-        "</div>" +
-        actionHtml;
-
-      // Wire track button
-      var trackBtn = row.querySelector("[data-quest-id]");
-      if (trackBtn) {
-        trackBtn.addEventListener("click", function () { maybeTrackQuest(qDef); });
-      }
-
-      listEl.appendChild(row);
+      weeklyList.appendChild(buildChangeQuestRow(qDef.icon, qDef.title, qDef.description, pct, barColor, isTracking, allDone ? null : onTrack));
     });
+    card.appendChild(weeklyList);
 
-    window.AppShell.openSheet(sheetId);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    // Close on overlay background click
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) { closeChangeQuestModal(); } });
+    document.getElementById("changeQuestCloseBtn").addEventListener("click", closeChangeQuestModal);
+
+    // Trigger entrance animation on next frame
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { overlay.classList.add("is-open"); });
+    });
   }
 
   // ── Weekly Quest Catalog — 5 quests per week, rotating pool ─────────────────
@@ -1072,9 +1446,15 @@
     var expenses     = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
     var summary      = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
     var weeklyBudget = summary.weeklyBudget || 0;
-    var progressMap  = computeAllQuestProgress(expenses, weeklyBudget);
     var activeQuest  = window.StorageAPI.getCurrentQuest ? window.StorageAPI.getCurrentQuest() : null;
     var activeId     = activeQuest ? activeQuest.id : null;
+    // General progress map uses weekStart as cutoff (for non-tracked quests)
+    var progressMap  = computeAllQuestProgress(expenses, weeklyBudget);
+    // Forward-looking progress map for the actively tracked weekly quest only
+    var activeAssignedAt = (activeQuest && activeQuest.type !== "daily") ? activeQuest.assignedAt : null;
+    var progressMapTracked = activeAssignedAt
+      ? computeAllQuestProgress(expenses, weeklyBudget, activeAssignedAt)
+      : progressMap;
     var pool         = getWeeklyQuestPool();
 
     section.innerHTML =
@@ -1092,15 +1472,28 @@
     nextMon.setDate(nextMon.getDate() + 7);
 
     pool.forEach(function (qDef) {
-      var computedConds = progressMap[qDef.id] || qDef.conditions.map(function (c) { return { type: c.type, target: c.target, progress: 0 }; });
-      var isTracked     = qDef.id === activeId;
-      var allDone       = computedConds.every(function (c) { return c.progress >= c.target; });
+      var isTracked = qDef.id === activeId;
+      var isClaimed = window.StorageAPI.isQuestClaimed ? window.StorageAPI.isQuestClaimed(qDef.id, "weekly") : false;
+      // Use forward-looking map for the active quest, general map for the rest
+      var pMap = isTracked ? progressMapTracked : progressMap;
+      var computedConds = pMap[qDef.id] || qDef.conditions.map(function (c) { return { type: c.type, target: c.target, progress: 0 }; });
+      // Lock claimed quests into permanently completed visual state
+      if (isClaimed) {
+        computedConds = computedConds.map(function (c) { return { type: c.type, target: c.target, progress: c.target }; });
+      }
+      // completedAt lock: trust storage's authoritative completion flag so the
+      // Claim button appears even if the recomputed bars are slightly behind.
+      if (isTracked && activeQuest && activeQuest.completedAt && !isClaimed) {
+        computedConds = computedConds.map(function (c) { return { type: c.type, target: c.target, progress: c.target }; });
+      }
+      var allDone = isClaimed || (isTracked && activeQuest && Boolean(activeQuest.completedAt)) || computedConds.every(function (c) { return c.progress >= c.target; });
 
       var wrapper = document.createElement("div");
       wrapper.innerHTML = buildQuestCardHtml(qDef, computedConds, {
         tracked: isTracked,
-        showTrackBtn: !isTracked && !allDone,
-        showClaimBtn: false
+        showTrackBtn: !isClaimed && !isTracked && !allDone,
+        showClaimBtn: !isClaimed && allDone,
+        claimed: isClaimed
       });
       var card = wrapper.firstChild;
       if (!card) { return; }
@@ -1113,6 +1506,21 @@
         trackBtn.addEventListener("click", function (e) {
           e.stopPropagation();
           maybeTrackQuest(qDef);
+        });
+      }
+
+      var claimBtnInCatalog = card.querySelector(".quest-claim-btn");
+      if (claimBtnInCatalog) {
+        claimBtnInCatalog.addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (!window.StorageAPI || !window.StorageAPI.claimQuestReward) { return; }
+          var result = window.StorageAPI.claimQuestReward(qDef.id, qDef);
+          if (!result || !result.ok) {
+            if (result && result.alreadyClaimed) { showSimpleToast("\u2713 Reward already claimed!", "#475569"); }
+            return;
+          }
+          dispatchQuestBadge();
+          showQuestCelebrationModal({ title: result.title, xpReward: result.xpReward, sentimosReward: result.sentimosReward, claimedQuestId: qDef.id });
         });
       }
 
@@ -1130,6 +1538,35 @@
     });
   }
 
+  // ── Badge count helper ─────────────────────────────────────────────────────
+  // Computes completed-but-unclaimed count across ALL daily + weekly pool quests,
+  // caches it to localStorage for cross-page persistence, and dispatches the event.
+
+  function dispatchQuestBadge() {
+    if (!window.StorageAPI || !window.StorageAPI.isQuestClaimed) { return; }
+    var now = new Date();
+    var todayKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+    var freshExp = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var freshSummary = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
+    var wb = freshSummary.weeklyBudget || 0;
+    var todayE = freshExp.filter(function (e) { return e.timestamp && e.timestamp.slice(0, 10) === todayKey; });
+    var count = 0;
+
+    DAILY_QUEST_DEFS.forEach(function (def) {
+      var r = def.compute(todayE, wb);
+      if (!r.unavailable && r.progress >= r.target && !window.StorageAPI.isQuestClaimed(def.id, "daily")) { count++; }
+    });
+
+    var pmap = computeAllQuestProgress(freshExp, wb);
+    getWeeklyQuestPool().forEach(function (qDef) {
+      var conds = pmap[qDef.id] || qDef.conditions.map(function (c) { return { type: c.type, target: c.target, progress: 0 }; });
+      if (conds.every(function (c) { return c.progress >= c.target; }) && !window.StorageAPI.isQuestClaimed(qDef.id, "weekly")) { count++; }
+    });
+
+    try { localStorage.setItem("sugbocents_unclaimed_quests", String(count)); } catch (_) {}
+    window.dispatchEvent(new CustomEvent("sugbocents:questBadgeUpdate", { detail: { count: count } }));
+  }
+
   // ── Main render ────────────────────────────────────────────
 
   function renderQuestPage() {
@@ -1140,9 +1577,12 @@
     renderDailyQuestsSection();
     renderWeeklyQuestCatalog();
     renderLockedQuestsSection();
+    dispatchQuestBadge();
   }
 
   // ── Init ───────────────────────────────────────────────────
+
+  var _notifiedCompleteIds = {};
 
   document.addEventListener("DOMContentLoaded", function () {
     if (document.body.getAttribute("data-page") !== "quests") { return; }
@@ -1150,6 +1590,14 @@
     setInterval(updateDailyResetPill, 1000);
     window.addEventListener("sugbocents:dataChanged", renderQuestPage);
     window.addEventListener("sugbocents:synced", renderQuestPage);
+
+    // Tracked quest completion — show in-page toast (only once per quest)
+    window.addEventListener("sugbocents:questCompleted", function (e) {
+      var qid = e.detail && e.detail.questId;
+      if (!qid || _notifiedCompleteIds[qid]) { return; }
+      _notifiedCompleteIds[qid] = true;
+      showSimpleToast("🎉 Quest complete! Scroll down to claim your reward.", "#0f766e");
+    });
   });
 
 })();

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -16,102 +16,66 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/dark-mode.css" />
   <script>(function () { if (localStorage.getItem("darkModeEnabled") === "true") document.documentElement.classList.add("dark-mode"); }());</script>
+  <script>(function(){if(localStorage.getItem("sidebarCollapsed")==="true")document.documentElement.classList.add("sidebar-collapsed");}());</script>
 </head>
 
 <body data-page="dashboard" data-protected="true" class="antialiased"
   style="background:#f7f3e8;font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;color:#102b1d;min-height:100vh">
 
   <div style="min-height:100vh;background:#f7f3e8">
-    <div class="lg:flex">
+    <div id="appShell" class="lg:flex">
 
-      <!-- DESKTOP SIDEBAR -->
-      <aside class="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-y-auto lg:flex"
-        style="background:#f7f3e8;padding:1.25rem;border-right:1px solid rgba(216,209,189,0.8)"
-        aria-label="Sidebar navigation">
-        <!-- Brand block with Tigom -->
-        <div class="rounded-[2rem] p-5 text-white" style="background:#164f33">
-          <div class="flex items-center gap-3">
-            <div class="relative h-12 w-12 shrink-0 animate-float" aria-hidden="true">
-              <div class="absolute left-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
-              <div class="absolute right-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>
-              <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
-                style="background:#2b8259;box-shadow:inset 0 -10px 0 rgba(22,79,51,0.26)"></div>
-              <div class="absolute left-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)">
-              </div>
-              <div class="absolute right-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)">
-              </div>
-              <div class="absolute left-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
-              <div class="absolute right-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>
-              <div class="absolute bottom-[26%] left-1/2 h-4 w-8 rounded-b-full"
-                style="border-bottom:4px solid #102b1d;transform:translateX(-50%)"></div>
-              <div
-                class="absolute -bottom-1 left-1/2 flex h-6 w-8 items-center justify-center rounded-full text-xs font-black"
-                style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+
+      <main id="mainContent" class="min-w-0 flex-1 pb-28 lg:pb-8">
+
+        <!-- Page skeleton (visible while auth resolves; removed by revealPageContent() in app.js) -->
+        <div id="pageSkeleton" class="mx-auto max-w-6xl space-y-6 px-4 py-5 sm:px-6 lg:px-8" aria-hidden="true" style="pointer-events:none">
+          <!-- Hero -->
+          <div style="height:10.5rem;border-radius:2rem;background:#1f5e3a;opacity:0.4"></div>
+          <!-- Budget + Tigom -->
+          <div style="display:flex;flex-wrap:wrap;gap:1.5rem">
+            <div class="sk-card" style="flex:1;min-width:min(100%,14rem);display:flex;flex-direction:column;gap:0.85rem">
+              <div class="sk" style="width:6rem;height:0.65rem"></div>
+              <div class="sk" style="width:9rem;height:1.85rem"></div>
+              <div class="sk" style="height:0.75rem;border-radius:9999px"></div>
+              <div class="sk" style="width:5rem;height:0.55rem"></div>
             </div>
-            <div>
-              <p class="font-display text-2xl font-black">SugboCents</p>
-              <p class="text-xs font-bold" style="color:rgba(255,255,255,0.65)">Budgeting that feels alive</p>
+            <div class="sk-card" style="flex:1;min-width:min(100%,12rem);display:flex;align-items:center;gap:1rem">
+              <div class="sk sk-circle" style="width:4rem;height:4rem;flex-shrink:0"></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:0.6rem">
+                <div class="sk" style="width:7rem;height:0.65rem"></div>
+                <div class="sk" style="width:100%;height:0.55rem"></div>
+                <div class="sk" style="width:75%;height:0.55rem"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Quick add -->
+          <div class="sk-card">
+            <div class="sk" style="width:7rem;height:0.75rem;margin-bottom:1.25rem"></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(3.5rem,1fr));gap:0.75rem">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem"><div class="sk sk-circle" style="width:3rem;height:3rem"></div><div class="sk" style="width:2.75rem;height:0.5rem"></div></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem"><div class="sk sk-circle" style="width:3rem;height:3rem"></div><div class="sk" style="width:2.75rem;height:0.5rem"></div></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem"><div class="sk sk-circle" style="width:3rem;height:3rem"></div><div class="sk" style="width:2.75rem;height:0.5rem"></div></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem"><div class="sk sk-circle" style="width:3rem;height:3rem"></div><div class="sk" style="width:2.75rem;height:0.5rem"></div></div>
+            </div>
+          </div>
+          <!-- Recent expenses -->
+          <div class="sk-card">
+            <div style="display:flex;justify-content:space-between;margin-bottom:1rem">
+              <div class="sk" style="width:8rem;height:0.75rem"></div>
+              <div class="sk" style="width:3.5rem;height:0.75rem"></div>
+            </div>
+            <div style="display:flex;flex-direction:column">
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid #f5f2eb"><div class="sk sk-circle" style="width:2.5rem;height:2.5rem;flex-shrink:0"></div><div style="flex:1"><div class="sk" style="width:6rem;height:0.65rem;margin-bottom:0.4rem"></div><div class="sk" style="width:4rem;height:0.5rem"></div></div><div class="sk" style="width:3.5rem;height:0.65rem"></div></div>
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid #f5f2eb"><div class="sk sk-circle" style="width:2.5rem;height:2.5rem;flex-shrink:0"></div><div style="flex:1"><div class="sk" style="width:8rem;height:0.65rem;margin-bottom:0.4rem"></div><div class="sk" style="width:3rem;height:0.5rem"></div></div><div class="sk" style="width:4rem;height:0.65rem"></div></div>
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid #f5f2eb"><div class="sk sk-circle" style="width:2.5rem;height:2.5rem;flex-shrink:0"></div><div style="flex:1"><div class="sk" style="width:5rem;height:0.65rem;margin-bottom:0.4rem"></div><div class="sk" style="width:5rem;height:0.5rem"></div></div><div class="sk" style="width:3rem;height:0.65rem"></div></div>
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0"><div class="sk sk-circle" style="width:2.5rem;height:2.5rem;flex-shrink:0"></div><div style="flex:1"><div class="sk" style="width:7rem;height:0.65rem;margin-bottom:0.4rem"></div><div class="sk" style="width:3.5rem;height:0.5rem"></div></div><div class="sk" style="width:4.5rem;height:0.65rem"></div></div>
             </div>
           </div>
         </div>
-        <!-- Nav links -->
-        <nav class="mt-6 flex-1 space-y-2" aria-label="Main navigation">
-          <a href="dashboard.html" data-nav="dashboard" class="sidebar-new-link sidebar-new-link--active">
-            <span class="sidebar-new-link__icon">&#x2302;</span> Home
-          </a>
-          <a href="quests.html" data-nav="quests" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#9671;</span> Quests
-          </a>
-          <a href="leaderboard.html" data-nav="leaderboard" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#9819;</span> League
-          </a>
-          <a href="profile.html" data-nav="profile" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#9689;</span> Profile
-          </a>
-          <a href="activity.html" data-nav="activity" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#8776;</span> Activity
-          </a>
-          <a href="tigom.html" data-nav="goals" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#9678;</span> Goals
-          </a>
-          <a href="chat.html" data-nav="chat" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#10022;</span> AI Chat
-          </a>
-          <a href="settings.html" data-nav="settings" class="sidebar-new-link">
-            <span class="sidebar-new-link__icon">&#9776;</span> Settings
-          </a>
-        </nav>
-        <!-- User strip -->
-        <a href="settings.html" class="mt-4 flex items-center gap-3 rounded-2xl px-3 py-3 transition hover:bg-white"
-          style="text-decoration:none">
-          <div id="sidebarAvatar"
-            class="grid h-10 w-10 shrink-0 place-items-center rounded-full font-display text-sm font-black text-white"
-            style="background:#84919a">U</div>
-          <div class="min-w-0 flex-1">
-            <p id="sidebarName" class="truncate text-sm font-extrabold" style="color:#102b1d">Loading&hellip;</p>
-            <p class="text-xs font-semibold" style="color:#617063">Account settings</p>
-          </div>
-          <span style="color:#164f33">&#8594;</span>
-        </a>
-      </aside>
-
-      <!-- MAIN CONTENT -->
-      <main class="min-w-0 flex-1 pb-28 lg:pb-8">
-
-        <!-- Sticky resource bar -->
-        <header class="sticky top-0 z-40 backdrop-blur-xl"
-          style="border-bottom:1px solid rgba(216,209,189,0.7);background:rgba(247,243,232,0.88);padding:0.75rem 1rem">
-          <div class="mx-auto flex max-w-6xl items-center gap-3">
-            <div class="hidden w-[9rem] shrink-0 lg:block">
-              <p class="font-display text-lg font-extrabold tracking-tight" style="color:#164f33">SugboCents</p>
-              <p class="text-xs font-semibold" style="color:#5f6f63">Habit finance game</p>
-            </div>
-            <div id="resourceBar" class="flex-1" aria-label="Your stats" style="min-height:4rem"></div>
-          </div>
-        </header>
 
         <!-- Dashboard content -->
-        <div class="mx-auto max-w-6xl space-y-6 px-4 py-5 sm:px-6 lg:px-8">
+        <div id="pageContent" class="mx-auto max-w-6xl space-y-6 px-4 py-5 sm:px-6 lg:px-8" style="display:none">
 
           <!-- HERO -->
           <section class="relative overflow-hidden rounded-[2rem] px-5 py-6 text-white shadow-xl sm:px-8 sm:py-8"
@@ -161,6 +125,8 @@
                 <p class="text-xs font-bold uppercase tracking-[0.18em]" style="color:rgba(255,255,255,0.6)">Sentimos
                 </p>
                 <p id="sentimosHeroVal" class="font-display text-4xl font-black" style="color:#5eead4">&#8373;0</p>
+                <a href="shop.html" class="mt-0.5 inline-block text-xs font-extrabold"
+                  style="color:rgba(255,255,255,0.45);text-decoration:none">Shop &#8594;</a>
               </div>
               <div>
                 <p class="text-xs font-bold uppercase tracking-[0.18em]" style="color:rgba(255,255,255,0.6)">Level</p>
@@ -176,6 +142,48 @@
                   <span id="xpValue" class="xp-value-label" style="color:rgba(255,255,255,0.6)">0 XP</span>
                   <span id="xpNextLabel" class="xp-next-label" style="color:rgba(255,255,255,0.6)">Log to earn XP</span>
                 </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ONBOARDING CARD — JS shows only for new users; auto-hides when budget+expense both set -->
+          <section id="onboardingCard" class="rounded-[2rem] p-5 sm:p-6 shadow-sm" aria-label="Getting started"
+            style="display:none;background:#fff9ee;outline:1px solid rgba(154,107,69,0.22)">
+            <div class="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#9a6b45">Getting started</p>
+                <h2 class="font-display text-xl font-black tracking-tight" style="color:#102b1d">Welcome to SugboCents &#x1F331;</h2>
+              </div>
+              <button type="button" id="onboardDismissBtn"
+                class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-lg font-black transition hover:bg-black/5"
+                style="color:#9a6b45" aria-label="Dismiss setup guide">&times;</button>
+            </div>
+            <div class="space-y-2.5">
+              <div id="onboardStep1" class="flex items-center gap-3 rounded-2xl p-3"
+                style="background:rgba(255,255,255,0.7);outline:1px solid rgba(154,107,69,0.15)">
+                <div id="onboardStep1Icon"
+                  class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-black"
+                  style="background:#e8dfc6;color:#9a6b45">1</div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-extrabold" style="color:#102b1d">Set your weekly budget</p>
+                  <p class="text-xs font-semibold" style="color:#617063">Tell SugboCents how much to work with</p>
+                </div>
+                <a href="settings.html" id="onboardStep1Cta"
+                  class="shrink-0 rounded-full px-3 py-1 text-xs font-extrabold text-white"
+                  style="background:#9a6b45;text-decoration:none">Set up</a>
+              </div>
+              <div id="onboardStep2" class="flex items-center gap-3 rounded-2xl p-3"
+                style="background:rgba(255,255,255,0.7);outline:1px solid rgba(154,107,69,0.15)">
+                <div id="onboardStep2Icon"
+                  class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-black"
+                  style="background:#e8dfc6;color:#9a6b45">2</div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-extrabold" style="color:#102b1d">Log your first expense</p>
+                  <p class="text-xs font-semibold" style="color:#617063">Build the habit, one tap at a time</p>
+                </div>
+                <button type="button" id="onboardLogNowBtn"
+                  class="shrink-0 rounded-full px-3 py-1 text-xs font-extrabold text-white"
+                  style="background:#9a6b45">Log now</button>
               </div>
             </div>
           </section>
@@ -318,13 +326,52 @@
                     / 7 days</span>
                 </div>
               </div>
-              <a href="quests.html" class="mt-5 block text-sm font-extrabold"
-                style="color:#164f33;text-decoration:none">See weekly quests &#8594;</a>
+              <a href="quests.html" id="activeQuestLink" class="mt-5 block text-sm font-extrabold"
+                style="color:#164f33;text-decoration:none">See quests &#8594;</a>
             </section>
           </div>
 
           <!-- backward-compat hidden containers for existing JS hooks -->
           <div id="weekAtGlance" style="display:none"></div>
+
+          <!-- SAVINGS GOALS + LEADERBOARD PREVIEW — side by side like streak path + quest -->
+          <div class="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+
+            <!-- Savings goals -->
+            <section id="savingsGoalsSection" class="rounded-[2rem] bg-white p-5 shadow-sm sm:p-6"
+              style="outline:1px solid #ded7c6" aria-label="Savings goals">
+              <div class="mb-4 flex items-end justify-between gap-4">
+                <div>
+                  <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Savings</p>
+                  <h2 class="font-display text-2xl font-black tracking-tight" style="color:#102b1d">Your goals</h2>
+                </div>
+                <a href="tigom.html" class="shrink-0 text-sm font-extrabold"
+                  style="color:#164f33;text-decoration:none">Manage &#8594;</a>
+              </div>
+              <div id="savingsGoalsList"><!-- JS fills --></div>
+            </section>
+
+            <!-- Leaderboard preview -->
+            <section class="rounded-[2rem] bg-white shadow-sm overflow-hidden" style="outline:1px solid #ded7c6"
+              aria-label="League standings">
+              <div class="flex items-center justify-between gap-2 px-5 pt-5 pb-3">
+                <div>
+                  <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">League</p>
+                  <h2 class="font-display text-2xl font-black tracking-tight flex items-center gap-2"
+                    style="color:#102b1d">This Week <span id="lbDashV3RankChip" class="lb-dash-v3-rank-chip"></span></h2>
+                </div>
+                <span id="lbDashV3Countdown" class="lb-dash-v3-countdown shrink-0 text-right"></span>
+              </div>
+              <p id="lbDashV3JustAhead" class="lb-dash-v3-just-ahead" style="display:none"></p>
+              <div id="lbDashV3Rows" class="lb-dash-v3-rows pb-1" style="display:none"></div>
+              <div id="lbDashV3Empty" class="lb-dash-v3-empty" style="display:none">No friends yet. <a
+                  href="profile.html">Add one to compete &#8594;</a></div>
+              <div class="lb-dash-v3-footer">
+                <a href="leaderboard.html" class="lb-dash-v3-cta">View full leaderboard &#8594;</a>
+              </div>
+            </section>
+
+          </div>
 
           <!-- BADGE TEASER — JS may show this -->
           <section id="badgeTeaserSection" style="display:none" aria-label="Next milestone">
@@ -370,6 +417,44 @@
     </div>
   </div>
 
+  <!-- BOTTOM NAV (mobile) -->
+  <nav class="fixed inset-x-0 bottom-0 z-40 border-t px-2 py-2 lg:hidden"
+    style="background:rgba(251,248,239,0.94);border-color:#d8d1bd;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding-bottom:calc(0.5rem + env(safe-area-inset-bottom))"
+    aria-label="Main navigation">
+    <div class="mx-auto grid max-w-md grid-cols-5 gap-1">
+      <a href="dashboard.html" data-nav="dashboard"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#x2302;</span>
+        <span class="mt-1 block">Home</span>
+      </a>
+      <a href="quests.html" data-nav="quests"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#9671;</span>
+        <span class="mt-1 block">Quests</span>
+      </a>
+      <a href="leaderboard.html" data-nav="leaderboard"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#9819;</span>
+        <span class="mt-1 block">League</span>
+      </a>
+      <a href="profile.html" data-nav="profile"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#9689;</span>
+        <span class="mt-1 block">Profile</span>
+      </a>
+      <a href="settings.html" data-nav="settings"
+        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
+        style="color:#607064;text-decoration:none">
+        <span class="block text-lg leading-none">&#9776;</span>
+        <span class="mt-1 block">More</span>
+      </a>
+    </div>
+  </nav>
+
   <!-- FLOATING TIGOM CHAT FAB -->
   <a href="chat.html" class="fixed z-30 grid place-items-center rounded-full shadow-2xl transition lg:bottom-6"
     style="bottom:5.5rem;right:1rem;height:4rem;width:4rem;background:white;outline:2px solid rgba(22,79,51,0.15);box-shadow:0 8px 32px rgba(16,43,29,0.2);text-decoration:none"
@@ -393,43 +478,6 @@
     </div>
   </a>
 
-  <!-- MOBILE BOTTOM NAV -->
-  <nav class="fixed inset-x-0 bottom-0 z-40 border-t px-2 py-2 lg:hidden"
-    style="background:rgba(251,248,239,0.94);border-color:#d8d1bd;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding-bottom:calc(0.5rem + env(safe-area-inset-bottom))"
-    aria-label="Main navigation">
-    <div class="mx-auto grid max-w-md grid-cols-5 gap-1">
-      <a href="dashboard.html" data-nav="dashboard"
-        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition"
-        style="background:#164f33;color:white;text-decoration:none">
-        <span class="block text-lg leading-none">&#x2302;</span>
-        <span class="mt-1 block">Home</span>
-      </a>
-      <a href="quests.html" data-nav="quests"
-        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
-        style="color:#607064;text-decoration:none">
-        <span class="block text-lg leading-none">&#9671;</span>
-        <span class="mt-1 block">Quests</span>
-      </a>
-      <a href="leaderboard.html" data-nav="leaderboard"
-        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
-        style="color:#607064;text-decoration:none">
-        <span class="block text-lg leading-none">&#9819;</span>
-        <span class="mt-1 block">League</span>
-      </a>
-      <a href="profile.html" data-nav="profile"
-        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
-        style="color:#607064;text-decoration:none">
-        <span class="block text-lg leading-none">&#9689;</span>
-        <span class="mt-1 block">Profile</span>
-      </a>
-      <a href="activity.html" data-nav="activity"
-        class="rounded-2xl px-2 py-2 text-center text-[0.68rem] font-black transition hover:bg-white"
-        style="color:#607064;text-decoration:none">
-        <span class="block text-lg leading-none">&#8776;</span>
-        <span class="mt-1 block">More</span>
-      </a>
-    </div>
-  </nav>
 
   <!-- MODALS -->
   <div id="budgetGateModal" class="modal-backdrop hidden" role="alertdialog" aria-modal="true"
@@ -524,10 +572,12 @@
     <button type="button" id="undoToastBtn" class="undo-btn">Undo</button>
   </div>
 
+  <script src="js/chrome.js"></script>
   <script src="js/firebase-init.js"></script>
   <script src="js/firebase-auth-service.js"></script>
   <script src="js/firestore-service.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/motion.js"></script>
   <script src="js/app.js"></script>
   <script src="js/gamification.js"></script>
   <script src="js/dark-mode.js"></script>

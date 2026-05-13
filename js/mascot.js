@@ -61,8 +61,9 @@
 
   // ── Build DOM ────────────────────────────────────────────
   function buildWidget() {
-    // Don't render on the chat page itself
-    if (document.body.getAttribute("data-page") === "chat") { return; }
+    // Don't render on the chat page itself, or on dashboard which has its own CSS Tigom FAB
+    var page = document.body.getAttribute("data-page");
+    if (page === "chat" || page === "dashboard") { return; }
 
     var state = getMascotState();
     var stateObj = STATES[state];
