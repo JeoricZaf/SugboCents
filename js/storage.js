@@ -181,8 +181,7 @@
   var DAILY_QUEST_SPECS_INTERNAL = [
     { id: "daily-first-log",    condType: "log_count_today",      target: 1 },
     { id: "daily-triple-log",   condType: "log_count_today",      target: 3 },
-    { id: "daily-categories",   condType: "category_count_today", target: 3 },
-    { id: "daily-under-budget", condType: "under_daily_budget",   target: 1 }
+    { id: "daily-categories",   condType: "category_count_today", target: 3 }
   ];
 
   var XP_LEVELS = [
@@ -400,6 +399,29 @@
     }, 0);
   }
 
+  function getCurrentWeekMondayKey() {
+    var now = new Date();
+    var dayOfWeek = now.getDay();
+    var monday = new Date(now);
+    monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
+    return monday.getFullYear() + "-" +
+      String(monday.getMonth() + 1).padStart(2, "0") + "-" +
+      String(monday.getDate()).padStart(2, "0");
+  }
+
+  function getWeeklyQuestCountFromHistory(questHistory, mondayKey) {
+    if (!Array.isArray(questHistory)) { return 0; }
+    var monday = new Date(mondayKey + "T00:00:00");
+    var nextMonday = new Date(monday);
+    nextMonday.setDate(nextMonday.getDate() + 7);
+    return questHistory.reduce(function (count, q) {
+      if (!q || !q.completedAt) { return count; }
+      var d = new Date(q.completedAt);
+      return (d >= monday && d < nextMonday) ? count + 1 : count;
+    }, 0);
+  }
+
   function _countQuestStreak(questHistory) {
     // Count consecutive completed weeks (no missed week) from most recent
     var sorted = (questHistory || [])
@@ -586,16 +608,9 @@
       }
     }
 
-    if (Array.isArray(firestoreExpenses) && firestoreExpenses.length > 0) {
-      // Smart merge: Firestore is ground truth for confirmed records.
-      // Also preserve any local-only entries (pending cloud writes from offline
-      // usage or slow connections) so they are not silently discarded.
-      var fsIdSet = {};
-      firestoreExpenses.forEach(function (e) { if (e && e.id) { fsIdSet[e.id] = true; } });
-      var pendingLocal = Array.isArray(user.expenses)
-        ? user.expenses.filter(function (e) { return e && e.id && !fsIdSet[e.id]; })
-        : [];
-      user.expenses = firestoreExpenses.concat(pendingLocal);
+    if (Array.isArray(firestoreExpenses)) {
+      // Firestore expenses are authoritative even when the remote list is empty.
+      user.expenses = firestoreExpenses.slice();
     }
 
     if (Array.isArray(firestoreQuickAdd) && firestoreQuickAdd.length > 0) {
@@ -696,6 +711,21 @@
     var store = loadStore();
     store.session = null;
     saveStore(store);
+    try {
+      localStorage.removeItem("sugbocents_friend_cache"); // legacy key
+      localStorage.removeItem("sugbocents_lb_players_v2"); // legacy key
+      localStorage.removeItem("sugbocents_lb_snapshot"); // legacy key
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var key = localStorage.key(i);
+        if (key && (
+          key.indexOf("sugbocents_friend_cache_") === 0 ||
+          key.indexOf("sugbocents_lb_players_v3_") === 0 ||
+          key.indexOf("sugbocents_lb_snapshot_v2_") === 0
+        )) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (_) {}
   }
 
   function isFirebaseAuthEnabled() {
@@ -772,6 +802,8 @@
     var firstName = sanitizeName(user.firstName);
     var lastName = sanitizeName(user.lastName);
     ensureGamificationFields(user);
+    var mondayKey = getCurrentWeekMondayKey();
+    var weeklyQuestsCompleted = getWeeklyQuestCountFromHistory(user.questHistory, mondayKey);
 
     return {
       id: user.id,
@@ -787,6 +819,7 @@
       friendCode: user.friendCode || null,
       // Gamification fields required by leaderboard.js getSelf()
       questsCompleted: user.questsCompleted || 0,
+      weeklyQuestsCompleted: weeklyQuestsCompleted,
       weeklyXpStart: typeof user.weeklyXpStart === "number" ? user.weeklyXpStart : 0,
       weeklyXpStartDate: user.weeklyXpStartDate || null
     };
@@ -1056,11 +1089,13 @@
       syncGamificationFields(store.session.userId, user);
       var currentStreak = getCurrentStreakFromExpenses(user.expenses || []);
       var xpInfoForSync = getXpInfoFromUser(user);
+      var weeklyQuestCount = getWeeklyQuestCountFromHistory(user.questHistory, getCurrentWeekMondayKey());
       window.FirestoreService.syncPublicProfile(store.session.userId, {
         firstName: user.firstName,
         lastName: user.lastName,
         streak: currentStreak,
         questsCompleted: user.questsCompleted || 0,
+        weeklyQuestsCompleted: weeklyQuestCount,
         xp: user.xp || 0,
         weeklyXpStart: user.weeklyXpStart || 0,
         weeklyXpStartDate: user.weeklyXpStartDate || null,
@@ -2382,6 +2417,13 @@
       delete user.clearedQuestAt;
     }
     saveStore(store);
+
+    // Recompute weekly quest progress immediately after equipping so dashboard
+    // renders persisted, up-to-date progress instead of an initial 0/N snapshot.
+    if (questObj && questObj.type !== "daily") {
+      updateQuestProgress();
+    }
+
     window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
   }
 
@@ -2466,6 +2508,9 @@
     }
 
     saveStore(store);
+    if (store.session && window.FirestoreService && window.FirestoreService.syncPublicProfile) {
+      window.FirestoreService.syncPublicProfile(store.session.userId, user);
+    }
     // Re-compute badge count immediately so the nav badge reflects the claim.
     _computeAndCacheQuestBadge(user);
     window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
@@ -2480,6 +2525,9 @@
     user.questHistory.unshift(Object.assign({}, quest));
     user.activeQuest = null;
     saveStore(store);
+    if (store.session && window.FirestoreService && window.FirestoreService.syncPublicProfile) {
+      window.FirestoreService.syncPublicProfile(store.session.userId, user);
+    }
     window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
     if (window.GamificationUI && window.GamificationUI.queueModal) {
       window.GamificationUI.queueModal({
@@ -2536,14 +2584,6 @@
         var cats = {};
         todayExp.forEach(function (e) { cats[e.category || "others"] = true; });
         newProgress = Math.min(cond.target, Object.keys(cats).length);
-        break;
-      }
-      case "under_daily_budget": {
-        var weeklyBudget = user.weeklyBudget || 0;
-        if (weeklyBudget <= 0) { break; }
-        var dailyLimit = weeklyBudget / 7;
-        var spent = todayExp.reduce(function (s, e) { return s + (Number(e.amount) || 0); }, 0);
-        newProgress = spent <= dailyLimit ? 1 : 0;
         break;
       }
       default:
@@ -2814,7 +2854,6 @@
       var todayEnd = new Date(todayStart); todayEnd.setDate(todayEnd.getDate() + 1);
       var expenses = Array.isArray(user.expenses) ? user.expenses : [];
       var weeklyBudget = user.weeklyBudget || 0;
-      var dailyLimit = weeklyBudget > 0 ? weeklyBudget / 7 : 0;
 
       var todayExp = expenses.filter(function (e) {
         var d = new Date(e.timestamp); return d >= todayStart && d < todayEnd;
@@ -2823,7 +2862,6 @@
       var todayCats = {};
       todayExp.forEach(function (e) { todayCats[e.category || "others"] = true; });
       var todayCatCount = Object.keys(todayCats).length;
-      var todaySpent = todayExp.reduce(function (s, e) { return s + (Number(e.amount) || 0); }, 0);
 
       var count = 0;
 
@@ -2832,7 +2870,6 @@
         var met = false;
         if (spec.condType === "log_count_today")      { met = todayCount >= spec.target; }
         else if (spec.condType === "category_count_today") { met = todayCatCount >= spec.target; }
-        else if (spec.condType === "under_daily_budget") { met = dailyLimit > 0 && todaySpent <= dailyLimit; }
         if (met) {
           var claimKey = spec.id + ":" + todayKey;
           if (user.claimedQuestIds.indexOf(claimKey) === -1) { count++; }

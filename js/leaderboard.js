@@ -20,7 +20,8 @@
     7: "#67E8F9"
   };
 
-  var SNAPSHOT_KEY = "sugbocents_lb_snapshot";
+  var SNAPSHOT_KEY_BASE = "sugbocents_lb_snapshot_v2";
+  var PLAYERS_CACHE_KEY_BASE = "sugbocents_lb_players_v3";
   var PAGE = document.body.dataset.page;
 
   // ── Utilities ─────────────────────────────────────────────────
@@ -72,35 +73,95 @@
     return "\u23F1 Resetting soon";
   }
 
+  function getWeekMondayKey(dateObj) {
+    var now = dateObj ? new Date(dateObj) : new Date();
+    var dayOfWeek = now.getDay();
+    var monday = new Date(now);
+    monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
+    return monday.getFullYear() + "-" + String(monday.getMonth() + 1).padStart(2, "0") + "-" + String(monday.getDate()).padStart(2, "0");
+  }
+
+  function getStoreUserBySession() {
+    try {
+      var session = (window.StorageAPI && window.StorageAPI.getSession) ? window.StorageAPI.getSession() : null;
+      var sessionUserId = session && session.userId ? String(session.userId) : null;
+      var keys = ["sugbocents.v1", "sugbocents_app"];
+      for (var i = 0; i < keys.length; i++) {
+        var raw = localStorage.getItem(keys[i]);
+        if (!raw) { continue; }
+        var parsed = JSON.parse(raw);
+        if (!parsed || !parsed.session || !parsed.session.userId) { continue; }
+        var userId = sessionUserId || String(parsed.session.userId);
+        var users = Array.isArray(parsed.users) ? parsed.users : [];
+        var found = users.find(function (u) { return String(u.id) === userId; }) || null;
+        if (found) { return found; }
+      }
+      return null;
+    } catch (e) { return null; }
+  }
+
+  function getWeeklyQuestCount(user, mondayKey) {
+    if (!user || !Array.isArray(user.questHistory)) { return 0; }
+    var monday = new Date(mondayKey + "T00:00:00");
+    var nextMonday = new Date(monday);
+    nextMonday.setDate(nextMonday.getDate() + 7);
+    var count = 0;
+    user.questHistory.forEach(function (q) {
+      if (!q || !q.completedAt) { return; }
+      var d = new Date(q.completedAt);
+      if (d >= monday && d < nextMonday) { count += 1; }
+    });
+    return count;
+  }
+
+  function resolveWeeklyQuestCount(runtimeUser, storedUser, mondayKey) {
+    var direct = Number((runtimeUser && runtimeUser.weeklyQuestsCompleted) || 0);
+    if (direct > 0) { return direct; }
+
+    var fromRuntimeHistory = getWeeklyQuestCount(runtimeUser, mondayKey);
+    if (fromRuntimeHistory > 0) { return fromRuntimeHistory; }
+
+    var fromStoredDirect = Number((storedUser && storedUser.weeklyQuestsCompleted) || 0);
+    if (fromStoredDirect > 0) { return fromStoredDirect; }
+
+    return getWeeklyQuestCount(storedUser, mondayKey);
+  }
+
   function getSelf() {
     if (!window.StorageAPI) { return null; }
     var user = window.StorageAPI.getCurrentUser ? window.StorageAPI.getCurrentUser() : null;
-    if (!user) { return null; }
+    var storedUser = getStoreUserBySession();
+    if (!user && !storedUser) { return null; }
+    if (!user && storedUser) { user = storedUser; }
     var streak = window.StorageAPI.getCurrentStreak ? window.StorageAPI.getCurrentStreak() : 0;
     var info   = window.StorageAPI.getXpInfo ? window.StorageAPI.getXpInfo() : { xp: 0, level: 1, levelName: "Rookie Saver" };
-    var quests = user.questsCompleted || 0;
+    var quests = Number((user && user.questsCompleted) || (storedUser && storedUser.questsCompleted) || 0);
     var weeklyXP = 0;
-    var now = new Date();
-    var dayOfWeek = now.getDay();
-    var mondayKey = (function () {
-      var d = new Date(now);
-      d.setDate(d.getDate() - ((dayOfWeek + 6) % 7));
-      d.setHours(0, 0, 0, 0);
-      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-    }());
-    var weeklyXpStart = (user.weeklyXpStartDate === mondayKey) ? (user.weeklyXpStart || 0) : (info.xp || 0);
+    var mondayKey = getWeekMondayKey(new Date());
+    var weeklyXpStartDate = (user && user.weeklyXpStartDate) || (storedUser && storedUser.weeklyXpStartDate) || null;
+    var weeklyXpStart = 0;
+    if (user && typeof user.weeklyXpStart === "number") {
+      weeklyXpStart = user.weeklyXpStart;
+    } else if (storedUser && typeof storedUser.weeklyXpStart === "number") {
+      weeklyXpStart = storedUser.weeklyXpStart;
+    }
+    weeklyXpStart = (weeklyXpStartDate === mondayKey) ? weeklyXpStart : (info.xp || 0);
     weeklyXP = Math.max(0, (info.xp || 0) - weeklyXpStart);
+    var weeklyQuestsCompleted = resolveWeeklyQuestCount(user, storedUser, mondayKey);
 
-    var firstName = user.firstName || "You";
-    var lastInitial = user.lastName ? user.lastName.charAt(0).toUpperCase() + "." : "";
+    var firstName = (user && user.firstName) || (storedUser && storedUser.firstName) || "You";
+    var lastName = (user && user.lastName) || (storedUser && storedUser.lastName) || "";
+    var lastInitial = lastName ? lastName.charAt(0).toUpperCase() + "." : "";
     var displayName = [firstName, lastInitial].filter(Boolean).join(" ");
 
     return {
-      uid:             user.id,
+      uid:             (user && user.id) || (storedUser && storedUser.id) || "self",
       displayName:     displayName,
       initial:         (firstName || "Y").charAt(0).toUpperCase(),
       streak:          streak,
       questsCompleted: quests,
+      weeklyQuestsCompleted: weeklyQuestsCompleted,
       weeklyXP:        weeklyXP,
       level:           info.level || 1,
       isSelf:          true
@@ -108,11 +169,11 @@
   }
 
   // ── League Score: transparent, weighted ranking formula ─────
-  // Score = XP×1 + Quests×50 + Streak×10 (streak capped at 21 days)
+  // Score = XP×1 + WeeklyQuests×50 + Streak×10 (streak capped at 21 days)
   // This is the single source of truth for rank position.
   function computeLeagueScore(player) {
     var streakPts = Math.min(player.streak || 0, 21) * 10;
-    var questPts  = (player.questsCompleted || 0) * 50;
+    var questPts  = (player.weeklyQuestsCompleted || 0) * 50;
     var xpPts     = (player.weeklyXP || 0);
     return streakPts + questPts + xpPts;
   }
@@ -121,9 +182,34 @@
     return players.slice().sort(function (a, b) {
       var scoreDiff = (b.leagueScore || 0) - (a.leagueScore || 0);
       if (scoreDiff !== 0) { return scoreDiff; }
-      // Deterministic tiebreaker — alphabetical, no rank-swap on reload
+      // Deterministic tiebreaker must be immutable to prevent name-based rank gaming.
+      var aUid = String(a.uid || "");
+      var bUid = String(b.uid || "");
+      var uidDiff = aUid.localeCompare(bUid);
+      if (uidDiff !== 0) { return uidDiff; }
       return (a.displayName || "").localeCompare(b.displayName || "");
     });
+  }
+
+  function dedupePlayersByUid(players) {
+    var byUid = {};
+    (players || []).forEach(function (player) {
+      if (!player || !player.uid) { return; }
+      var key = String(player.uid);
+      var existing = byUid[key];
+      if (!existing) {
+        byUid[key] = player;
+        return;
+      }
+      if (player.isSelf && !existing.isSelf) {
+        byUid[key] = player;
+        return;
+      }
+      if ((player.leagueScore || 0) > (existing.leagueScore || 0)) {
+        byUid[key] = player;
+      }
+    });
+    return Object.keys(byUid).map(function (uid) { return byUid[uid]; });
   }
 
   function getMoveIndicator(uid, currentRank, snapshot) {
@@ -134,33 +220,65 @@
     return "same";
   }
 
-  function loadSnapshot() {
+  function getSnapshotKey(userId) {
+    return userId ? (SNAPSHOT_KEY_BASE + "_" + String(userId)) : null;
+  }
+
+  function getPlayersCacheKey(userId) {
+    return userId ? (PLAYERS_CACHE_KEY_BASE + "_" + String(userId)) : null;
+  }
+
+  function loadSnapshot(userId) {
+    var key = getSnapshotKey(userId);
+    if (!key) { return null; }
     try {
-      var raw = localStorage.getItem(SNAPSHOT_KEY);
-      return raw ? JSON.parse(raw) : null;
+      var raw = localStorage.getItem(key);
+      if (!raw) { return null; }
+      var parsed = JSON.parse(raw);
+      // Legacy snapshots are ignored because they are not week-anchored.
+      if (!parsed || !parsed.weekKey || !parsed.ranks) { return null; }
+      if (parsed.weekKey !== getWeekMondayKey(new Date())) { return null; }
+      return parsed.ranks;
     } catch (e) { return null; }
   }
 
-  function saveSnapshot(ranking) {
+  function saveSnapshot(userId, ranking) {
+    var key = getSnapshotKey(userId);
+    if (!key) { return; }
+    var weekKey = getWeekMondayKey(new Date());
     var snap = {};
     ranking.forEach(function (p) { if (p.uid) { snap[p.uid] = p.rank; } });
-    try { localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap)); } catch (e) {}
+    try {
+      var existingRaw = localStorage.getItem(key);
+      if (existingRaw) {
+        var existing = JSON.parse(existingRaw);
+        if (existing && existing.weekKey === weekKey && existing.ranks) {
+          return;
+        }
+      }
+      localStorage.setItem(key, JSON.stringify({
+        weekKey: weekKey,
+        ranks: snap
+      }));
+    } catch (e) {}
   }
 
   // ── Players cache — full ranked array for instant stale-while-revalidate ──
-  var PLAYERS_CACHE_KEY = "sugbocents_lb_players_v2";
-
-  function loadPlayersCache() {
+  function loadPlayersCache(userId) {
+    var key = getPlayersCacheKey(userId);
+    if (!key) { return null; }
     try {
-      var raw = localStorage.getItem(PLAYERS_CACHE_KEY);
+      var raw = localStorage.getItem(key);
       if (!raw) { return null; }
       var parsed = JSON.parse(raw);
       return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
     } catch (e) { return null; }
   }
 
-  function savePlayersCache(ranked) {
-    try { localStorage.setItem(PLAYERS_CACHE_KEY, JSON.stringify(ranked)); } catch (e) {}
+  function savePlayersCache(userId, ranked) {
+    var key = getPlayersCacheKey(userId);
+    if (!key) { return; }
+    try { localStorage.setItem(key, JSON.stringify(ranked)); } catch (e) {}
   }
   // ──────────────────────────────────────────────────────────────────────────
 
@@ -253,9 +371,9 @@
               (isSelf ? '<span class="lb-v3-you-tag">You</span>' : '') +
             '</p>' +
             '<div class="lb-v3-stats">' +
-              '<span class="lb-v3-stat lb-v3-stat--score" title="League Score = XP + Quests\u00d750 + Streak\u00d710 (cap 21d)">\u2B50 ' + (player.leagueScore || 0) + '</span>' +
+              '<span class="lb-v3-stat lb-v3-stat--score" title="League Score = XP + Weekly Quests\u00d750 + Streak\u00d710 (cap 21d)">\u2B50 ' + (player.leagueScore || 0) + '</span>' +
               '<span class="lb-v3-stat lb-v3-stat--streak">\uD83D\uDD25 ' + (player.streak || 0) + '</span>' +
-              '<span class="lb-v3-stat lb-v3-stat--quests">\u2705 ' + (player.questsCompleted || 0) + '</span>' +
+              '<span class="lb-v3-stat lb-v3-stat--quests">\u2705 ' + (player.weeklyQuestsCompleted || 0) + '</span>' +
               '<span class="lb-v3-stat lb-v3-stat--xp">\u26A1 ' + (player.weeklyXP || 0) + '</span>' +
             '</div>' +
           '</div>' +
@@ -309,11 +427,16 @@
     // Only show the dock when the user's own row has scrolled out of view.
     // Fall back to always-visible on browsers without IntersectionObserver.
     var selfRow = document.getElementById("lbSelfRow");
+    if (renderPinnedSelf._observer) {
+      renderPinnedSelf._observer.disconnect();
+      renderPinnedSelf._observer = null;
+    }
     if (selfRow && typeof IntersectionObserver !== "undefined") {
       el.style.display = "none"; // hidden by default; observer reveals it
-      new IntersectionObserver(function (entries) {
+      renderPinnedSelf._observer = new IntersectionObserver(function (entries) {
         el.style.display = entries[0].isIntersecting ? "none" : "";
-      }, { threshold: 0.5 }).observe(selfRow);
+      }, { threshold: 0.5 });
+      renderPinnedSelf._observer.observe(selfRow);
     } else {
       el.style.display = "";
     }
@@ -382,7 +505,7 @@
           '</p>' +
           '<div class="lb-podium-stats">' +
             '<span class="lb-podium-stat">\uD83D\uDD25 ' + (player.streak || 0) + '</span>' +
-            '<span class="lb-podium-stat">\u2705 ' + (player.questsCompleted || 0) + '</span>' +
+            '<span class="lb-podium-stat">\u2705 ' + (player.weeklyQuestsCompleted || 0) + '</span>' +
             '<span class="lb-podium-stat">\u26A1 ' + (player.weeklyXP || 0) + '</span>' +
           '</div>' +
           '<div class="lb-podium-bar"></div>' +
@@ -463,13 +586,13 @@
     }
 
     function loadLocalUser() {
+      var stored = getStoreUserBySession();
+      if (stored) { return stored; }
       try {
-        var raw = localStorage.getItem("sugbocents_app");
-        if (!raw) { return null; }
-        var parsed = JSON.parse(raw);
-        if (!parsed.session || !parsed.session.userId) { return null; }
-        var users = Array.isArray(parsed.users) ? parsed.users : [];
-        return users.find(function (u) { return u.id === parsed.session.userId; }) || null;
+        if (window.StorageAPI && window.StorageAPI.getCurrentUser) {
+          return window.StorageAPI.getCurrentUser() || null;
+        }
+        return null;
       } catch (e) { return null; }
     }
 
@@ -504,9 +627,9 @@
         // ── Stale-while-revalidate: serve last known ranking instantly ──────
         // If we have cached player data, render it now (~5ms, no Firestore wait).
         // Fresh data will silently overwrite it once getFriends resolves.
-        var cachedPlayers = loadPlayersCache();
+        var cachedPlayers = loadPlayersCache(myUserId);
         if (cachedPlayers) {
-          var cachedSnapshot = loadSnapshot();
+          var cachedSnapshot = loadSnapshot(myUserId);
           renderPodium(cachedPlayers);
           renderRows(cachedPlayers, myUserId, cachedSnapshot);
           showSection("lbRows");
@@ -516,33 +639,45 @@
           showSection("lbLoading");
         }
 
-        // ── Fire-and-forget: sync our public profile ─────────────────────────
-        // syncPublicProfile writes to Firestore so friends see our fresh XP/streak.
-        // We do NOT await it — getFriends reads OTHER people's profiles, not ours,
-        // so blocking on this write only delays the user with no benefit.
+        // ── Sync our public profile with a bounded wait ───────────────────────
+        // Rankings should use one source-of-truth in Firebase mode, so we give
+        // self profile sync a short window before reading leaderboard data.
         var localUser = loadLocalUser();
+        var syncPromise = Promise.resolve();
         if (localUser && window.FirestoreService.syncPublicProfile) {
           var xpInfo = window.StorageAPI.getXpInfo ? window.StorageAPI.getXpInfo() : { level: 1, levelName: "Rookie Saver" };
-          window.FirestoreService.syncPublicProfile(myUserId, {
+          syncPromise = window.FirestoreService.syncPublicProfile(myUserId, {
             firstName: localUser.firstName || "",
             lastName:  localUser.lastName  || "",
             streak:    self.streak,
             questsCompleted: self.questsCompleted,
+            weeklyQuestsCompleted: self.weeklyQuestsCompleted || 0,
             xp:              xpInfo.xp || 0,
             weeklyXpStart:   localUser.weeklyXpStart || 0,
             weeklyXpStartDate: localUser.weeklyXpStartDate || null,
             level:     xpInfo.level,
             levelName: xpInfo.levelName
-          });
+          }).catch(function () {});
         }
+
+        await Promise.race([
+          syncPromise,
+          new Promise(function (resolve) { setTimeout(resolve, 1200); })
+        ]);
 
         // Keep feed skeleton visible while waiting for the friends list.
         // renderLiveFeed will be called with the real friend UIDs once getFriends resolves.
 
-        var friends = await window.FirestoreService.getFriends(myUserId);
+        var friendFetch = window.FirestoreService.getFriends(myUserId);
+        var selfProfileFetch = window.FirestoreService.getPublicProfile
+          ? window.FirestoreService.getPublicProfile(myUserId).catch(function () { return null; })
+          : Promise.resolve(null);
+        var both = await Promise.all([friendFetch, selfProfileFetch]);
+        var friends = both[0] || [];
+        var selfProfile = both[1] || null;
 
         if (friends.length === 0) {
-          renderLiveFeed([]); // show "no friends" feed empty state
+          renderLiveFeed([], myUserId); // show "no friends" feed empty state
           renderEmptyState();
           showSection("lbEmpty");
           return;
@@ -555,6 +690,7 @@
             initial:        (f.firstName || f.displayName || "F").charAt(0).toUpperCase(),
             streak:         Number(f.streak  || 0),
             questsCompleted:Number(f.questsCompleted || 0),
+            weeklyQuestsCompleted:Number(f.weeklyQuestsCompleted || 0),
             weeklyXP:       Number(f.weeklyXP || 0),
             level:          Number(f.level   || 1),
             isSelf:         false
@@ -563,16 +699,26 @@
           return p;
         });
         var selfWithScore = Object.assign({}, self);
+        if (selfProfile) {
+          selfWithScore.displayName = selfProfile.displayName || selfWithScore.displayName;
+          selfWithScore.initial = (selfProfile.firstName || selfWithScore.displayName || "Y").charAt(0).toUpperCase();
+          selfWithScore.streak = Number(selfProfile.streak || 0);
+          selfWithScore.questsCompleted = Number(selfProfile.questsCompleted || 0);
+          selfWithScore.weeklyQuestsCompleted = Number(selfProfile.weeklyQuestsCompleted || 0);
+          selfWithScore.weeklyXP = Number(selfProfile.weeklyXP || 0);
+          selfWithScore.level = Number(selfProfile.level || selfWithScore.level || 1);
+        }
         selfWithScore.leagueScore = computeLeagueScore(selfWithScore);
         allPlayers.push(selfWithScore);
+        allPlayers = dedupePlayersByUid(allPlayers);
 
         var ranked = sortRanking(allPlayers).map(function (p, i) {
           return Object.assign({}, p, { rank: i + 1 });
         });
 
-        var snapshot = loadSnapshot();
-        saveSnapshot(ranked);
-        savePlayersCache(ranked); // persist for next page open
+        var snapshot = loadSnapshot(myUserId);
+        saveSnapshot(myUserId, ranked);
+        savePlayersCache(myUserId, ranked); // persist for next page open
 
         renderPodium(ranked);
         renderRows(ranked, myUserId, snapshot);
@@ -584,7 +730,7 @@
         var friendUids = friends
           .map(function (f) { return f.uid; })
           .filter(function (uid) { return uid !== myUserId; });
-        renderLiveFeed(friendUids);
+        renderLiveFeed(friendUids, myUserId);
 
       } catch (e) {
         console.error("[Leaderboard] renderLeaderboard error:", e);
@@ -612,7 +758,7 @@
     }
 
     // friendUids — array of friend UIDs to fetch feed entries from (must NOT include own UID).
-    async function renderLiveFeed(friendUids) {
+    async function renderLiveFeed(friendUids, myUid) {
       var feedEl = document.getElementById("lbLiveFeed");
       if (!feedEl) { return; }
 
@@ -636,13 +782,31 @@
         return;
       }
 
-      if (!window.FirestoreService || !window.FirestoreService.getFriendsFeedEntries) {
+      if (!window.FirestoreService) {
         feedEl.innerHTML = '';
         return;
       }
 
-      // Fetch at most 5 entries total across all friends, newest first.
-      var entries = await window.FirestoreService.getFriendsFeedEntries(friendUids, 5);
+      var entries = [];
+
+      // Preferred path: query global_feed audience and filter to friend authors.
+      if (myUid && window.FirestoreService.getMyFeedEntries) {
+        var sharedEntries = await window.FirestoreService.getMyFeedEntries(myUid, 20);
+        if (sharedEntries && sharedEntries.length) {
+          var friendSet = {};
+          friendUids.forEach(function (uid) { friendSet[uid] = true; });
+          entries = sharedEntries.filter(function (entry) {
+            return entry && entry.authorUid && friendSet[entry.authorUid];
+          }).sort(function (a, b) {
+            return (b.timestamp || "").localeCompare(a.timestamp || "");
+          });
+        }
+      }
+
+      // Legacy fallback for projects that still use per-user feed docs.
+      if ((!entries || entries.length === 0) && window.FirestoreService.getFriendsFeedEntries) {
+        entries = await window.FirestoreService.getFriendsFeedEntries(friendUids, 5);
+      }
 
       if (!entries || entries.length === 0) {
         feedEl.innerHTML =
@@ -686,7 +850,11 @@
       if (_lbDebounceTimer) { clearTimeout(_lbDebounceTimer); }
       _lbDebounceTimer = setTimeout(function () {
         _lbDebounceTimer = null;
-        renderLeaderboard();
+        if (_lbRendering) {
+          setTimeout(renderLeaderboard, 400);
+        } else {
+          renderLeaderboard();
+        }
       }, 1200);
     }
 
@@ -696,7 +864,9 @@
                                 window.FirebaseInit.isFirebaseMode();
 
       if (isFirebaseAvailable) {
-        var hasCachedData = loadPlayersCache() !== null;
+        var currentSession = window.StorageAPI && window.StorageAPI.getSession ? window.StorageAPI.getSession() : null;
+        var cacheUserId = currentSession && currentSession.userId ? currentSession.userId : null;
+        var hasCachedData = cacheUserId ? (loadPlayersCache(cacheUserId) !== null) : false;
 
         if (hasCachedData) {
           // Instant cache render — data visible in ~5ms before Firebase auth settles.
@@ -760,6 +930,15 @@
   if (PAGE === "dashboard") {
 
     var _lbFetching = false; // debounce: prevent simultaneous fetches
+    var _lbDashDebounceTimer = null;
+
+    function scheduleDashboardRender() {
+      if (_lbDashDebounceTimer) { clearTimeout(_lbDashDebounceTimer); }
+      _lbDashDebounceTimer = setTimeout(function () {
+        _lbDashDebounceTimer = null;
+        renderDashboardWidget();
+      }, 1200);
+    }
 
     async function renderDashboardWidget() {
       var countEl = document.getElementById("lbDashV3Countdown");
@@ -791,119 +970,119 @@
       if (_lbFetching) { return; }
       _lbFetching = true;
 
-      // Show skeleton while fetching
-      if (emptyEl) { emptyEl.style.display = "none"; }
-      if (rowsEl) {
-        rowsEl.style.display = "";
-        rowsEl.innerHTML = [1, 2, 3].map(function () {
-          return '<div style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0;border-bottom:1px solid #f0ebe0">' +
-            '<div style="width:1.5rem;height:1rem;background:#ece7da;border-radius:0.4rem;animation:pulse 1.4s ease-in-out infinite"></div>' +
-            '<div style="width:2rem;height:2rem;background:#ece7da;border-radius:50%;animation:pulse 1.4s ease-in-out infinite"></div>' +
-            '<div style="flex:1;height:0.75rem;background:#ece7da;border-radius:0.4rem;animation:pulse 1.4s ease-in-out infinite"></div>' +
-            '<div style="width:2.5rem;height:0.75rem;background:#ece7da;border-radius:0.4rem;animation:pulse 1.4s ease-in-out infinite"></div>' +
-          '</div>';
-        }).join("");
-      }
-
-      var friends;
       try {
-        friends = await window.FirestoreService.getFriends(myUserId);
-      } catch (e) {
-        _lbFetching = false;
-        if (emptyEl) { emptyEl.style.display = ""; }
-        if (rowsEl)  { rowsEl.style.display  = "none"; }
-        if (jaEl)    { jaEl.style.display     = "none"; }
-        return;
-      }
-      _lbFetching = false;
+        // Show skeleton while fetching
+        if (emptyEl) { emptyEl.style.display = "none"; }
+        if (rowsEl) {
+          rowsEl.style.display = "";
+          rowsEl.innerHTML = [1, 2, 3].map(function () {
+            return '<div style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0;border-bottom:1px solid #f0ebe0">' +
+              '<div style="width:1.5rem;height:1rem;background:#ece7da;border-radius:0.4rem;animation:pulse 1.4s ease-in-out infinite"></div>' +
+              '<div style="width:2rem;height:2rem;background:#ece7da;border-radius:50%;animation:pulse 1.4s ease-in-out infinite"></div>' +
+              '<div style="flex:1;height:0.75rem;background:#ece7da;border-radius:0.4rem;animation:pulse 1.4s ease-in-out infinite"></div>' +
+              '<div style="width:2.5rem;height:0.75rem;background:#ece7da;border-radius:0.4rem;animation:pulse 1.4s ease-in-out infinite"></div>' +
+            '</div>';
+          }).join("");
+        }
 
-      if (friends.length === 0) {
-        if (emptyEl) { emptyEl.style.display = ""; }
-        if (rowsEl)  { rowsEl.style.display  = "none"; }
-        if (jaEl)    { jaEl.style.display     = "none"; }
-        return;
-      }
+        var friends = await window.FirestoreService.getFriends(myUserId);
 
-      if (emptyEl) { emptyEl.style.display = "none"; }
-      if (rowsEl)  { rowsEl.style.display  = ""; }
+        if (friends.length === 0) {
+          if (emptyEl) { emptyEl.style.display = ""; }
+          if (rowsEl)  { rowsEl.style.display  = "none"; }
+          if (jaEl)    { jaEl.style.display     = "none"; }
+          return;
+        }
 
-      var allPlayers = friends.map(function (f) {
-        var p = {
-          uid:            f.uid,
-          displayName:    f.displayName || "Friend",
-          initial:        (f.firstName || f.displayName || "F").charAt(0).toUpperCase(),
-          streak:         Number(f.streak  || 0),
-          questsCompleted:Number(f.questsCompleted || 0),
-          weeklyXP:       Number(f.weeklyXP || 0),
-          level:          Number(f.level   || 1),
-          isSelf:         false
-        };
-        p.leagueScore = computeLeagueScore(p);
-        return p;
-      });
-      var selfDash = Object.assign({}, self, { uid: myUserId });
-      selfDash.leagueScore = computeLeagueScore(selfDash);
-      allPlayers.push(selfDash);
+        if (emptyEl) { emptyEl.style.display = "none"; }
+        if (rowsEl)  { rowsEl.style.display  = ""; }
 
-      var ranked = sortRanking(allPlayers).map(function (p, i) {
-        return Object.assign({}, p, { rank: i + 1 });
-      });
+        var allPlayers = friends.map(function (f) {
+          var p = {
+            uid:            f.uid,
+            displayName:    f.displayName || "Friend",
+            initial:        (f.firstName || f.displayName || "F").charAt(0).toUpperCase(),
+            streak:         Number(f.streak  || 0),
+            questsCompleted:Number(f.questsCompleted || 0),
+            weeklyQuestsCompleted:Number(f.weeklyQuestsCompleted || 0),
+            weeklyXP:       Number(f.weeklyXP || 0),
+            level:          Number(f.level   || 1),
+            isSelf:         false
+          };
+          p.leagueScore = computeLeagueScore(p);
+          return p;
+        });
+        var selfDash = Object.assign({}, self, { uid: myUserId });
+        selfDash.leagueScore = computeLeagueScore(selfDash);
+        allPlayers.push(selfDash);
+        allPlayers = dedupePlayersByUid(allPlayers);
 
-      var selfInRanking = ranked.find(function (p) { return p.isSelf; });
-      var selfRank = selfInRanking ? selfInRanking.rank : ranked.length;
+        var ranked = sortRanking(allPlayers).map(function (p, i) {
+          return Object.assign({}, p, { rank: i + 1 });
+        });
 
-      if (rankEl) { rankEl.textContent = "#" + selfRank + " of " + ranked.length; }
+        var selfInRanking = ranked.find(function (p) { return p.isSelf; });
+        var selfRank = selfInRanking ? selfInRanking.rank : ranked.length;
 
-      if (jaEl) {
-        if (selfRank === 1) {
-          jaEl.textContent = "\uD83D\uDD25 You're leading the pack this week!";
-          jaEl.style.display = "";
-        } else {
-          var aheadPlayer = ranked[selfRank - 2];
-          if (aheadPlayer) {
-            var scoreGap = Math.max(0, (aheadPlayer.leagueScore || 0) - ((selfInRanking && selfInRanking.leagueScore) || 0));
-            jaEl.textContent = scoreGap > 0
-              ? "\u2B50 " + scoreGap + " pts from overtaking " + aheadPlayer.displayName
-              : "\uD83D\uDD25 Tied with " + aheadPlayer.displayName + " \u2014 log more!";
+        if (rankEl) { rankEl.textContent = "#" + selfRank + " of " + ranked.length; }
+
+        if (jaEl) {
+          if (selfRank === 1) {
+            jaEl.textContent = "\uD83D\uDD25 You're leading the pack this week!";
             jaEl.style.display = "";
+          } else {
+            var aheadPlayer = ranked[selfRank - 2];
+            if (aheadPlayer) {
+              var scoreGap = Math.max(0, (aheadPlayer.leagueScore || 0) - ((selfInRanking && selfInRanking.leagueScore) || 0));
+              jaEl.textContent = scoreGap > 0
+                ? "\u2B50 " + scoreGap + " pts from overtaking " + aheadPlayer.displayName
+                : "\uD83D\uDD25 Tied with " + aheadPlayer.displayName + " \u2014 log more!";
+              jaEl.style.display = "";
+            }
           }
         }
+
+        var MEDALS = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
+        var top3 = ranked.slice(0, 3);
+        var rowHtml = top3.map(function (p) {
+          var rankDisplay = MEDALS[p.rank - 1] || String(p.rank);
+          var rowCls = "lb-dash-v3-row" + (p.isSelf ? " lb-dash-v3-row--self" : "");
+          var avatarBgColor = avatarColor(p.level || 1);
+          return (
+            '<div class="' + rowCls + '">' +
+              '<span class="lb-dash-v3-rank">' + rankDisplay + '</span>' +
+              '<div class="lb-dash-v3-avatar" style="background:' + avatarBgColor + '">' + escHtml(p.initial) + '</div>' +
+              '<span class="lb-dash-v3-name">' + escHtml(p.displayName) + (p.isSelf ? '<span style="font-size:0.6rem;color:var(--brand-700,#2b8259);font-weight:700;"> (You)</span>' : '') + '</span>' +
+              '<span class="lb-dash-v3-score">\u26A1 ' + (p.weeklyXP || 0) + '</span>' +
+            '</div>'
+          );
+        }).join("");
+
+        if (selfRank > 3 && selfInRanking) {
+          rowHtml += (
+            '<div class="lb-dash-v3-row lb-dash-v3-row--self">' +
+              '<span class="lb-dash-v3-rank">' + selfRank + '</span>' +
+              '<div class="lb-dash-v3-avatar">' + escHtml(self.initial) + '</div>' +
+              '<span class="lb-dash-v3-name">You</span>' +
+              '<span class="lb-dash-v3-score">\u26A1 ' + (self.weeklyXP || 0) + '</span>' +
+            '</div>'
+          );
+        }
+
+        if (rowsEl) { rowsEl.innerHTML = rowHtml; }
+      } catch (e) {
+        if (emptyEl) { emptyEl.style.display = ""; }
+        if (rowsEl)  { rowsEl.style.display  = "none"; }
+        if (jaEl)    { jaEl.style.display     = "none"; }
+      } finally {
+        _lbFetching = false;
       }
-
-      var MEDALS = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
-      var top3 = ranked.slice(0, 3);
-      var rowHtml = top3.map(function (p) {
-        var rankDisplay = MEDALS[p.rank - 1] || String(p.rank);
-        var rowCls = "lb-dash-v3-row" + (p.isSelf ? " lb-dash-v3-row--self" : "");
-        var avatarBgColor = avatarColor(p.level || 1);
-        return (
-          '<div class="' + rowCls + '">' +
-            '<span class="lb-dash-v3-rank">' + rankDisplay + '</span>' +
-            '<div class="lb-dash-v3-avatar" style="background:' + avatarBgColor + '">' + escHtml(p.initial) + '</div>' +
-            '<span class="lb-dash-v3-name">' + escHtml(p.displayName) + (p.isSelf ? '<span style="font-size:0.6rem;color:var(--brand-700,#2b8259);font-weight:700;"> (You)</span>' : '') + '</span>' +
-            '<span class="lb-dash-v3-score">\u26A1 ' + (p.weeklyXP || 0) + '</span>' +
-          '</div>'
-        );
-      }).join("");
-
-      if (selfRank > 3 && selfInRanking) {
-        rowHtml += (
-          '<div class="lb-dash-v3-row lb-dash-v3-row--self">' +
-            '<span class="lb-dash-v3-rank">' + selfRank + '</span>' +
-            '<div class="lb-dash-v3-avatar">' + escHtml(self.initial) + '</div>' +
-            '<span class="lb-dash-v3-name">You</span>' +
-            '<span class="lb-dash-v3-score">\u26A1 ' + (self.weeklyXP || 0) + '</span>' +
-          '</div>'
-        );
-      }
-
-      if (rowsEl) { rowsEl.innerHTML = rowHtml; }
     }
 
     document.addEventListener("DOMContentLoaded", function () {
       renderDashboardWidget();
-      window.addEventListener("sugbocents:dataChanged", renderDashboardWidget);
-      window.addEventListener("sugbocents:synced",      renderDashboardWidget);
+      window.addEventListener("sugbocents:dataChanged", scheduleDashboardRender);
+      window.addEventListener("sugbocents:synced",      scheduleDashboardRender);
     });
   }
 

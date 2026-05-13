@@ -1923,7 +1923,12 @@
         "no_overspend_days": "No overspending for",
         "log_days_before_noon": "Log before noon on",
         "log_days_after_9pm": "Log after 9 PM on",
-        "frugal_week": "Spend \u226450% of weekly budget"
+        "frugal_week": "Spend \u226450% of weekly budget",
+        "category_diversity_week": "Log in at least",
+        "xp_earned_week": "Earn",
+        "log_count_today": "Log expenses",
+        "category_count_today": "Log in categories",
+        "under_daily_budget": "Stay under daily budget"
       };
       var condUnits = {
         "log_days": "days",
@@ -1932,7 +1937,12 @@
         "no_overspend_days": "days",
         "log_days_before_noon": "days",
         "log_days_after_9pm": "days",
-        "frugal_week": ""
+        "frugal_week": "",
+        "category_diversity_week": "categories",
+        "xp_earned_week": "XP",
+        "log_count_today": "today",
+        "category_count_today": "today",
+        "under_daily_budget": ""
       };
 
       var condsHtml = "<ul class=\"quest-sheet-cond-list\">";
@@ -1976,7 +1986,12 @@
       "no_overspend_days":    "quest-icon-circle--shield",
       "log_days_before_noon": "quest-icon-circle--clock",
       "log_days_after_9pm":   "quest-icon-circle--clock",
-      "frugal_week":          "quest-icon-circle--target"
+      "frugal_week":          "quest-icon-circle--target",
+      "category_diversity_week":"quest-icon-circle--target",
+      "xp_earned_week":       "quest-icon-circle--bolt",
+      "log_count_today":      "quest-icon-circle--box",
+      "category_count_today": "quest-icon-circle--target",
+      "under_daily_budget":   "quest-icon-circle--shield"
     };
 
     if (!quest) {
@@ -1993,19 +2008,34 @@
 
     // Section header with countdown timer
     var now = new Date();
+    var isDaily = quest.type === "daily";
     var daysLeft = Math.max(0, Math.ceil((new Date(quest.expiresAt) - now) / 86400000));
     var isDone = quest.completedAt !== null;
-    var timerText = isDone ? "Complete! \u2713" : ("\u23F1 " + daysLeft + " day" + (daysLeft !== 1 ? "s" : "") + " left");
+    var timerText;
+    if (isDone) {
+      timerText = "Complete! \u2713";
+    } else if (isDaily) {
+      var msLeft = new Date(quest.expiresAt).getTime() - now.getTime();
+      if (msLeft <= 0) {
+        timerText = "\u23F1 Expires soon";
+      } else {
+        var hLeft = Math.floor(msLeft / 3600000);
+        var mLeft = Math.floor((msLeft % 3600000) / 60000);
+        timerText = hLeft > 0 ? ("\u23F1 " + hLeft + "h " + mLeft + "m left") : ("\u23F1 " + mLeft + "m left");
+      }
+    } else {
+      timerText = "\u23F1 " + daysLeft + " day" + (daysLeft !== 1 ? "s" : "") + " left";
+    }
 
     var sectionHdr = document.createElement("div");
     sectionHdr.className = "quest-section-header";
     sectionHdr.innerHTML =
-      "<span class=\"quest-section-header__title\">THIS WEEK'S QUEST</span>" +
+      "<span class=\"quest-section-header__title\">" + (isDaily ? "TODAY'S QUEST" : "THIS WEEK'S QUEST") + "</span>" +
       "<span class=\"quest-section-header__timer\">" + timerText + "</span>";
     container.appendChild(sectionHdr);
 
     // Primary condition for display
-    var primaryCond = quest.conditions[0];
+    var primaryCond = (quest.conditions && quest.conditions[0]) ? quest.conditions[0] : { progress: 0, target: 1, type: "log_days" };
     var pct = isDone ? 100 : Math.min(100, Math.round((primaryCond.progress / primaryCond.target) * 100));
     var primaryType = primaryCond ? primaryCond.type : "log_days";
     var iconClass = iconClassMap[primaryType] || "quest-icon-circle--bolt";
@@ -2029,7 +2059,7 @@
     if (!isDone) {
       var nextEl = document.createElement("div");
       nextEl.className = "quest-row--locked";
-      nextEl.innerHTML = "<span aria-hidden=\"true\">\uD83D\uDD12</span><p>Next quest unlocks Monday after completion</p>";
+      nextEl.innerHTML = "<span aria-hidden=\"true\">\uD83D\uDD12</span><p>" + (isDaily ? "Next daily quest unlocks tomorrow" : "Next quest unlocks Monday after completion") + "</p>";
       rowEl.appendChild(nextEl);
     }
 

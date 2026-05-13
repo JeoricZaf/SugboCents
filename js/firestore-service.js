@@ -172,8 +172,20 @@
       }());
       if (!user.weeklyXpStartDate || user.weeklyXpStartDate !== weekMondayKey) {
         user.weeklyXpStart = user.xp || 0;
+        user.weeklyXpStartDate = weekMondayKey;
       }
       var weeklyXP = Math.max(0, (user.xp || 0) - (user.weeklyXpStart || 0));
+      var weeklyQuestsCompleted = Number(user.weeklyQuestsCompleted || 0);
+      if (Array.isArray(user.questHistory)) {
+        var monday = new Date(weekMondayKey + "T00:00:00");
+        var nextMonday = new Date(monday);
+        nextMonday.setDate(nextMonday.getDate() + 7);
+        weeklyQuestsCompleted = user.questHistory.reduce(function (count, q) {
+          if (!q || !q.completedAt) { return count; }
+          var d = new Date(q.completedAt);
+          return (d >= monday && d < nextMonday) ? count + 1 : count;
+        }, 0);
+      }
 
       await db.collection("users").doc(userId).set({
         publicProfile: {
@@ -181,7 +193,9 @@
           firstName:        firstName,
           streak:           Number(user.streak || 0),
           questsCompleted:  Number(user.questsCompleted || 0),
+          weeklyQuestsCompleted: Number(weeklyQuestsCompleted || 0),
           weeklyXP:         weeklyXP,
+          weekMondayKey:    weekMondayKey,
           level:            Number(user.level || 1),
           levelName:        String(user.levelName || "Rookie Saver"),
           friendCode:       user.friendCode ? String(user.friendCode) : undefined,
@@ -190,29 +204,36 @@
       }, { merge: true });
 
       // Invalidate cached profile in every friend's doc so their next getFriends()
-      // re-fetches fresh data. We do this fire-and-forget via a batched write (max 20 friends).
+      // re-fetches fresh data. Process all friends in commit-safe chunks.
       var friendsSnap = await db.collection("friends").doc(userId)
-        .collection("friends").limit(20).get().catch(function () { return null; });
+        .collection("friends").get().catch(function () { return null; });
       if (friendsSnap && !friendsSnap.empty) {
         var profilePayload = {
           displayName:     displayName,
           firstName:       firstName,
           streak:          Number(user.streak || 0),
           questsCompleted: Number(user.questsCompleted || 0),
+          weeklyQuestsCompleted: Number(weeklyQuestsCompleted || 0),
           weeklyXP:        weeklyXP,
+          weekMondayKey:   weekMondayKey,
           level:           Number(user.level || 1),
           levelName:       String(user.levelName || "Rookie Saver"),
           lastSyncedAt:    new Date().toISOString()
         };
-        var batch = db.batch();
-        friendsSnap.docs.forEach(function (doc) {
-          batch.set(
-            db.collection("friends").doc(doc.id).collection("friends").doc(userId),
-            { publicProfile: profilePayload },
-            { merge: true }
-          );
-        });
-        batch.commit().catch(function () {}); // non-critical
+
+        var docs = friendsSnap.docs;
+        var chunkSize = 400;
+        for (var i = 0; i < docs.length; i += chunkSize) {
+          var batch = db.batch();
+          docs.slice(i, i + chunkSize).forEach(function (doc) {
+            batch.set(
+              db.collection("friends").doc(doc.id).collection("friends").doc(userId),
+              { publicProfile: profilePayload },
+              { merge: true }
+            );
+          });
+          await batch.commit().catch(function () {}); // non-critical
+        }
       }
     } catch (e) {
       console.warn("[FirestoreService] syncPublicProfile error:", e);
@@ -231,6 +252,45 @@
       console.warn("[FirestoreService] getPublicProfile error:", e);
       return null;
     }
+  }
+
+  function getFriendCacheKey(userId) {
+    return "sugbocents_friend_cache_" + String(userId || "");
+  }
+
+  function normalizePublicProfile(profile, fallbackDisplayName) {
+    var safe = profile || {};
+    var displayName = String(safe.displayName || fallbackDisplayName || "Friend");
+    var now = new Date();
+    var dayOfWeek = now.getDay();
+    var monday = new Date(now);
+    monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
+    var currentWeekKey = monday.getFullYear() + "-" +
+      String(monday.getMonth() + 1).padStart(2, "0") + "-" +
+      String(monday.getDate()).padStart(2, "0");
+
+    var profileWeekKey = String(safe.weekMondayKey || "");
+    var weeklyXP = Number(safe.weeklyXP || 0);
+    var weeklyQuestsCompleted = Number(safe.weeklyQuestsCompleted || 0);
+
+    if (profileWeekKey && profileWeekKey !== currentWeekKey) {
+      weeklyXP = 0;
+      weeklyQuestsCompleted = 0;
+    }
+
+    return {
+      displayName: displayName,
+      firstName: String(safe.firstName || ""),
+      streak: Number(safe.streak || 0),
+      questsCompleted: Number(safe.questsCompleted || 0),
+      weeklyQuestsCompleted: weeklyQuestsCompleted,
+      weeklyXP: weeklyXP,
+      weekMondayKey: profileWeekKey || currentWeekKey,
+      level: Number(safe.level || 1),
+      levelName: String(safe.levelName || "Rookie Saver"),
+      lastSyncedAt: safe.lastSyncedAt ? String(safe.lastSyncedAt) : null
+    };
   }
 
   // ── Friends ───────────────────────────────────────────────────
@@ -316,57 +376,46 @@
     if (!isFirestoreEnabled() || !userId) { return []; }
     try {
       var db = window.FirebaseInit.getDb();
-      // Single query — friend docs contain a cached publicProfile snapshot,
-      // so we avoid N+1 profile reads in the common case.
       var snapshot = await db.collection("friends").doc(userId)
         .collection("friends").get();
       if (snapshot.empty) { return []; }
 
       var results = [];
-      var staleIds = [];  // friend IDs whose cached profile is missing or stale
-
-      // Profiles older than 30 minutes are treated as stale and re-fetched live.
-      var STALE_THRESHOLD_MS = 30 * 60 * 1000;
-      var now = Date.now();
-
-      snapshot.docs.forEach(function (doc) {
-        var data = doc.data();
-        var profile = data.publicProfile;
-        if (profile && profile.displayName) {
-          // Check freshness: re-fetch if lastSyncedAt is absent or too old
-          var lastSync = profile.lastSyncedAt ? new Date(profile.lastSyncedAt).getTime() : 0;
-          if (isNaN(lastSync) || (now - lastSync) > STALE_THRESHOLD_MS) {
-            staleIds.push(doc.id);
-          } else {
-            results.push(Object.assign({ uid: doc.id }, profile));
-          }
-        } else {
-          staleIds.push(doc.id);
-        }
+      var friendDocs = snapshot.docs.map(function (doc) {
+        var data = doc.data() || {};
+        return {
+          uid: doc.id,
+          cachedDisplayName: data.displayName || (data.publicProfile && data.publicProfile.displayName) || "Friend"
+        };
       });
 
-      // Fetch uncached/stale profiles in parallel
-      if (staleIds.length > 0) {
-        var profilePromises = staleIds.map(function (fId) {
-          return getPublicProfile(fId).then(function (profile) {
-            if (!profile) { return null; }
-            // Back-fill cache in the friend doc so next load is free
-            db.collection("friends").doc(userId)
-              .collection("friends").doc(fId)
-              .set({ publicProfile: profile }, { merge: true })
-              .catch(function () {}); // non-critical
-            return Object.assign({ uid: fId }, profile);
+      // Ranking-critical fields must come from users/{uid}.publicProfile.
+      var profilePromises = friendDocs.map(function (friendDoc) {
+        return getPublicProfile(friendDoc.uid)
+          .then(function (profile) {
+            var normalized = normalizePublicProfile(profile, friendDoc.cachedDisplayName);
+            return Object.assign({ uid: friendDoc.uid }, normalized);
+          })
+          .catch(function () {
+            return Object.assign({ uid: friendDoc.uid }, normalizePublicProfile(null, friendDoc.cachedDisplayName));
           });
-        });
-        var fetched = await Promise.all(profilePromises);
-        fetched.forEach(function (f) { if (f) { results.push(f); } });
-      }
+      });
+
+      results = await Promise.all(profilePromises);
+
+      // Backfill cache using normalized live profiles.
+      results.forEach(function (friendProfile) {
+        db.collection("friends").doc(userId)
+          .collection("friends").doc(friendProfile.uid)
+          .set({ publicProfile: normalizePublicProfile(friendProfile, friendProfile.displayName) }, { merge: true })
+          .catch(function () {});
+      });
 
       // Cache resolved friend UIDs in localStorage so addExpense can build
       // the global_feed audience array without a round-trip read.
       try {
         var uids = results.map(function (f) { return f.uid; });
-        localStorage.setItem("sugbocents_friend_cache", JSON.stringify(uids));
+        localStorage.setItem(getFriendCacheKey(userId), JSON.stringify(uids));
       } catch (_) {}
 
       return results;
@@ -455,11 +504,24 @@
     if (!isFirestoreEnabled() || !userId || !entry) { return; }
     try {
       var db = window.FirebaseInit.getDb();
-      // Build audience from the friend UID cache populated by getFriends()
+      // Build audience from a user-scoped friend UID cache populated by getFriends().
       var friendUids;
-      try { friendUids = JSON.parse(localStorage.getItem("sugbocents_friend_cache") || "[]"); }
+      try { friendUids = JSON.parse(localStorage.getItem(getFriendCacheKey(userId)) || "[]"); }
       catch (_) { friendUids = []; }
       if (!Array.isArray(friendUids)) { friendUids = []; }
+
+      // Fallback: if cache is empty, fetch current friend IDs once.
+      if (friendUids.length === 0) {
+        try {
+          var friendSnap = await db.collection("friends").doc(userId)
+            .collection("friends").get();
+          friendUids = friendSnap.docs.map(function (doc) { return doc.id; });
+          localStorage.setItem(getFriendCacheKey(userId), JSON.stringify(friendUids));
+        } catch (_) {
+          friendUids = [];
+        }
+      }
+
       var audience = [userId].concat(friendUids);
       await db.collection("global_feed").add({
         type:          String(entry.type   || "activity"),

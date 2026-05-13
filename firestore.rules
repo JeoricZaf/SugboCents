@@ -82,6 +82,33 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function validPublicProfile(data) {
+      return !('publicProfile' in data) || (
+        data.publicProfile is map &&
+        (!('displayName' in data.publicProfile) ||
+          (data.publicProfile.displayName is string && data.publicProfile.displayName.size() > 0 && data.publicProfile.displayName.size() <= 80)) &&
+        (!('firstName' in data.publicProfile) ||
+          (data.publicProfile.firstName is string && data.publicProfile.firstName.size() <= 40)) &&
+        (!('streak' in data.publicProfile) ||
+          (data.publicProfile.streak is number && data.publicProfile.streak >= 0 && data.publicProfile.streak <= 365)) &&
+        (!('questsCompleted' in data.publicProfile) ||
+          (data.publicProfile.questsCompleted is number && data.publicProfile.questsCompleted >= 0 && data.publicProfile.questsCompleted <= 5000)) &&
+        (!('weeklyQuestsCompleted' in data.publicProfile) ||
+          (data.publicProfile.weeklyQuestsCompleted is number && data.publicProfile.weeklyQuestsCompleted >= 0 && data.publicProfile.weeklyQuestsCompleted <= 12)) &&
+        (!('weeklyXP' in data.publicProfile) ||
+          (data.publicProfile.weeklyXP is number && data.publicProfile.weeklyXP >= 0 && data.publicProfile.weeklyXP <= 5000)) &&
+        (!('level' in data.publicProfile) ||
+          (data.publicProfile.level is number && data.publicProfile.level >= 1 && data.publicProfile.level <= 7)) &&
+        (!('levelName' in data.publicProfile) ||
+          (data.publicProfile.levelName is string && data.publicProfile.levelName.size() <= 40)) &&
+        (!('friendCode' in data.publicProfile) ||
+          (data.publicProfile.friendCode is string && data.publicProfile.friendCode.size() <= 20)) &&
+        (!('lastSyncedAt' in data.publicProfile) || data.publicProfile.lastSyncedAt is string) &&
+        (!('weekMondayKey' in data.publicProfile) ||
+          (data.publicProfile.weekMondayKey is string && data.publicProfile.weekMondayKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+      );
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -91,7 +118,7 @@ service cloud.firestore {
       // Allow authenticated users to read profiles (since public profiles are stored here)
       allow read: if isAuthenticated();
       // Only the user themselves can write their data
-      allow create, update: if isOwner(userId);
+      allow create, update: if isOwner(userId) && validPublicProfile(request.resource.data);
       allow delete: if false;
 
       // User Expenses

@@ -704,3 +704,59 @@ exports.sendWeeklyWrappedEmailAuto = onSchedule(
     });
   }
 );
+
+exports.resetWeeklyLeaderboardStats = onSchedule(
+  {
+    schedule: "1 0 * * 1",
+    timeZone: "Asia/Manila",
+    region: "us-central1"
+  },
+  async () => {
+    const db = admin.firestore();
+    const week = getWeekRange(new Date(), false);
+    const usersRef = db.collection("users");
+    const pageSize = 400;
+    let lastDoc = null;
+    let processed = 0;
+
+    while (true) {
+      let q = usersRef
+        .orderBy(admin.firestore.FieldPath.documentId())
+        .limit(pageSize);
+      if (lastDoc) {
+        q = q.startAfter(lastDoc);
+      }
+
+      const snap = await q.get();
+      if (snap.empty) {
+        break;
+      }
+
+      const batch = db.batch();
+      const syncedAt = new Date().toISOString();
+      snap.docs.forEach((doc) => {
+        batch.set(doc.ref, {
+          publicProfile: {
+            weeklyXP: 0,
+            weeklyQuestsCompleted: 0,
+            weekMondayKey: week.weekKey,
+            lastSyncedAt: syncedAt
+          }
+        }, { merge: true });
+      });
+
+      await batch.commit();
+      processed += snap.size;
+      lastDoc = snap.docs[snap.docs.length - 1];
+
+      if (snap.size < pageSize) {
+        break;
+      }
+    }
+
+    console.info("resetWeeklyLeaderboardStats summary", {
+      processed,
+      weekKey: week.weekKey
+    });
+  }
+);

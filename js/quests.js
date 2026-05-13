@@ -14,8 +14,7 @@
     "category_diversity_week":"Log in at least",
     "xp_earned_week":         "Earn",
     "log_count_today":        "Log expenses",
-    "category_count_today":   "Log in categories",
-    "under_daily_budget":     "Stay under daily budget"
+    "category_count_today":   "Log in categories"
   };
 
   var COND_UNITS = {
@@ -29,8 +28,7 @@
     "category_diversity_week":"categories",
     "xp_earned_week":         "XP",
     "log_count_today":        "today",
-    "category_count_today":   "today",
-    "under_daily_budget":     ""
+    "category_count_today":   "today"
   };
 
   // ── Daily Quest Definitions ────────────────────────────────
@@ -70,20 +68,6 @@
         todayExp.forEach(function (e) { cats[e.category || "others"] = true; });
         return { progress: Math.min(3, Object.keys(cats).length), target: 3 };
       }
-    },
-    {
-      id: "daily-under-budget",
-      title: "Daily Saver",
-      description: "Stay under your daily budget today",
-      icon: "\uD83D\uDEE1\uFE0F",
-      xpReward: 20,
-      sentimosReward: 10,
-      compute: function (todayExp, weeklyBudget) {
-        if (!weeklyBudget || weeklyBudget <= 0) { return { progress: 0, target: 1, unavailable: true }; }
-        var dailyLimit = weeklyBudget / 7;
-        var spent = todayExp.reduce(function (s, e) { return s + (Number(e.amount) || 0); }, 0);
-        return { progress: spent <= dailyLimit ? 1 : 0, target: 1 };
-      }
     }
   ];
 
@@ -92,8 +76,7 @@
   var DAILY_QUEST_STORAGE_CONDITIONS = {
     "daily-first-log":    { type: "log_count_today",      target: 1 },
     "daily-triple-log":   { type: "log_count_today",      target: 3 },
-    "daily-categories":   { type: "category_count_today", target: 3 },
-    "daily-under-budget": { type: "under_daily_budget",   target: 1 }
+    "daily-categories":   { type: "category_count_today", target: 3 }
   };
 
   function trackDailyQuest(def) {

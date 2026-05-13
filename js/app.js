@@ -430,6 +430,16 @@
     });
   }
 
+  function getQuestBadgeCacheKey() {
+    var session = (window.StorageAPI && window.StorageAPI.getSession) ? window.StorageAPI.getSession() : null;
+    var userId = session && session.userId ? String(session.userId) : "anon";
+    return "sugbocents_unclaimed_quests:" + userId;
+  }
+
+  function clearLegacyQuestBadgeCache() {
+    try { localStorage.removeItem("sugbocents_unclaimed_quests"); } catch (_) {}
+  }
+
   // Refresh badge state from storage — runs on every page on load + data change
   function refreshQuestBadge() {
     if (!window.StorageAPI || !window.StorageAPI.checkQuestBadge) { return; }
@@ -437,7 +447,7 @@
     // Also check the cached unclaimed count in localStorage so non-quest pages
     // reflect quests completed but not tracked (e.g. daily quests outside spotlight)
     try {
-      var cached = parseInt(localStorage.getItem("sugbocents_unclaimed_quests") || "0", 10);
+      var cached = parseInt(localStorage.getItem(getQuestBadgeCacheKey()) || "0", 10);
       if (cached > count) { count = cached; }
     } catch (_) {}
     window.dispatchEvent(new CustomEvent("sugbocents:questBadgeUpdate", { detail: { count: count } }));
@@ -494,9 +504,10 @@
     initSidebarTooltip();
     registerServiceWorker();
     injectQuestBadgeSpans();
+    clearLegacyQuestBadgeCache();
     // Apply cached badge count immediately (before async StorageAPI resolves)
     try {
-      var cachedBadge = parseInt(localStorage.getItem("sugbocents_unclaimed_quests") || "0", 10);
+      var cachedBadge = parseInt(localStorage.getItem(getQuestBadgeCacheKey()) || "0", 10);
       if (cachedBadge > 0) {
         document.querySelectorAll(".quest-nav-badge").forEach(function (el) { el.classList.remove("is-hidden"); });
       }
@@ -530,7 +541,7 @@
     window.addEventListener("sugbocents:questBadgeUpdate", function (e) {
       var count = e.detail && e.detail.count ? e.detail.count : 0;
       // Persist the count so other pages can read it on initial load
-      try { localStorage.setItem("sugbocents_unclaimed_quests", String(count)); } catch (_) {}
+      try { localStorage.setItem(getQuestBadgeCacheKey(), String(count)); } catch (_) {}
       document.querySelectorAll(".quest-nav-badge").forEach(function (el) {
         if (count > 0) { el.classList.remove("is-hidden"); }
         else           { el.classList.add("is-hidden"); }
