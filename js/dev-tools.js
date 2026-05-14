@@ -296,15 +296,15 @@
         "<div class=\"dev-grid dev-grid--2\">" +
           "<button class=\"dev-btn dev-btn--green\"  data-dev=\"ahead\">\ud83d\udcc8 Ahead of Pace</button>" +
           "<button class=\"dev-btn dev-btn--teal\"   data-dev=\"ontrack\">\u2713 On Track</button>" +
-          "<button class=\"dev-btn dev-btn--amber\"  data-dev=\"warn\">\u26a0\ufe0f Watch Out</button>" +
-          "<button class=\"dev-btn dev-btn--red\"    data-dev=\"overbudget\">\ud83d\udd34 Overbudget</button>" +
+          "<button class=\"dev-btn dev-btn--amber\"  data-dev=\"warn\" onclick='notif(3)'>\u26a0\ufe0f Watch Out</button>" +
+          "<button class=\"dev-btn dev-btn--red\"    data-dev=\"overbudget\" onclick='notif(4)'>\ud83d\udd34 Overbudget</button>" +
         "</div>" +
 
         "<div class=\"dev-sec\">Streak Badge</div>" +
         "<div class=\"dev-grid dev-grid--3\">" +
-          "<button class=\"dev-btn dev-btn--orange\" data-dev=\"streak5\">\ud83d\udd25 5-Day</button>" +
-          "<button class=\"dev-btn dev-btn--pulse\"  data-dev=\"streak-risk\">\u26a1 At-Risk</button>" +
-          "<button class=\"dev-btn dev-btn--orange\" data-dev=\"streak14\">\ud83c\udfc6 14-Day</button>" +
+          "<button class=\"dev-btn dev-btn--orange\" data-dev=\"streak5\" onclick='notif(5)' >\ud83d\udd25 5-Day</button>" +
+          "<button class=\"dev-btn dev-btn--pulse\"  data-dev=\"streak-risk\" onclick='notif(6)'>\u26a1 At-Risk</button>" +
+          "<button class=\"dev-btn dev-btn--orange\" data-dev=\"streak14\" onclick='notif(7)'>\ud83c\udfc6 14-Day</button>" +
         "</div>" +
 
         "<div class=\"dev-divider\"></div>" +
@@ -347,3 +347,63 @@
     init();
   }
 })();
+
+
+function notif(type) {
+
+    if (type == 3) {
+      const options = {
+      body: "",
+      icon: "assets/images/mascot/head-worried.png", // Path to your logo
+      tag: "budget-alerts",
+      renotify: true,
+      badge: "badge.png"
+    };
+      new Notification("Watch out!", options);
+    }
+    else if (type == 4) {
+      const options = {
+      body: "",
+      icon: "assets/images/mascot/head-shocked.png", // Path to your logo
+      tag: "budget-alerts",
+      renotify: true,
+      badge: "badge.png"
+    };
+      new Notification("Overbudget!", options);
+    
+  }
+  else if (type == 5) {
+      const options = {
+      body: "",
+      icon: "assets/images/mascot/head-happy.png", // Path to your logo
+      tag: "budget-alerts",
+      renotify: true,
+      badge: "badge.png"
+    };
+      new Notification("Great job! 5-day streak! Keep going for 5 more!", options);
+    
+  }
+  else if (type == 6) {
+      const options = {
+      body: "",
+      icon: "assets/images/mascot/head-sad1.png", // Path to your logo
+      tag: "budget-alerts",
+      renotify: true,
+      badge: "badge.png"
+    };
+      new Notification("Uh oh! The day has almost ended, will you really break your streak?", options);
+    
+  }
+
+  else if (type == 7) {
+      const options = {
+      body: "  ",
+      icon: "icons/icon-192.png", // Path to your logo
+      tag: "budget-alerts",
+      renotify: true,
+      badge: "badge.png"
+    };
+      new Notification("You are on fire! 14 days??! Keep going!", options);
+    
+  }
+}

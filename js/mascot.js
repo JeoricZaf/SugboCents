@@ -501,6 +501,9 @@ document.addEventListener("DOMContentLoaded", function() {
     console.log("Mascot was clicked");
     playRandomMascot();
 
+   
+
+
     // if (isClick) {
     //   var randomMsg = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
     //   showBubble(randomMsg, false);
