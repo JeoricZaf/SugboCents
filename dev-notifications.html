@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#1f6b46" />
+  <title>Dev Tools - SugboCents</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;700;800&display=swap"
+    rel="stylesheet" />
+  <script defer src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dev-notifications.css" />
+</head>
+<body data-page="dev" data-protected="true" data-dev-only="true" class="antialiased"
+  style="background:#f7f3e8;font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;color:#102b1d;min-height:100vh">
+  <div style="min-height:100vh;background:#f7f3e8">
+    <div id="appShell" class="lg:flex">
+      <main id="mainContent" class="min-w-0 flex-1 pb-28 lg:pb-8">
+        <div class="mx-auto max-w-6xl space-y-4 px-4 py-5 sm:px-6 lg:px-8">
+          <div id="devApp">
+            <header class="mb-4">
+              <p class="text-xs font-extrabold uppercase tracking-[0.22em]" style="color:#6b756c">ADMIN ONLY - affects only your account</p>
+              <h1 class="text-3xl font-black" style="color:#164f33">Dev Tools</h1>
+              <p class="text-sm font-semibold" style="color:#617063">Notification testing control room for deterministic demos and debug flows.</p>
+            </header>
+
+            <section class="dev-section" id="devSnapshotSection">
+              <div class="dev-section-head">
+                <h2 class="dev-section-title">Snapshot</h2>
+                <button class="dev-button secondary" data-action="snapshot-refresh" type="button">Refresh</button>
+              </div>
+              <div class="dev-snapshot-grid">
+                <div class="dev-kv"><span>UID</span><strong id="snapUid">-</strong></div>
+                <div class="dev-kv"><span>Email enabled</span><strong id="snapEmailEnabled">-</strong></div>
+                <div class="dev-kv"><span>Push enabled</span><strong id="snapPushEnabled">-</strong></div>
+                <div class="dev-kv"><span>Push setup status</span><strong id="snapPushSetupFailure">-</strong></div>
+                <div class="dev-kv"><span>FCM tokens</span><strong id="snapFcmCount">-</strong></div>
+                <div class="dev-kv"><span>FCM token preview</span><strong id="snapFcmPreview">-</strong></div>
+                <div class="dev-kv"><span>Today push count</span><strong id="snapPushCount">-</strong></div>
+                <div class="dev-kv"><span>Today email count</span><strong id="snapEmailCount">-</strong></div>
+                <div class="dev-kv"><span>Email quota today</span><strong id="snapEmailQuota">-</strong></div>
+                <div class="dev-kv"><span>Current streak</span><strong id="snapStreak">-</strong></div>
+                <div class="dev-kv"><span>Last expense</span><strong id="snapLastExpense">-</strong></div>
+                <div class="dev-kv"><span>Last login</span><strong id="snapLastLogin">-</strong></div>
+                <div class="dev-kv"><span>Lapsed stages sent</span><strong id="snapLapsedStages">-</strong></div>
+                <div class="dev-kv"><span>Inbox unread</span><strong id="snapUnread">-</strong></div>
+                <div class="dev-kv"><span>Foreground listener</span><strong id="snapFgListener">-</strong></div>
+                <div class="dev-kv"><span>Sim Brevo failure</span><strong id="snapBrevoFlag">-</strong></div>
+              </div>
+              <p id="devSnapshotStatus" class="dev-status"></p>
+            </section>
+
+            <section class="dev-section" id="devQuickSendSection">
+              <h2 class="dev-section-title">Quick Send</h2>
+              <div class="dev-grid dev-grid-3">
+                <button class="dev-button" data-action="quick-push" type="button">Send test push to me</button>
+                <button class="dev-button" data-action="quick-email" type="button">Send test email to me</button>
+                <button class="dev-button" data-action="quick-both" type="button">Send test BOTH</button>
+              </div>
+              <div class="dev-checks mt-2">
+                <label><input id="devBypassCap" type="checkbox" /> Bypass daily cap</label>
+                <label><input id="devBypassQuiet" type="checkbox" /> Bypass quiet hours</label>
+                <label><input id="devForceForeground" type="checkbox" /> Force foreground (keep this tab focused)</label>
+              </div>
+              <p id="devQuickSendStatus" class="dev-status"></p>
+            </section>
+
+            <section class="dev-section" id="devPresetsSection">
+              <h2 class="dev-section-title">Preset States</h2>
+              <div class="dev-grid dev-grid-3">
+                <button class="dev-button secondary" data-action="preset" data-preset="onboarding-activate-d1" type="button">Onboarding activate d1</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="onboarding-activate-d3" type="button">Onboarding activate d3</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="onboarding-no-budget" type="button">Onboarding no budget</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="onboarding-welcome" type="button">Onboarding welcome</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="daily-reminder" type="button">Daily reminder</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="streak-at-risk-soft" type="button">Streak at risk soft</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="streak-at-risk-last" type="button">Streak at risk last</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="streak-broken" type="button">Streak broken</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="budget-warning" type="button">Budget warning</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="budget-exceeded" type="button">Budget exceeded</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="achievement-near" type="button">Achievement near</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="weekly-digest" type="button">Weekly digest</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="lapsed-d3" type="button">Lapsed d3</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="lapsed-d7" type="button">Lapsed d7</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="lapsed-d14" type="button">Lapsed d14</button>
+                <button class="dev-button secondary" data-action="preset" data-preset="lapsed-d30" type="button">Lapsed d30</button>
+              </div>
+              <p id="devPresetsStatus" class="dev-status"></p>
+            </section>
+
+            <section class="dev-section" id="devCronSection">
+              <h2 class="dev-section-title">Cron Simulators</h2>
+              <div class="dev-grid dev-grid-3">
+                <button class="dev-button" data-action="cron" data-cron="dailyReminderCron" data-overrides='{"forceMatch":true}' type="button">Run dailyReminder NOW</button>
+                <button class="dev-button" data-action="cron" data-cron="streakAtRiskCron" data-overrides='{"hourOverride":18}' type="button">Run streakAtRisk 6pm</button>
+                <button class="dev-button" data-action="cron" data-cron="streakAtRiskCron" data-overrides='{"hourOverride":22}' type="button">Run streakAtRisk 10pm</button>
+                <button class="dev-button" data-action="cron" data-cron="streakBrokenCron" data-overrides='{}' type="button">Run streakBroken</button>
+                <button class="dev-button" data-action="cron" data-cron="weeklyDigestCron" data-overrides='{"forceBucket":true}' type="button">Run weeklyDigest</button>
+                <button class="dev-button" data-action="cron" data-cron="lapsedUserCron" data-overrides='{"stageOverride":"d3"}' type="button">Run lapsed d3</button>
+                <button class="dev-button" data-action="cron" data-cron="lapsedUserCron" data-overrides='{"stageOverride":"d7"}' type="button">Run lapsed d7</button>
+                <button class="dev-button" data-action="cron" data-cron="lapsedUserCron" data-overrides='{"stageOverride":"d14"}' type="button">Run lapsed d14</button>
+                <button class="dev-button" data-action="cron" data-cron="lapsedUserCron" data-overrides='{"stageOverride":"d30"}' type="button">Run lapsed d30</button>
+              </div>
+              <p id="devCronStatus" class="dev-status"></p>
+            </section>
+
+            <section class="dev-section" id="devStateSection">
+              <h2 class="dev-section-title">State Manipulation</h2>
+              <div class="dev-grid dev-grid-2">
+                <div class="dev-row">
+                  <input id="devStreakInput" class="dev-input" type="number" min="0" placeholder="Set streak" />
+                  <button class="dev-button" data-action="state-set-streak" type="button">Apply</button>
+                </div>
+                <div class="dev-row">
+                  <input id="devLastLoginDays" class="dev-input" type="number" min="0" placeholder="Last login days ago" />
+                  <button class="dev-button" data-action="state-set-last-login" type="button">Apply</button>
+                </div>
+                <div class="dev-row">
+                  <input id="devBudgetInput" class="dev-input" type="number" min="0" step="0.01" placeholder="Set weekly budget" />
+                  <button class="dev-button" data-action="state-set-budget" type="button">Apply</button>
+                </div>
+                <div class="dev-row">
+                  <input id="devXpInput" class="dev-input" type="number" min="0" placeholder="Set XP" />
+                  <button class="dev-button" data-action="state-set-xp" type="button">Apply</button>
+                </div>
+              </div>
+              <div class="dev-grid dev-grid-3 mt-2">
+                <button class="dev-button secondary" data-action="state-reset-caps" type="button">Reset today's caps</button>
+                <button class="dev-button secondary" data-action="state-reset-quota" type="button">Reset today's email quota</button>
+                <button class="dev-button secondary" data-action="state-mark-read" type="button">Mark inbox read</button>
+                <button class="dev-button danger" data-action="state-clear-inbox" type="button">Clear inbox</button>
+                <button class="dev-button secondary" data-action="state-clear-lapsed" type="button">Clear lapsed stages</button>
+                <button class="dev-button danger" data-action="state-full-reset" type="button">Full reset (fresh onboarding)</button>
+              </div>
+              <p id="devStateStatus" class="dev-status"></p>
+            </section>
+
+            <section class="dev-section" id="devQuestSection">
+              <h2 class="dev-section-title">Quests</h2>
+              <div class="dev-grid dev-grid-3">
+                <button class="dev-button" data-action="quest-activate" type="button">Activate Daily Quest</button>
+                <button class="dev-button" data-action="quest-complete" type="button">Mark Quest Complete</button>
+                <button class="dev-button secondary" data-action="quest-reset" type="button">Reset Quest State</button>
+              </div>
+              <div class="dev-row mt-2">
+                <input id="devQuestProgressInput" class="dev-input" type="number" min="0" placeholder="Set progress (N)" />
+                <button class="dev-button" data-action="quest-progress" type="button">Set Progress</button>
+              </div>
+              <p id="devQuestStatus" class="dev-status"></p>
+            </section>
+
+            <section class="dev-section" id="devAchievementSection">
+              <h2 class="dev-section-title">Achievements</h2>
+              <p class="text-xs mb-2" style="color:#617063">Badge IDs: first-step, consistent, streak-master, level-up-2, level-up-5</p>
+              <div class="dev-row">
+                <input id="devBadgeIdInput" class="dev-input" type="text" placeholder="Badge ID" />
+                <input id="devBadgeProgressInput" class="dev-input" type="number" min="0" placeholder="Progress" style="max-width:100px" />
+              </div>
+              <div class="dev-grid dev-grid-3 mt-2">
+                <button class="dev-button" data-action="badge-unlock" type="button">Unlock Badge</button>
+                <button class="dev-button" data-action="badge-set-progress" type="button">Set Progress</button>
+                <button class="dev-button" data-action="badge-claim" type="button">Claim Badge</button>
+                <button class="dev-button danger" data-action="badge-reset" type="button">Reset Badge</button>
+              </div>
+              <p id="devAchievementStatus" class="dev-status"></p>
+            </section>
+
+            <section class="dev-section" id="devSentimosSection">
+              <h2 class="dev-section-title">Sentimos & Shop</h2>
+              <div class="dev-row">
+                <input id="devSentimosInput" class="dev-input" type="number" min="0" placeholder="Set sentimos balance" />
+                <button class="dev-button" data-action="sentimos-set-balance" type="button">Set Balance</button>
+              </div>
+              <div class="dev-grid dev-grid-2 mt-2">
+                <button class="dev-button secondary" data-action="sentimos-add-freeze" type="button">Add Streak Freeze (+1)</button>
+              </div>
+              <p id="devSentimosStatus" class="dev-status"></p>
+            </section>
+
+            <section class="dev-section" id="devLeaderboardSection">
+              <h2 class="dev-section-title">Leaderboard</h2>
+              <div class="dev-grid dev-grid-2">
+                <button class="dev-button" data-action="leaderboard-seed" type="button">Populate leaderboard test data</button>
+              </div>
+              <p class="text-xs mt-2" style="color:#617063">Creates fake friends and leaderboard feed activity for your account testing view.</p>
+              <p id="devLeaderboardStatus" class="dev-status"></p>
+            </section>
+
+            <section class="dev-section" id="devEdgeSection">
+              <h2 class="dev-section-title">Edge Cases</h2>
+              <div class="dev-checks">
+                <label><input id="devBrevoToggle" type="checkbox" data-action="edge-brevo-toggle" /> Simulate Brevo failure for next email</label>
+              </div>
+              <div class="dev-grid dev-grid-2 mt-2">
+                <button class="dev-button" data-action="edge-send-five" type="button">Send 5 pushes rapidly</button>
+                <button class="dev-button" data-action="edge-broken-deeplink" type="button">Send broken deep-link</button>
+              </div>
+              <p id="devEdgeStatus" class="dev-status"></p>
+            </section>
+
+            <section class="dev-section" id="devFlowsSection">
+              <h2 class="dev-section-title">Demo Flows</h2>
+              <div class="dev-grid dev-grid-2">
+                <button class="dev-button" data-action="flow-a" type="button">Demo Flow A - New user onboarding</button>
+                <button class="dev-button" data-action="flow-b" type="button">Demo Flow B - Streak journey</button>
+                <button class="dev-button" data-action="flow-c" type="button">Demo Flow C - Budget escalation</button>
+                <button class="dev-button" data-action="flow-d" type="button">Demo Flow D - Weekly digest</button>
+              </div>
+              <div id="devFlowStatus" class="dev-flow-status"></div>
+            </section>
+
+            <section class="dev-section" id="devLogSection">
+              <div class="dev-section-head">
+                <h2 class="dev-section-title">Dev Log</h2>
+                <button class="dev-button danger" data-action="log-clear" type="button">Clear my dev log</button>
+              </div>
+              <div id="devLogList" class="dev-log-list"></div>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script defer src="js/storage.js"></script>
+  <script defer src="js/firebase-init.js"></script>
+  <script defer src="js/firebase-auth-service.js"></script>
+  <script defer src="js/firestore-service.js"></script>
+  <script defer src="js/chrome.js"></script>
+  <script defer src="js/motion.js"></script>
+  <script defer src="js/app.js"></script>
+  <script defer src="js/notifications.js"></script>
+  <script defer src="js/dev-notifications.js"></script>
+</body>
+</html>

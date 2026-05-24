@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;700;800&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/mascot.css" />
   <link rel="stylesheet" href="css/dark-mode.css" />
@@ -54,7 +54,7 @@
         <!-- Activity content -->
         <div id="pageContent" class="mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-6 lg:px-8" style="display:none">
 
-          <!-- ── Weekly Summary Hero ─────────────────────── -->
+          <!-- â”€â”€ Weekly Summary Hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
           <section class="rounded-[2rem] p-5 text-white shadow-lg" style="background:#164f33"
             aria-label="Weekly spending summary">
             <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:rgba(255,255,255,0.55)">Weekly summary</p>
@@ -84,7 +84,7 @@
             </div>
           </section>
 
-          <!-- ── Tab Switcher ───────────────────────────── -->
+          <!-- â”€â”€ Tab Switcher â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
           <div class="grid grid-cols-2 rounded-full p-1" style="background:#e7e0cf" role="tablist" aria-label="View switcher">
             <button id="tabExpenses" type="button" role="tab" aria-selected="true" aria-controls="expensesTabPanel"
               class="rounded-full px-4 py-3 text-sm font-black transition"
@@ -98,7 +98,7 @@
             </button>
           </div>
 
-          <!-- ── Expenses Tab Panel ─────────────────────── -->
+          <!-- â”€â”€ Expenses Tab Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
           <div id="expensesTabPanel" role="tabpanel" aria-labelledby="tabExpenses">
             <div class="rounded-[2rem] bg-white shadow-sm" style="outline:1px solid #ded7c6;overflow:hidden">
 
@@ -159,7 +159,7 @@
             </div>
           </div>
 
-          <!-- ── Activity Feed Tab Panel ────────────────── -->
+          <!-- â”€â”€ Activity Feed Tab Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
           <div id="activityTabPanel" role="tabpanel" aria-labelledby="tabActivity" style="display:none">
             <div id="activityFeedList" class="space-y-3">
               <!-- JS renders activity events here -->
@@ -193,37 +193,16 @@
     <button type="button" id="undoToastBtn" class="undo-btn">Undo</button>
   </div>
 
-  <!-- FLOATING TIGOM CHAT FAB -->
-  <a href="chat.html" class="fixed z-30 grid place-items-center rounded-full shadow-2xl transition lg:bottom-6"
-    style="bottom:5.5rem;right:1rem;height:4rem;width:4rem;background:white;outline:2px solid rgba(22,79,51,0.15);box-shadow:0 8px 32px rgba(16,43,29,0.2);text-decoration:none"
-    aria-label="Open Tigom AI chat">
-    <div class="relative h-10 w-10" aria-hidden="true">
-      <div class="absolute left-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>
-      <div class="absolute right-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>
-      <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
-        style="background:#2b8259;box-shadow:inset 0 -8px 0 rgba(22,79,51,0.26)"></div>
-      <div class="absolute left-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
-      <div class="absolute right-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
-      <div class="absolute left-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>
-      <div class="absolute right-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>
-      <div class="absolute bottom-[26%] left-1/2 rounded-b-full"
-        style="height:3px;width:1.5rem;border-bottom:3px solid #102b1d;transform:translateX(-50%)"></div>
-      <div class="absolute -bottom-1 left-1/2 flex h-5 w-6 items-center justify-center rounded-full text-[0.55rem] font-black"
-        style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
-    </div>
-  </a>
-
-
-  <script src="js/chrome.js"></script>
-  <script src="js/firebase-init.js"></script>
-  <script src="js/firebase-auth-service.js"></script>
-  <script src="js/firestore-service.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/motion.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/dark-mode.js"></script>
-  <script src="js/activity.js"></script>
-  <script src="js/chat-ai.js"></script>
-  <script src="js/mascot.js"></script>
-</body>
+<script defer src="js/chrome.js"></script>
+  <script defer src="js/firebase-init.js"></script>
+  <script defer src="js/firebase-auth-service.js"></script>
+  <script defer src="js/firestore-service.js"></script>
+  <script defer src="js/storage.js"></script>
+  <script defer src="js/motion.js"></script>
+  <script defer src="js/app.js"></script>
+  <script defer src="js/dark-mode.js"></script>
+  <script defer src="js/activity.js"></script>
+  <script defer src="js/chat-ai.js"></script>
+  </body>
 </html>
+

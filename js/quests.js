@@ -79,13 +79,49 @@
     "daily-categories":   { type: "category_count_today", target: 3 }
   };
 
+  function getDayKeyManila(value) {
+    if (window.StorageAPI && window.StorageAPI.getManilaDayKey) {
+      return window.StorageAPI.getManilaDayKey(value || new Date());
+    }
+    var d = new Date(value || new Date());
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  function getMondayDateManila(value) {
+    if (window.StorageAPI && window.StorageAPI.getManilaMondayKey) {
+      return new Date(window.StorageAPI.getManilaMondayKey(value || new Date()) + "T00:00:00+08:00");
+    }
+    var now = new Date(value || new Date());
+    var day = now.getDay();
+    var diff = (day === 0) ? -6 : 1 - day;
+    var monday = new Date(now);
+    monday.setDate(now.getDate() + diff);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  }
+
+  function getHourManila(value) {
+    var d = new Date(value);
+    if (isNaN(d.getTime())) { return 0; }
+    try {
+      var hourToken = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Manila",
+        hour: "2-digit",
+        hour12: false
+      }).format(d);
+      return Number(hourToken) || 0;
+    } catch (_) {
+      return d.getHours();
+    }
+  }
+
   function trackDailyQuest(def) {
     if (!window.StorageAPI || !window.StorageAPI.setCurrentQuest) { return; }
     var cond = DAILY_QUEST_STORAGE_CONDITIONS[def.id] || { type: "log_count_today", target: 1 };
     var now = new Date();
     // Use 23:59:59.999 (end-of-day) rather than the following midnight so quest
     // completion that fires just before midnight doesn't race against expiry.
-    var endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    var endOfDay = new Date(getDayKeyManila(now) + "T23:59:59.999+08:00");
     var questObj = {
       id: def.id, type: "daily", title: def.title, description: def.description,
       icon: def.icon, xpReward: def.xpReward, sentimosReward: def.sentimosReward || 10,
@@ -131,15 +167,8 @@
   // ── Helpers ────────────────────────────────────────────────
 
   function getNextMondayDate() {
-    var now = new Date();
-    var day = now.getDay();
-    var daysUntil;
-    if (day === 0) { daysUntil = 1; }
-    else if (day === 1) { daysUntil = 7; }
-    else { daysUntil = 8 - day; }
-    var next = new Date(now);
-    next.setDate(now.getDate() + daysUntil);
-    next.setHours(0, 0, 0, 0);
+    var next = getMondayDateManila(new Date());
+    next.setDate(next.getDate() + 7);
     return next;
   }
 
@@ -180,11 +209,8 @@
     var pill = document.getElementById("weeklyResetPill");
     if (!pill) { return; }
     var now = new Date();
-    var day = now.getDay();
-    var daysUntilMon;
-    if (day === 0) { daysUntilMon = 1; }
-    else if (day === 1) { daysUntilMon = 7; }
-    else { daysUntilMon = 8 - day; }
+    var nextMon = getNextMondayDate();
+    var daysUntilMon = Math.max(1, Math.ceil((nextMon.getTime() - now.getTime()) / 86400000));
     if (daysUntilMon === 1) {
       pill.textContent = "Resets tomorrow";
     } else {
@@ -205,19 +231,11 @@
     var activeQuest  = window.StorageAPI.getCurrentQuest ? window.StorageAPI.getCurrentQuest() : null;
     var trackedDailyId = (activeQuest && activeQuest.type === "daily") ? activeQuest.id : null;
 
-    var now      = new Date();
-    var today    = new Date(now); today.setHours(0, 0, 0, 0);
-    var tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    var todayKey = getDayKeyManila(new Date());
 
     var todayExp = expenses.filter(function (e) {
-      var d = new Date(e.timestamp);
-      return d >= today && d < tomorrow;
+      return e.timestamp && getDayKeyManila(e.timestamp) === todayKey;
     });
-
-    // Forward-looking cutoff: only count expenses logged after the quest was assigned
-    var assignedAtCutoff = (activeQuest && activeQuest.type === "daily" && activeQuest.assignedAt)
-      ? new Date(activeQuest.assignedAt)
-      : today;
 
     var allDone = DAILY_QUEST_DEFS.every(function (def) {
       var isCl = window.StorageAPI.isQuestClaimed ? window.StorageAPI.isQuestClaimed(def.id, "daily") : false;
@@ -293,12 +311,9 @@
           target   = storedCond ? storedCond.target : 3;
           progress = target;
         } else {
-          // Forward-looking: only expenses logged at or after assignedAt count
-          var trackedExp = expenses.filter(function (e) {
-            var d = new Date(e.timestamp);
-            return d >= assignedAtCutoff && d < tomorrow;
-          });
-          result        = def.compute(trackedExp, weeklyBudget);
+          // Daily quests count all logs for today (midnight to now), regardless of when
+          // the quest was pinned. This must match storage.js updateDailyQuestProgressInternal.
+          result        = def.compute(todayExp, weeklyBudget);
           isUnavailable = Boolean(result.unavailable);
           progress      = result.progress;
           target        = result.target;
@@ -499,13 +514,7 @@
   // ── Compute progress for ALL weekly quests from expense history ─────────────
 
   function getWeekStart() {
-    var now  = new Date();
-    var day  = now.getDay(); // 0=Sun 1=Mon
-    var diff = (day === 0) ? -6 : 1 - day;
-    var mon  = new Date(now);
-    mon.setDate(now.getDate() + diff);
-    mon.setHours(0, 0, 0, 0);
-    return mon;
+    return getMondayDateManila(new Date());
   }
 
   // ── Weekly quest pool (5 per week, rotates every Monday) ─────────────────────
@@ -523,7 +532,6 @@
 
   function computeAllQuestProgress(expenses, weeklyBudget, assignedAt) {
     var weekStart = getWeekStart();
-    var now       = new Date();
 
     // Use assignedAt as the cutoff if it is more recent than weekStart (forward-looking)
     var cutoff = weekStart;
@@ -540,8 +548,7 @@
     // Build per-day buckets
     var byDay = {};
     weekExp.forEach(function (e) {
-      var d = new Date(e.timestamp);
-      var key = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
+      var key = getDayKeyManila(e.timestamp);
       if (!byDay[key]) { byDay[key] = []; }
       byDay[key].push(e);
     });
@@ -564,7 +571,7 @@
       if (dailyLimit > 0 && daySpent <= dailyLimit)  { underBudgetDays++; }
       if (dailyLimit > 0 && daySpent <= dailyLimit)  { noOverspendDays++; }
       dayExps.forEach(function (e) {
-        var h = new Date(e.timestamp).getHours();
+        var h = getHourManila(e.timestamp);
         if (h < 12)  { beforeNoonDays[key] = true; }
         if (h >= 21) { after9pmDays[key]   = true; }
         if (e.category) { categories[e.category] = true; }
@@ -795,19 +802,17 @@
 
     var computedConds;
     if (isDaily) {
-      // Forward-looking: recompute daily progress from assignedAt cutoff
+      // Daily quests count from today's start, not from assignedAt.
       var dailyDef = null;
       for (var di = 0; di < DAILY_QUEST_DEFS.length; di++) {
         if (DAILY_QUEST_DEFS[di].id === activeQuest.id) { dailyDef = DAILY_QUEST_DEFS[di]; break; }
       }
-      if (dailyDef && activeQuest.assignedAt) {
-        var assignedAtDate = new Date(activeQuest.assignedAt);
-        var todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
-        var fwdExp = expenses.filter(function (e) {
-          var d = new Date(e.timestamp);
-          return d >= assignedAtDate && d <= todayEnd;
+      if (dailyDef) {
+        var todayKeySpotlight = getDayKeyManila(new Date());
+        var todayExpSpotlight = expenses.filter(function (e) {
+          return e.timestamp && getDayKeyManila(e.timestamp) === todayKeySpotlight;
         });
-        var dRes = dailyDef.compute(fwdExp, weeklyBudget);
+        var dRes = dailyDef.compute(todayExpSpotlight, weeklyBudget);
         computedConds = [{ type: (activeQuest.conditions[0] || {}).type || "log_count_today", target: dRes.target, progress: dRes.progress }];
       } else {
         computedConds = (activeQuest.conditions || []).map(function (c) {
@@ -1077,8 +1082,8 @@
       var freshSum = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
       var wb = freshSum.weeklyBudget || 0;
       var now = new Date();
-      var todayKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
-      var todayE = freshExp.filter(function (e) { return e.timestamp && e.timestamp.slice(0, 10) === todayKey; });
+      var todayKey = getDayKeyManila(now);
+      var todayE = freshExp.filter(function (e) { return e.timestamp && getDayKeyManila(e.timestamp) === todayKey; });
 
       // Search daily quests first
       var nextQ = null;
@@ -1316,12 +1321,9 @@
     var activeId     = activeQuest ? activeQuest.id : null;
 
     // Build today's expenses for daily progress
-    var todayKey = (function () {
-      var n = new Date();
-      return n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0");
-    }());
+    var todayKey = getDayKeyManila(new Date());
     var todayExp = freshExp.filter(function (e) {
-      return e.timestamp && e.timestamp.slice(0, 10) === todayKey;
+      return e.timestamp && getDayKeyManila(e.timestamp) === todayKey;
     });
 
     // Build overlay + card
@@ -1528,11 +1530,11 @@
   function dispatchQuestBadge() {
     if (!window.StorageAPI || !window.StorageAPI.isQuestClaimed) { return; }
     var now = new Date();
-    var todayKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+    var todayKey = getDayKeyManila(now);
     var freshExp = window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
     var freshSummary = window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
     var wb = freshSummary.weeklyBudget || 0;
-    var todayE = freshExp.filter(function (e) { return e.timestamp && e.timestamp.slice(0, 10) === todayKey; });
+    var todayE = freshExp.filter(function (e) { return e.timestamp && getDayKeyManila(e.timestamp) === todayKey; });
     var count = 0;
 
     DAILY_QUEST_DEFS.forEach(function (def) {

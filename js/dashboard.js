@@ -4,6 +4,8 @@
   var pendingDelete     = null; // { id, data }
   var pendingDeleteTimer = null;
   var UNDO_DELAY_MS     = 4000;
+  var friendActivityUnsubscribe = null;
+  var friendActivityTopKey = "";
 
   // ── expense log rate limiter (localStorage) ──────────────
   var EXP_RL_KEY       = "sc_exp_rl";
@@ -23,6 +25,15 @@
     data.timestamps.push(now);
     try { localStorage.setItem(EXP_RL_KEY, JSON.stringify(data)); } catch (_) {}
     return { allowed: true };
+  }
+
+  function maybeTriggerNotificationPrompt() {
+    if (!window.NotificationsAPI || !window.NotificationsAPI.maybePromptAfterFirstExpense) {
+      return;
+    }
+    window.NotificationsAPI.maybePromptAfterFirstExpense().catch(function () {
+      // Keep expense logging resilient even if notification registration fails.
+    });
   }
 
   // ── helpers ─────────────────────────────────────────────
@@ -58,6 +69,106 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function ensureFriendActivityAnimationStyle() {
+    if (document.getElementById("friendActivityAnimStyle")) { return; }
+    var style = document.createElement("style");
+    style.id = "friendActivityAnimStyle";
+    style.textContent = "@keyframes scFriendPop{0%{opacity:.35;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)}}.sc-friend-activity-new{animation:scFriendPop .35s ease both}";
+    document.head.appendChild(style);
+  }
+
+  function getFriendActivityEntryKey(entry) {
+    if (!entry) { return ""; }
+    var author = String(entry.authorUid || entry.authorId || "");
+    var ts = String(entry.timestamp || "");
+    var msg = String(entry.message || "");
+    return author + "|" + ts + "|" + msg;
+  }
+
+  function renderFriendActivityRows(myUid, entries, isLive) {
+    var list = document.getElementById("friendActivityList");
+    var empty = document.getElementById("friendActivityEmpty");
+    if (!list) { return; }
+
+    var rows = (entries || []).filter(function (entry) {
+      var author = String(entry.authorUid || entry.authorId || "");
+      return !!author && author !== String(myUid || "");
+    }).slice(0, 3);
+
+    if (rows.length === 0) {
+      list.innerHTML = "";
+      if (empty) { empty.style.display = ""; }
+      friendActivityTopKey = "";
+      return;
+    }
+
+    if (empty) { empty.style.display = "none"; }
+    ensureFriendActivityAnimationStyle();
+
+    var nextTopKey = getFriendActivityEntryKey(rows[0]);
+    var animateTop = !!(isLive && friendActivityTopKey && nextTopKey && nextTopKey !== friendActivityTopKey);
+    friendActivityTopKey = nextTopKey;
+
+    list.innerHTML = rows.map(function (entry, idx) {
+      var emoji = escapeHtml(entry.emoji || "📊");
+      var author = escapeHtml(entry.authorName || "Friend");
+      var message = escapeHtml((entry.message || "Shared an update").slice(0, 96));
+      var timestamp = escapeHtml(formatRelativeTime(entry.timestamp || new Date().toISOString()));
+      var rowClass = (animateTop && idx === 0) ? " sc-friend-activity-new" : "";
+      return (
+        '<li class="rounded-2xl px-3 py-2.5' + rowClass + '" style="background:#faf8f1;outline:1px solid #ece6d8">' +
+          '<div class="flex items-start gap-2.5">' +
+            '<span class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm" style="background:#ecfdf5;color:#164f33">' + emoji + '</span>' +
+            '<div class="min-w-0 flex-1">' +
+              '<p class="truncate text-sm font-extrabold" style="color:#102b1d">' + author + '</p>' +
+              '<p class="text-xs font-semibold" style="color:#617063">' + message + '</p>' +
+            '</div>' +
+            '<span class="shrink-0 text-[0.7rem] font-black" style="color:#8b9490">' + timestamp + '</span>' +
+          '</div>' +
+        '</li>'
+      );
+    }).join("");
+  }
+
+  async function refreshFriendActivityWidget(myUid, isLive) {
+    if (!window.FirestoreService || !window.FirestoreService.getMyFeedEntries || !myUid) {
+      renderFriendActivityRows(myUid, [], isLive);
+      return;
+    }
+    var entries = [];
+    try {
+      entries = await window.FirestoreService.getMyFeedEntries(myUid, 20);
+    } catch (_) {
+      entries = [];
+    }
+    renderFriendActivityRows(myUid, entries || [], isLive);
+  }
+
+  function initFriendActivityWidget() {
+    var list = document.getElementById("friendActivityList");
+    if (!list) { return; }
+
+    if (friendActivityUnsubscribe) {
+      try { friendActivityUnsubscribe(); } catch (_) {}
+      friendActivityUnsubscribe = null;
+    }
+
+    var session = window.StorageAPI && window.StorageAPI.getSession ? window.StorageAPI.getSession() : null;
+    var myUid = session && session.userId ? session.userId : "";
+    if (!myUid) {
+      renderFriendActivityRows("", [], false);
+      return;
+    }
+
+    refreshFriendActivityWidget(myUid, false);
+
+    if (window.FirestoreService && window.FirestoreService.onFriendFeedChange) {
+      friendActivityUnsubscribe = window.FirestoreService.onFriendFeedChange(myUid, function (entries) {
+        renderFriendActivityRows(myUid, entries || [], true);
+      }, 20);
+    }
   }
 
   // ── greeting ─────────────────────────────────────────────
@@ -346,7 +457,8 @@
         var d = new Date(exp.timestamp);
         return d >= weekStart && d < weekEnd;
       });
-      avgDaily = weekExpenses.length > 0 ? spent / 7 : 0;
+      var elapsedDays = Math.max(1, (now.getDay() + 6) % 7 + 1); // Mon=1 … Sun=7
+      avgDaily = weekExpenses.length > 0 ? spent / elapsedDays : 0;
     }
 
     var spentEl     = document.getElementById("dashQuickSpent");
@@ -448,6 +560,20 @@
         });
         suggestRow.appendChild(chip);
       });
+
+      // "Add shortcut" tile — always visible even for new users
+      var addWrapEmpty = document.createElement("div");
+      addWrapEmpty.className = "quest-tile-wrap";
+      var addBtnEmpty = document.createElement("button");
+      addBtnEmpty.type = "button";
+      addBtnEmpty.className = "quest-tile-btn quest-tile-btn--add-new";
+      addBtnEmpty.setAttribute("aria-label", "Add new shortcut");
+      addBtnEmpty.innerHTML =
+        '<span class="quest-tile-emoji" aria-hidden="true" style="font-size:1.4rem;color:var(--brand-700)">+</span>' +
+        '<span class="quest-tile-label" style="color:var(--brand-700)">Add</span>';
+      addBtnEmpty.addEventListener("click", function () { openQaModal(null); });
+      addWrapEmpty.appendChild(addBtnEmpty);
+      grid.appendChild(addWrapEmpty);
       return;
     }
 
@@ -516,13 +642,7 @@
           window.GamificationUI.maybeNotifyNewAchievements(result.newlyUnlockableAchievements || []);
         }
 
-        updateBudgetCard();
-        renderXpWidget();
-        renderTodayMission();
-        renderBadgeTeaser();
-        renderRecentExpenses();
-
-        if (window.SpendingChart) { window.SpendingChart.update(); }
+        maybeTriggerNotificationPrompt();
 
         button.classList.add("qa-pulse");
         setTimeout(function () { button.classList.remove("qa-pulse"); }, 500);
@@ -1315,18 +1435,11 @@
           window.GamificationUI.maybeNotifyNewAchievements(result.newlyUnlockableAchievements || []);
         }
 
+        maybeTriggerNotificationPrompt();
+
         modal.classList.add("hidden");
 
-        updateBudgetCard();
-        renderXpWidget();
-        renderTodayMission();
-        renderBadgeTeaser();
-        renderRecentExpenses();
-        updateLogOnceXpBadge();
-        renderQuickAddButtons();
-
         if (window.SpendingChart) { window.SpendingChart.update(); }
-        window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
       });
     }
   }
@@ -1519,9 +1632,9 @@
       if (progressWrap) { progressWrap.classList.add("hidden"); }
       if (claimBtn) {
         claimBtn.classList.remove("hidden");
-        claimBtn.onclick = function () {
+        claimBtn.onclick = async function () {
           if (window.StorageAPI.claimAchievement) {
-            window.StorageAPI.claimAchievement(target.id);
+            await window.StorageAPI.claimAchievement(target.id);
           }
           renderBadgeTeaser();
         };
@@ -1785,7 +1898,7 @@
     }
 
     // Sprint 3: inject week map and quest row into the mission card
-    renderWeekMap(card);
+    renderWeekMapIntoCard(card);
     renderQuestRow(card);
   }
 
@@ -1796,7 +1909,70 @@
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
 
-  function renderWeekMap(container) {
+  function getDashboardDayKey(input) {
+    if (window.StorageAPI && window.StorageAPI.getManilaDayKey) {
+      return window.StorageAPI.getManilaDayKey(input || new Date());
+    }
+    return getLocalDateKeyDash(input);
+  }
+
+  function computeDailyQuestConditionsForDashboard(quest) {
+    if (!quest || !Array.isArray(quest.conditions) || !quest.conditions.length) { return []; }
+
+    var conditions = quest.conditions.map(function (c) {
+      return {
+        type: c.type,
+        target: Number(c.target) || 1,
+        progress: Number(c.progress) || 0
+      };
+    });
+
+    var expenses = window.StorageAPI && window.StorageAPI.getExpenses ? window.StorageAPI.getExpenses() : [];
+    var summary = window.StorageAPI && window.StorageAPI.getBudgetSummary ? window.StorageAPI.getBudgetSummary() : {};
+    var weeklyBudget = Number(summary.weeklyBudget) || 0;
+    var dailyBudget = weeklyBudget > 0 ? (weeklyBudget / 7) : 0;
+    var todayKey = getDashboardDayKey(new Date());
+
+    var todayExpenses = expenses.filter(function (e) {
+      return e && e.timestamp && getDashboardDayKey(e.timestamp) === todayKey;
+    });
+
+    conditions.forEach(function (cond) {
+      if (!cond || !cond.type) { return; }
+      switch (cond.type) {
+        case "log_count_today":
+          cond.progress = Math.min(cond.target, todayExpenses.length);
+          break;
+        case "category_count_today": {
+          var cats = {};
+          todayExpenses.forEach(function (e) { cats[e.category || "others"] = true; });
+          cond.progress = Math.min(cond.target, Object.keys(cats).length);
+          break;
+        }
+        case "under_daily_budget": {
+          if (dailyBudget <= 0) {
+            cond.progress = 0;
+            break;
+          }
+          var spentToday = todayExpenses.reduce(function (sum, e) {
+            return sum + (Number(e.amount) || 0);
+          }, 0);
+          cond.progress = spentToday <= dailyBudget ? Math.min(cond.target, 1) : 0;
+          break;
+        }
+        default:
+          break;
+      }
+    });
+
+    if (quest.completedAt) {
+      conditions.forEach(function (cond) { cond.progress = cond.target; });
+    }
+
+    return conditions;
+  }
+
+  function renderWeekMapIntoCard(container) {
     // Remove previous map if re-rendering
     var existing = container.querySelector(".week-map");
     if (existing) { existing.remove(); }
@@ -2006,16 +2182,22 @@
       return;
     }
 
+    var displayQuest = quest;
+    if (quest.type === "daily") {
+      displayQuest = Object.assign({}, quest, {
+        conditions: computeDailyQuestConditionsForDashboard(quest)
+      });
+    }
+
     // Section header with countdown timer
     var now = new Date();
-    var isDaily = quest.type === "daily";
-    var daysLeft = Math.max(0, Math.ceil((new Date(quest.expiresAt) - now) / 86400000));
-    var isDone = quest.completedAt !== null;
+    var isDaily = displayQuest.type === "daily";
+    var daysLeft = Math.max(0, Math.ceil((new Date(displayQuest.expiresAt) - now) / 86400000));
     var timerText;
-    if (isDone) {
+    if (displayQuest.completedAt) {
       timerText = "Complete! \u2713";
     } else if (isDaily) {
-      var msLeft = new Date(quest.expiresAt).getTime() - now.getTime();
+      var msLeft = new Date(displayQuest.expiresAt).getTime() - now.getTime();
       if (msLeft <= 0) {
         timerText = "\u23F1 Expires soon";
       } else {
@@ -2035,7 +2217,8 @@
     container.appendChild(sectionHdr);
 
     // Primary condition for display
-    var primaryCond = (quest.conditions && quest.conditions[0]) ? quest.conditions[0] : { progress: 0, target: 1, type: "log_days" };
+    var primaryCond = (displayQuest.conditions && displayQuest.conditions[0]) ? displayQuest.conditions[0] : { progress: 0, target: 1, type: "log_days" };
+    var isDone = !!displayQuest.completedAt || (primaryCond.progress >= primaryCond.target);
     var pct = isDone ? 100 : Math.min(100, Math.round((primaryCond.progress / primaryCond.target) * 100));
     var primaryType = primaryCond ? primaryCond.type : "log_days";
     var iconClass = iconClassMap[primaryType] || "quest-icon-circle--bolt";
@@ -2046,10 +2229,10 @@
     rowEl.innerHTML =
       "<div class=\"quest-row__header\">" +
         "<div class=\"quest-row__title-group\">" +
-          "<div class=\"quest-icon-circle " + iconClass + "\" aria-hidden=\"true\">" + (quest.icon || "\u26A1") + "</div>" +
-          "<span class=\"quest-row__title\">" + quest.title + "</span>" +
+          "<div class=\"quest-icon-circle " + iconClass + "\" aria-hidden=\"true\">" + (displayQuest.icon || "\u26A1") + "</div>" +
+          "<span class=\"quest-row__title\">" + displayQuest.title + "</span>" +
         "</div>" +
-        "<span class=\"quest-card__reward" + (isDone ? " quest-card__reward--done" : "") + "\">\u20B5" + quest.sentimosReward + "</span>" +
+        "<span class=\"quest-card__reward" + (isDone ? " quest-card__reward--done" : "") + "\">\u20B5" + displayQuest.sentimosReward + "</span>" +
       "</div>" +
       "<div class=\"quest-bar-wrap\" role=\"button\" tabindex=\"0\" aria-label=\"View quest details\">" +
         "<div class=\"quest-bar-fill" + (isDone ? " quest-bar-fill--done" : "") + "\" style=\"width:" + pct + "%\"></div>" +
@@ -2068,8 +2251,8 @@
     // Tap to open detail sheet
     var barEl = rowEl.querySelector(".quest-bar-wrap");
     if (barEl) {
-      barEl.addEventListener("click", function () { openQuestDetailSheet(quest); });
-      barEl.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { openQuestDetailSheet(quest); } });
+      barEl.addEventListener("click", function () { openQuestDetailSheet(displayQuest); });
+      barEl.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { openQuestDetailSheet(displayQuest); } });
     }
   }
 
@@ -2564,11 +2747,6 @@
       amtInput.value  = "";
       if (noteInput) { noteInput.value = ""; }
       if (dateInput) { dateInput.value = ""; }
-      updateBudgetCard();
-      updateQuickSummaryStats();
-      renderXpWidget();
-      renderRecentExpenses();
-      renderDashboardStats();
       if (window.SpendingChart) { window.SpendingChart.update(); }
 
       // brief visual confirmation on the button
@@ -3188,24 +3366,31 @@
       return;
     }
 
+    var displayQuest = activeQuest;
+    if (activeQuest.type === "daily") {
+      displayQuest = Object.assign({}, activeQuest, {
+        conditions: computeDailyQuestConditionsForDashboard(activeQuest)
+      });
+    }
+
     // Restore defaults that may have been set by the empty state
     if (titleEl) { titleEl.style.color = "#102b1d"; }
     if (rewardEl) { rewardEl.style.display = ""; }
 
-    if (titleEl) { titleEl.textContent = (activeQuest.icon ? activeQuest.icon + " " : "") + (activeQuest.title || "Active Quest"); }
-    if (descEl) { descEl.textContent = activeQuest.description || ""; }
-    var reward = activeQuest.xpReward || activeQuest.reward || 50;
+    if (titleEl) { titleEl.textContent = (displayQuest.icon ? displayQuest.icon + " " : "") + (displayQuest.title || "Active Quest"); }
+    if (descEl) { descEl.textContent = displayQuest.description || ""; }
+    var reward = displayQuest.xpReward || displayQuest.reward || 50;
     if (rewardEl) { rewardEl.textContent = "\u26A1 +" + reward + " XP"; }
 
-    var primaryCond = (activeQuest.conditions && activeQuest.conditions[0]) ? activeQuest.conditions[0] : null;
-    var current = primaryCond ? (primaryCond.progress || 0) : (activeQuest.current || activeQuest.progress || 0);
-    var target  = primaryCond ? (primaryCond.target || 1)   : (activeQuest.target || activeQuest.goal || 7);
+    var primaryCond = (displayQuest.conditions && displayQuest.conditions[0]) ? displayQuest.conditions[0] : null;
+    var current = primaryCond ? (primaryCond.progress || 0) : (displayQuest.current || displayQuest.progress || 0);
+    var target  = primaryCond ? (primaryCond.target || 1)   : (displayQuest.target || displayQuest.goal || 7);
     var unit    = primaryCond
       ? (primaryCond.type === "log_count" ? "expenses"
         : (primaryCond.type === "log_days" || primaryCond.type === "under_budget_days" || primaryCond.type === "no_overspend_days") ? "days" : "")
-      : (activeQuest.unit || "days");
+      : (displayQuest.unit || "days");
     var pct        = Math.min(Math.round((current / target) * 100), 100);
-    var isComplete = pct >= 100 || !!activeQuest.completedAt;
+    var isComplete = pct >= 100 || !!displayQuest.completedAt;
 
     if (barEl) { barEl.style.width = pct + "%"; barEl.style.background = isComplete ? "#2b8259" : "#EAB308"; }
     if (barLabelEl) {
@@ -3439,6 +3624,7 @@
       updateSidebarUser();
       renderOnboardingCard();
       renderSavingsGoals();
+      initFriendActivityWidget();
 
       initModal();
       initDashboardAccountMenu();
@@ -3455,6 +3641,7 @@
 
       window.addEventListener("sugbocents:synced", function () {
         updateBudgetCard();
+        updateQuickSummaryStats();
         renderXpWidget();
         renderTodayMission();
         renderBadgeTeaser();
@@ -3477,6 +3664,7 @@
 
       window.addEventListener("sugbocents:dataChanged", function () {
         updateBudgetCard();
+        updateQuickSummaryStats();
         renderXpWidget();
         renderTodayMission();
         renderBadgeTeaser();
@@ -3493,6 +3681,13 @@
         renderRecentExpenses();
         updateLogOnceXpBadge();
         renderQuickAddButtons();
+      });
+
+      window.addEventListener("pagehide", function () {
+        if (friendActivityUnsubscribe) {
+          try { friendActivityUnsubscribe(); } catch (_) {}
+          friendActivityUnsubscribe = null;
+        }
       });
 
       // Quest progress toast — fires after each expense that ticks quest progress

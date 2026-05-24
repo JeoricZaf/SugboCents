@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -11,7 +11,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;700;800&display=swap"
     rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/dark-mode.css" />
   <script>(function () { if (localStorage.getItem("darkModeEnabled") === "true") document.documentElement.classList.add("dark-mode"); }());</script>
@@ -123,6 +123,17 @@
               </span>
               <span style="color:#164f33">&#8594;</span>
             </a>
+            <a id="devToolsShortcut" href="dev-notifications.html"
+              class="hidden flex w-full items-center gap-4 rounded-[2rem] bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              style="outline:1px solid #ded7c6;text-decoration:none">
+              <span class="grid h-12 w-12 place-items-center rounded-2xl text-2xl flex-shrink-0"
+                style="background:#edf7ef;color:#164f33">&#x1F6E0;&#xFE0F;</span>
+              <span class="min-w-0 flex-1">
+                <span class="block font-display text-xl font-black" style="color:#102b1d">Dev Tools</span>
+                <span class="mt-1 block text-sm font-semibold" style="color:#617063">Notification testing panel</span>
+              </span>
+              <span style="color:#164f33">&#8594;</span>
+            </a>
           </section>
 
           <!-- GENTLE CONTROLS (Notification / streak preferences) -->
@@ -169,6 +180,83 @@
                 </span>
                 <input id="streakEnabled" type="checkbox" class="sr-only" checked />
               </label>
+
+              <p class="text-[0.72rem] font-extrabold uppercase tracking-[0.18em] pt-2" style="color:#6b756c">Notifications</p>
+
+              <label class="flex cursor-pointer items-center justify-between gap-4 rounded-3xl px-4 py-3"
+                style="background:#faf8f1">
+                <span class="text-sm font-extrabold" style="color:#102b1d">Push notifications</span>
+                <span id="notifPushTrack"
+                  class="relative inline-flex h-7 w-12 shrink-0 rounded-full p-1 transition-colors"
+                  style="background:#cbd5e1">
+                  <span id="notifPushThumb"
+                    class="block h-5 w-5 rounded-full bg-white transition-transform"
+                    style="transform:translateX(0)"></span>
+                </span>
+                <input id="notifPushToggle" type="checkbox" class="sr-only" />
+              </label>
+
+              <label class="flex cursor-pointer items-center justify-between gap-4 rounded-3xl px-4 py-3"
+                style="background:#faf8f1">
+                <span class="text-sm font-extrabold" style="color:#102b1d">Email reminders</span>
+                <span id="notifEmailTrack"
+                  class="relative inline-flex h-7 w-12 shrink-0 rounded-full p-1 transition-colors"
+                  style="background:#2b8259">
+                  <span id="notifEmailThumb"
+                    class="block h-5 w-5 rounded-full bg-white transition-transform"
+                    style="transform:translateX(1.25rem)"></span>
+                </span>
+                <input id="notifEmailToggle" type="checkbox" class="sr-only" checked />
+              </label>
+
+              <label class="flex cursor-pointer items-center justify-between gap-4 rounded-3xl px-4 py-3"
+                style="background:#faf8f1">
+                <span class="text-sm font-extrabold" style="color:#102b1d">Daily reminder</span>
+                <span id="notifDailyTrack"
+                  class="relative inline-flex h-7 w-12 shrink-0 rounded-full p-1 transition-colors"
+                  style="background:#cbd5e1">
+                  <span id="notifDailyThumb"
+                    class="block h-5 w-5 rounded-full bg-white transition-transform"
+                    style="transform:translateX(0)"></span>
+                </span>
+                <input id="notifDailyToggle" type="checkbox" class="sr-only" />
+              </label>
+
+              <div class="rounded-2xl px-4 py-3" style="background:#faf8f1">
+                <div class="grid grid-cols-2 gap-3">
+                  <label class="text-xs font-extrabold uppercase tracking-[0.15em]" style="color:#6b756c" for="notifDailyHour">Daily hour</label>
+                  <label class="text-xs font-extrabold uppercase tracking-[0.15em]" style="color:#6b756c" for="notifQuietStart">Quiet start</label>
+                </div>
+                <div class="mt-1.5 grid grid-cols-2 gap-3">
+                  <select id="notifDailyHour" class="w-full rounded-2xl px-3 py-2.5 text-sm font-semibold outline-none"
+                    style="border:1px solid #d8d1bd;background:white;color:#102b1d"></select>
+                  <select id="notifQuietStart" class="w-full rounded-2xl px-3 py-2.5 text-sm font-semibold outline-none"
+                    style="border:1px solid #d8d1bd;background:white;color:#102b1d"></select>
+                </div>
+                <div class="mt-2.5 grid grid-cols-2 gap-3">
+                  <label class="text-xs font-extrabold uppercase tracking-[0.15em]" style="color:#6b756c" for="notifSocialToggle">Social alerts</label>
+                  <label class="text-xs font-extrabold uppercase tracking-[0.15em]" style="color:#6b756c" for="notifQuietEnd">Quiet end</label>
+                </div>
+                <div class="mt-1.5 grid grid-cols-2 gap-3 items-center">
+                  <label class="flex cursor-pointer items-center justify-between gap-3 rounded-2xl px-3 py-2"
+                    style="border:1px solid #d8d1bd;background:white">
+                    <span id="notifSocialTrack"
+                      class="relative inline-flex h-7 w-12 shrink-0 rounded-full p-1 transition-colors"
+                      style="background:#2b8259">
+                      <span id="notifSocialThumb"
+                        class="block h-5 w-5 rounded-full bg-white transition-transform"
+                        style="transform:translateX(1.25rem)"></span>
+                    </span>
+                    <input id="notifSocialToggle" type="checkbox" class="sr-only" checked />
+                  </label>
+                  <select id="notifQuietEnd" class="w-full rounded-2xl px-3 py-2.5 text-sm font-semibold outline-none"
+                    style="border:1px solid #d8d1bd;background:white;color:#102b1d"></select>
+                </div>
+              </div>
+
+              <p id="notifIosNote" class="hidden text-xs font-semibold" style="color:#b45309">
+                iOS users: install SugboCents on your home screen (iOS 16.4+) to receive push notifications.
+              </p>
             </div>
             <p id="streakSaveMsg" class="mt-3 hidden text-sm font-semibold" style="color:#2b8259"></p>
           </section>
@@ -198,6 +286,23 @@
                     onfocus="this.style.borderColor='#164f33'" onblur="this.style.borderColor='#d8d1bd'" />
                   <p id="profileLastNameError" class="mt-1 text-xs font-semibold text-red-600 hidden"></p>
                 </div>
+              </div>
+              <div>
+                <div class="mb-1.5 flex items-center justify-between gap-2">
+                  <label class="block text-xs font-extrabold uppercase tracking-[0.15em]" style="color:#6b756c"
+                    for="profileDisplayName">Display name</label>
+                  <span id="displayNameCounter" class="text-[0.7rem] font-extrabold" style="color:#6b756c">0/24</span>
+                </div>
+                <input id="profileDisplayName" type="text" maxlength="24" placeholder="How friends will see you"
+                  class="w-full rounded-2xl px-4 py-3 text-sm font-semibold outline-none transition"
+                  style="border:1px solid #d8d1bd;background:#faf8f1;color:#102b1d"
+                  onfocus="this.style.borderColor='#164f33'" onblur="this.style.borderColor='#d8d1bd'" />
+                <p class="mt-1 text-xs font-semibold" style="color:#617063">Allowed: letters, numbers, spaces, . _ -</p>
+                <p id="profileDisplayNameError" class="mt-1 text-xs font-semibold text-red-600 hidden"></p>
+              </div>
+              <div>
+                <p class="mb-1.5 block text-xs font-extrabold uppercase tracking-[0.15em]" style="color:#6b756c">Avatar sticker</p>
+                <div id="avatarPickerGrid" class="grid grid-cols-4 gap-3"></div>
               </div>
               <button type="submit"
                 class="w-full rounded-2xl px-4 py-3 text-sm font-black text-white transition hover:opacity-90"
@@ -239,7 +344,7 @@
 
             <button id="sendReportBtn" type="button"
               class="mt-4 w-full rounded-2xl px-4 py-3 text-sm font-black text-white transition hover:opacity-90"
-              style="background:#164f33">📩 Send me this week's report</button>
+              style="background:#164f33">ðŸ“© Send me this week's report</button>
 
             <div class="mt-4 rounded-3xl px-4 py-3" style="background:#faf8f1">
               <label class="flex cursor-pointer items-center justify-between gap-4">
@@ -372,15 +477,17 @@
     </div>
   </div>
 
-  <script src="js/chrome.js"></script>
-  <script src="js/firebase-init.js"></script>
-  <script src="js/firebase-auth-service.js"></script>
-  <script src="js/firestore-service.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/motion.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/settings.js"></script>
-  <script src="js/dark-mode.js"></script>
-  <script src="js/chat-ai.js"></script>
+  <script defer src="js/chrome.js"></script>
+  <script defer src="js/firebase-init.js"></script>
+  <script defer src="js/firebase-auth-service.js"></script>
+  <script defer src="js/firestore-service.js"></script>
+  <script defer src="js/storage.js"></script>
+  <script defer src="js/motion.js"></script>
+  <script defer src="js/app.js"></script>
+  <script defer src="js/notifications.js"></script>
+  <script defer src="js/settings.js"></script>
+  <script defer src="js/dark-mode.js"></script>
+  <script defer src="js/chat-ai.js"></script>
 </body>
 </html>
+

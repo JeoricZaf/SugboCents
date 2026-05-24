@@ -5881,6 +5881,32 @@ body.edit-mode .qa-add-new-btn {
   transform: scale(0.96);
 }
 
+.sc-chat-fab[data-mood="stressed"] {
+  outline: 2px solid rgba(217, 72, 72, 0.45);
+}
+
+.sc-chat-fab[data-mood="happy"] {
+  outline: 2px solid rgba(43, 130, 89, 0.55);
+}
+
+.sc-chat-fab[data-unread]:not([data-unread=""])::after {
+  content: attr(data-unread);
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  display: grid;
+  place-items: center;
+  background: #d94848;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 900;
+  padding: 0 0.2rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+
 .sc-chat-shell {
   position: fixed;
   inset: 0;
@@ -8586,6 +8612,56 @@ html { background: #f7f3e8; }
   display: none;
 }
 
+/* ── Profile Nav Badge (friend request count) ───────────────── */
+.profile-nav-badge {
+  display: inline-flex;
+  min-width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  padding: 0 0.28rem;
+  margin-left: 0.35rem;
+  align-items: center;
+  justify-content: center;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.profile-nav-badge.is-hidden {
+  display: none;
+}
+
+/* Bottom nav: badge becomes an absolute red dot on the icon */
+nav .profile-nav-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  margin: 0;
+  min-width: 1rem;
+  height: 1rem;
+  font-size: 0.6rem;
+  box-shadow: 0 0 0 2px rgba(251, 248, 239, 0.94);
+}
+
+/* Friend-accept celebration bounce */
+@keyframes friend-accept-bounce {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.18); }
+  60%  { transform: scale(0.93); }
+  80%  { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+.friend-accept-bounce { animation: friend-accept-bounce 0.7s ease-in-out; }
+
+/* Sent-request count pill subtle pulse */
+@keyframes sent-count-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+.sent-count-pulse { animation: sent-count-pulse 2s ease-in-out infinite; }
+
 /* ── Global Page Skeleton / Shimmer ─────────────────────────────────────────
    .sk          — shimmer shimmer block (text/bar/number placeholders)
    .sk-circle   — circular variant (avatars, icon buttons)
@@ -8611,5 +8687,199 @@ html { background: #f7f3e8; }
   padding: 1.5rem;
   outline: 1px solid #ded7c6;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* ── Notifications: soft prompt + inbox drawer ────────────────────────── */
+.notif-soft-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.45);
+}
+.notif-soft-prompt-modal {
+  width: 100%;
+  max-width: 22rem;
+  background: #ffffff;
+  border-radius: var(--radius-lg, 1.1rem);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.28);
+  padding: 1.35rem;
+  text-align: center;
+}
+.notif-soft-prompt-icon {
+  font-size: 2rem;
+  margin-bottom: 0.4rem;
+}
+.notif-soft-prompt-modal h2 {
+  margin: 0;
+  color: var(--brand-900);
+  font-weight: 900;
+}
+.notif-soft-prompt-modal p {
+  margin: 0.6rem 0 0;
+  color: #55616d;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+.notif-soft-prompt-actions {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+.notif-soft-prompt-actions button {
+  border: none;
+  border-radius: 0.85rem;
+  padding: 0.6rem 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.notif-soft-prompt-deny {
+  background: #eef2f7;
+  color: #334155;
+}
+.notif-soft-prompt-allow {
+  background: var(--brand-700);
+  color: #fff;
+}
+
+.notif-bell-btn {
+  position: relative;
+  border: 1px solid #d8d1bd;
+  background: #ffffff;
+  color: #164f33;
+  border-radius: 0.9rem;
+  width: 2.7rem;
+  height: 2.7rem;
+  font-size: 1.05rem;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.notif-bell-btn.is-hidden {
+  display: none;
+}
+.notif-bell-badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  min-width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 0 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #f7f3e8;
+}
+.notif-bell-badge.is-hidden {
+  display: none;
+}
+
+.notif-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.44);
+  z-index: 1180;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+.notif-drawer-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.notif-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: min(24rem, 92vw);
+  background: #ffffff;
+  z-index: 1190;
+  transform: translateX(102%);
+  transition: transform 220ms ease;
+  box-shadow: -14px 0 34px rgba(15, 23, 42, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+.notif-drawer.is-open {
+  transform: translateX(0);
+}
+.notif-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e7ebf0;
+  padding: 1rem 1rem 0.85rem;
+}
+.notif-drawer__header h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: #164f33;
+}
+.notif-drawer__close {
+  border: none;
+  background: #eef2f7;
+  color: #334155;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.notif-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.85rem;
+}
+.notif-drawer__list {
+  display: grid;
+  gap: 0.55rem;
+}
+.notif-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 0.9rem;
+  padding: 0.75rem;
+  cursor: pointer;
+}
+.notif-item--unread {
+  border-color: #7cc89b;
+  background: #f2fbf5;
+}
+.notif-item__title {
+  color: #102b1d;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+.notif-item__body {
+  margin-top: 0.2rem;
+  color: #4b5563;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.notif-item__meta {
+  margin-top: 0.4rem;
+  color: #728197;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.notif-drawer__empty {
+  margin: 0.5rem 0;
+  color: #667085;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-align: center;
 }
 

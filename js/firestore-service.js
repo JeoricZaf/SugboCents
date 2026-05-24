@@ -37,6 +37,45 @@
     }
   }
 
+  async function seedUserDoc(userId, profile) {
+    if (!isFirestoreEnabled() || !userId) {
+      return { ok: false, error: "missing_user_id" };
+    }
+
+    try {
+      var db = window.FirebaseInit.getDb();
+      var firstName = String((profile && profile.firstName) || "").trim();
+      var lastName = String((profile && profile.lastName) || "").trim();
+      var email = String((profile && profile.email) || "").trim().toLowerCase();
+      var displayName = [firstName, lastName].filter(Boolean).join(" ") || "SugboCents User";
+      var avatar = String((profile && profile.avatar) || "").trim();
+
+      await db.collection("users").doc(userId).set({
+        firstName: firstName,
+        lastName: lastName,
+        displayName: displayName,
+        avatar: avatar || null,
+        email: email,
+        createdAt: new Date().toISOString(),
+        publicProfile: {
+          displayName: displayName,
+          displayNameLower: displayName.toLowerCase(),
+          avatar: avatar || null,
+          level: 1,
+          xp: 0,
+          currentStreak: 0,
+          weeklyXP: 0,
+          lastSyncedAt: new Date().toISOString()
+        }
+      }, { merge: true });
+
+      return { ok: true };
+    } catch (e) {
+      console.warn("[FirestoreService] seedUserDoc error:", e);
+      return { ok: false, error: e && e.message ? e.message : "seed_failed" };
+    }
+  }
+
   async function addExpenseDoc(userId, expense) {
     if (!isFirestoreEnabled()) {
       return;
@@ -55,25 +94,33 @@
     }
   }
 
-  async function getExpenseDocs(userId) {
+  async function getExpenseDocs(userId, limit) {
     if (!isFirestoreEnabled()) {
       return [];
     }
 
     try {
       var db = window.FirebaseInit.getDb();
-      var snapshot = await db
+      var query = db
         .collection("users")
         .doc(userId)
         .collection("expenses")
-        .orderBy("timestamp", "desc")
-        .get();
+        .orderBy("timestamp", "desc");
+      if (typeof limit === "number" && limit > 0) {
+        query = query.limit(limit);
+      }
+      var snapshot = await query.get();
       return snapshot.docs.map(function (doc) {
         return doc.data();
       });
     } catch (e) {
       console.warn("[FirestoreService] getExpenseDocs error:", e);
-      return [];
+      // CRITICAL: return null (not []) so syncFromFirestore's
+      // `if (Array.isArray(firestoreExpenses))` guard skips the overwrite.
+      // Returning [] here would silently wipe the user's local expenses
+      // any time Firestore is briefly unreachable (offline, rate limit,
+      // permission glitch). See audit Section "Reliability — C1".
+      return null;
     }
   }
 
@@ -157,8 +204,10 @@
       var db = window.FirebaseInit.getDb();
       var firstName = String(user.firstName || "").trim();
       var lastName  = String(user.lastName  || "").trim();
-      var lastInitial = lastName ? lastName.charAt(0).toUpperCase() + "." : "";
-      var displayName = [firstName, lastInitial].filter(Boolean).join(" ") || "Anonymous";
+      var fallbackDisplayName = [firstName, lastName].filter(Boolean).join(" ") || "SugboCents User";
+      var displayName = String(user.displayName || user.username || fallbackDisplayName).trim() || fallbackDisplayName;
+      var displayNameLower = displayName.toLowerCase();
+      var avatar = String(user.avatar || "").trim() || null;
 
       var now = new Date();
       var dayOfWeek = now.getDay();
@@ -190,7 +239,9 @@
       await db.collection("users").doc(userId).set({
         publicProfile: {
           displayName:      displayName,
+          displayNameLower: displayNameLower,
           firstName:        firstName,
+          avatar:           avatar,
           streak:           Number(user.streak || 0),
           questsCompleted:  Number(user.questsCompleted || 0),
           weeklyQuestsCompleted: Number(weeklyQuestsCompleted || 0),
@@ -210,7 +261,9 @@
       if (friendsSnap && !friendsSnap.empty) {
         var profilePayload = {
           displayName:     displayName,
+          displayNameLower: displayNameLower,
           firstName:       firstName,
+          avatar:          avatar,
           streak:          Number(user.streak || 0),
           questsCompleted: Number(user.questsCompleted || 0),
           weeklyQuestsCompleted: Number(weeklyQuestsCompleted || 0),
@@ -258,17 +311,158 @@
     return "sugbocents_friend_cache_" + String(userId || "");
   }
 
-  function normalizePublicProfile(profile, fallbackDisplayName) {
-    var safe = profile || {};
-    var displayName = String(safe.displayName || fallbackDisplayName || "Friend");
+  function getFriendProfilesCacheKey(userId) {
+    return "sugbocents_friend_profiles_" + String(userId || "");
+  }
+
+  function getCurrentWeekMondayKey() {
     var now = new Date();
     var dayOfWeek = now.getDay();
     var monday = new Date(now);
     monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
     monday.setHours(0, 0, 0, 0);
-    var currentWeekKey = monday.getFullYear() + "-" +
+    return monday.getFullYear() + "-" +
       String(monday.getMonth() + 1).padStart(2, "0") + "-" +
       String(monday.getDate()).padStart(2, "0");
+  }
+
+  function cacheFriendUids(userId, friends) {
+    if (!userId) { return; }
+    try {
+      var safeFriends = Array.isArray(friends) ? friends : [];
+      localStorage.setItem(getFriendCacheKey(userId), JSON.stringify(safeFriends.map(function (friend) {
+        return friend.uid;
+      })));
+      localStorage.setItem(getFriendProfilesCacheKey(userId), JSON.stringify(safeFriends.map(function (friend) {
+        return {
+          uid: friend.uid,
+          displayName: friend.displayName,
+          avatar: friend.avatar,
+          firstName: friend.firstName,
+          streak: Number(friend.streak || 0),
+          level: Number(friend.level || 1),
+          levelName: String(friend.levelName || "Rookie Saver"),
+          questsCompleted: Number(friend.questsCompleted || 0),
+          weeklyQuestsCompleted: Number(friend.weeklyQuestsCompleted || 0),
+          weeklyXP: Number(friend.weeklyXP || 0),
+          weekMondayKey: String(friend.weekMondayKey || ""),
+          lastSyncedAt: friend.lastSyncedAt ? String(friend.lastSyncedAt) : null
+        };
+      })));
+    } catch (_) {}
+  }
+
+  function getProfileHash(profile) {
+    var safe = profile || {};
+    return [
+      String(safe.displayName || ""),
+      String(safe.displayNameLower || ""),
+      String(safe.firstName || ""),
+      String(safe.avatar || ""),
+      String(safe.friendCode || ""),
+      Number(safe.streak || 0),
+      Number(safe.questsCompleted || 0),
+      Number(safe.weeklyQuestsCompleted || 0),
+      Number(safe.weeklyXP || 0),
+      String(safe.weekMondayKey || ""),
+      Number(safe.level || 1),
+      String(safe.levelName || "Rookie Saver")
+    ].join("|");
+  }
+
+  function profileNeedsRefresh(friend, currentWeekKey, nowMs) {
+    if (!friend) { return false; }
+    var lastSyncedAt = friend.lastSyncedAt ? Date.parse(friend.lastSyncedAt) : NaN;
+    var staleByTime = isNaN(lastSyncedAt) || (nowMs - lastSyncedAt > (15 * 60 * 1000));
+    var staleByWeek = String(friend.weekMondayKey || "") !== currentWeekKey;
+    return staleByTime || staleByWeek;
+  }
+
+  async function revalidateFriendProfilesInBackground(userId, friends) {
+    if (!isFirestoreEnabled() || !userId || !Array.isArray(friends) || friends.length === 0) {
+      return;
+    }
+
+    try {
+      var db = window.FirebaseInit.getDb();
+      if (!window.firebase || !window.firebase.firestore || !window.firebase.firestore.FieldPath) {
+        return;
+      }
+
+      var currentWeekKey = getCurrentWeekMondayKey();
+      var nowMs = Date.now();
+      var staleFriends = friends.filter(function (friend) {
+        return profileNeedsRefresh(friend, currentWeekKey, nowMs);
+      });
+      if (staleFriends.length === 0) { return; }
+
+      var byUid = {};
+      friends.forEach(function (friend) {
+        if (!friend || !friend.uid) { return; }
+        byUid[String(friend.uid)] = friend;
+      });
+
+      var changed = false;
+      var staleUids = staleFriends.map(function (friend) { return String(friend.uid); });
+      var chunkSize = 10;
+
+      for (var i = 0; i < staleUids.length; i += chunkSize) {
+        var chunk = staleUids.slice(i, i + chunkSize);
+        if (chunk.length === 0) { continue; }
+
+        var usersSnap = await db.collection("users")
+          .where(window.firebase.firestore.FieldPath.documentId(), "in", chunk)
+          .get();
+
+        if (!usersSnap || usersSnap.empty) { continue; }
+
+        var batch = db.batch();
+        var batchHasWrites = false;
+
+        usersSnap.forEach(function (doc) {
+          var uid = doc.id;
+          var data = doc.data() || {};
+          var fallbackDisplayName = data.displayName || (byUid[uid] && byUid[uid].displayName) || "Friend";
+          var normalizedRemote = normalizePublicProfile(data.publicProfile, fallbackDisplayName);
+          var existing = byUid[uid] || null;
+          var oldHash = getProfileHash(existing);
+          var newHash = getProfileHash(normalizedRemote);
+
+          if (oldHash !== newHash) {
+            byUid[uid] = Object.assign({ uid: uid }, normalizedRemote);
+            batch.set(
+              db.collection("friends").doc(userId).collection("friends").doc(uid),
+              { publicProfile: normalizedRemote },
+              { merge: true }
+            );
+            batchHasWrites = true;
+            changed = true;
+          }
+        });
+
+        if (batchHasWrites) {
+          await batch.commit();
+        }
+      }
+
+      if (changed) {
+        var updatedFriends = Object.keys(byUid).map(function (uid) {
+          return byUid[uid];
+        });
+        cacheFriendUids(userId, updatedFriends);
+        window.dispatchEvent(new CustomEvent("sugbocents:friendsRefreshed", {
+          detail: { userId: userId }
+        }));
+      }
+    } catch (e) {
+      console.warn("[FirestoreService] revalidateFriendProfilesInBackground error:", e);
+    }
+  }
+
+  function normalizePublicProfile(profile, fallbackDisplayName) {
+    var safe = profile || {};
+    var displayName = String(safe.displayName || fallbackDisplayName || "Friend");
+    var currentWeekKey = getCurrentWeekMondayKey();
 
     var profileWeekKey = String(safe.weekMondayKey || "");
     var weeklyXP = Number(safe.weeklyXP || 0);
@@ -281,7 +475,10 @@
 
     return {
       displayName: displayName,
+      displayNameLower: String(safe.displayNameLower || displayName.toLowerCase()),
       firstName: String(safe.firstName || ""),
+      avatar: String(safe.avatar || ""),
+      friendCode: safe.friendCode ? String(safe.friendCode) : "",
       streak: Number(safe.streak || 0),
       questsCompleted: Number(safe.questsCompleted || 0),
       weeklyQuestsCompleted: weeklyQuestsCompleted,
@@ -307,12 +504,48 @@
       var existing = await db.collection("friends").doc(targetUserId)
         .collection("friends").doc(myUserId).get();
       if (existing.exists) { return { ok: false, error: "Already friends" }; }
-      // Write request
-      await db.collection("friends").doc(targetUserId)
-        .collection("requests").doc(myUserId).set({
-          sentAt:      new Date().toISOString(),
-          displayName: String(myDisplayName || "")
-        });
+
+      // Duplicate outgoing request guard
+      var outgoingPending = await db.collection("friends").doc(targetUserId)
+        .collection("requests").doc(myUserId).get();
+      if (outgoingPending.exists) {
+        return {
+          ok: false,
+          error: "already_pending",
+          message: "You've already sent a request to this person."
+        };
+      }
+
+      // Reverse request guard (they already sent me one)
+      var incomingPending = await db.collection("friends").doc(myUserId)
+        .collection("requests").doc(targetUserId).get();
+      if (incomingPending.exists) {
+        return {
+          ok: false,
+          error: "incoming_pending",
+          message: "They've already sent you a request — accept it instead."
+        };
+      }
+
+      // Write request (atomic batch — also mirrors to sender's sentRequests)
+      var targetDisplayName = "";
+      try {
+        var targetData = targetDoc.data() || {};
+        var targetPP = targetData.publicProfile || {};
+        targetDisplayName = String(targetPP.displayName || targetData.firstName || "");
+      } catch (_) { /* fall through */ }
+
+      var sentAt = new Date().toISOString();
+      var batch = db.batch();
+      batch.set(
+        db.collection("friends").doc(targetUserId).collection("requests").doc(myUserId),
+        { sentAt: sentAt, displayName: String(myDisplayName || "") }
+      );
+      batch.set(
+        db.collection("users").doc(myUserId).collection("sentRequests").doc(targetUserId),
+        { sentAt: sentAt, targetDisplayName: targetDisplayName }
+      );
+      await batch.commit();
       return { ok: true };
     } catch (e) {
       console.error("[FirestoreService] sendFriendRequest error:", e);
@@ -352,6 +585,11 @@
         db.collection("friends").doc(myUserId).collection("requests").doc(requesterId)
       );
       await batch.commit();
+      // Best-effort cleanup of the sender's sentRequests mirror
+      try {
+        await db.collection("users").doc(requesterId)
+          .collection("sentRequests").doc(myUserId).delete();
+      } catch (_) { /* non-fatal */ }
       return { ok: true };
     } catch (e) {
       console.error("[FirestoreService] acceptFriendRequest error:", e);
@@ -365,6 +603,11 @@
       var db = window.FirebaseInit.getDb();
       await db.collection("friends").doc(myUserId)
         .collection("requests").doc(requesterId).delete();
+      // Best-effort cleanup of the sender's sentRequests mirror
+      try {
+        await db.collection("users").doc(requesterId)
+          .collection("sentRequests").doc(myUserId).delete();
+      } catch (_) { /* non-fatal */ }
       return { ok: true };
     } catch (e) {
       console.error("[FirestoreService] declineFriendRequest error:", e);
@@ -380,43 +623,31 @@
         .collection("friends").get();
       if (snapshot.empty) { return []; }
 
-      var results = [];
-      var friendDocs = snapshot.docs.map(function (doc) {
+      var results = snapshot.docs.map(function (doc) {
         var data = doc.data() || {};
+        var fallbackDisplayName = data.displayName || (data.publicProfile && data.publicProfile.displayName) || "Friend";
+        var normalized = normalizePublicProfile(data.publicProfile, fallbackDisplayName);
         return {
           uid: doc.id,
-          cachedDisplayName: data.displayName || (data.publicProfile && data.publicProfile.displayName) || "Friend"
+          displayName: normalized.displayName,
+          displayNameLower: normalized.displayNameLower,
+          firstName: normalized.firstName,
+          avatar: normalized.avatar,
+          friendCode: normalized.friendCode,
+          streak: normalized.streak,
+          questsCompleted: normalized.questsCompleted,
+          weeklyQuestsCompleted: normalized.weeklyQuestsCompleted,
+          weeklyXP: normalized.weeklyXP,
+          weekMondayKey: normalized.weekMondayKey,
+          level: normalized.level,
+          levelName: normalized.levelName,
+          lastSyncedAt: normalized.lastSyncedAt
         };
       });
 
-      // Ranking-critical fields must come from users/{uid}.publicProfile.
-      var profilePromises = friendDocs.map(function (friendDoc) {
-        return getPublicProfile(friendDoc.uid)
-          .then(function (profile) {
-            var normalized = normalizePublicProfile(profile, friendDoc.cachedDisplayName);
-            return Object.assign({ uid: friendDoc.uid }, normalized);
-          })
-          .catch(function () {
-            return Object.assign({ uid: friendDoc.uid }, normalizePublicProfile(null, friendDoc.cachedDisplayName));
-          });
-      });
+      cacheFriendUids(userId, results);
 
-      results = await Promise.all(profilePromises);
-
-      // Backfill cache using normalized live profiles.
-      results.forEach(function (friendProfile) {
-        db.collection("friends").doc(userId)
-          .collection("friends").doc(friendProfile.uid)
-          .set({ publicProfile: normalizePublicProfile(friendProfile, friendProfile.displayName) }, { merge: true })
-          .catch(function () {});
-      });
-
-      // Cache resolved friend UIDs in localStorage so addExpense can build
-      // the global_feed audience array without a round-trip read.
-      try {
-        var uids = results.map(function (f) { return f.uid; });
-        localStorage.setItem(getFriendCacheKey(userId), JSON.stringify(uids));
-      } catch (_) {}
+      revalidateFriendProfilesInBackground(userId, results).catch(function () {});
 
       return results;
     } catch (e) {
@@ -432,11 +663,204 @@
       var snapshot = await db.collection("friends").doc(userId)
         .collection("requests").orderBy("sentAt", "desc").get();
       return snapshot.docs.map(function (doc) {
-        return Object.assign({ uid: doc.id }, doc.data());
+        return Object.assign({ uid: doc.id, requesterId: doc.id }, doc.data());
       });
     } catch (e) {
       console.warn("[FirestoreService] getFriendRequests error:", e);
       return [];
+    }
+  }
+
+  function getCachedFriends(userId) {
+    if (!userId) { return []; }
+    try {
+      var raw = localStorage.getItem(getFriendProfilesCacheKey(userId));
+      if (!raw) { return []; }
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) { return []; }
+      return parsed.filter(function (item) {
+        return item && item.uid;
+      }).map(function (item) {
+        return {
+          uid: String(item.uid),
+          displayName: String(item.displayName || "Friend"),
+          avatar: String(item.avatar || ""),
+          firstName: String(item.firstName || ""),
+          streak: Number(item.streak || 0),
+          level: Number(item.level || 1),
+          levelName: String(item.levelName || "Rookie Saver"),
+          questsCompleted: Number(item.questsCompleted || 0),
+          weeklyQuestsCompleted: Number(item.weeklyQuestsCompleted || 0),
+          weeklyXP: Number(item.weeklyXP || 0),
+          weekMondayKey: String(item.weekMondayKey || ""),
+          lastSyncedAt: item.lastSyncedAt ? String(item.lastSyncedAt) : null
+        };
+      });
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function onPublicProfileChange(uid, callback) {
+    if (!isFirestoreEnabled() || !uid || typeof callback !== "function") {
+      return function () {};
+    }
+    try {
+      var db = window.FirebaseInit.getDb();
+      return db.collection("users").doc(uid).onSnapshot(function (doc) {
+        var data = doc && doc.exists ? doc.data() : null;
+        callback(data && data.publicProfile ? data.publicProfile : null);
+      }, function () {
+        callback(null);
+      });
+    } catch (_) {
+      return function () {};
+    }
+  }
+
+  function onFriendsChange(userId, callback) {
+    if (!isFirestoreEnabled() || !userId || typeof callback !== "function") {
+      return function () {};
+    }
+    try {
+      var db = window.FirebaseInit.getDb();
+      return db.collection("friends").doc(userId)
+        .collection("friends")
+        .onSnapshot(function (snapshot) {
+          var rows = (snapshot && snapshot.docs ? snapshot.docs : []).map(function (doc) {
+            return Object.assign({ uid: doc.id }, doc.data() || {});
+          });
+          callback(rows);
+        }, function () {
+          callback([]);
+        });
+    } catch (_) {
+      return function () {};
+    }
+  }
+
+  function onFriendRequestsChange(userId, callback) {
+    if (!isFirestoreEnabled() || !userId || typeof callback !== "function") {
+      return function () {};
+    }
+    try {
+      var db = window.FirebaseInit.getDb();
+      return db.collection("friends").doc(userId)
+        .collection("requests")
+        .orderBy("sentAt", "desc")
+        .onSnapshot(function (snapshot) {
+          var rows = (snapshot && snapshot.docs ? snapshot.docs : []).map(function (doc) {
+            return Object.assign({ uid: doc.id, requesterId: doc.id }, doc.data() || {});
+          });
+          callback(rows);
+        }, function () {
+          callback([]);
+        });
+    } catch (_) {
+      return function () {};
+    }
+  }
+
+  async function getSentRequests(myUid) {
+    if (!isFirestoreEnabled() || !myUid) { return []; }
+    try {
+      var db = window.FirebaseInit.getDb();
+      var snap = await db.collection("users").doc(myUid)
+        .collection("sentRequests").orderBy("sentAt", "desc").get();
+      var rows = [];
+      snap.forEach(function (doc) {
+        var data = doc.data() || {};
+        rows.push({
+          targetUid:         doc.id,
+          targetDisplayName: String(data.targetDisplayName || ""),
+          sentAt:            String(data.sentAt || "")
+        });
+      });
+      return rows;
+    } catch (e) {
+      console.warn("[FirestoreService] getSentRequests failed", e);
+      return [];
+    }
+  }
+
+  async function cancelSentRequest(myUid, targetUid) {
+    if (!isFirestoreEnabled() || !myUid || !targetUid) { return { ok: false, reason: "missing_args" }; }
+    try {
+      var db = window.FirebaseInit.getDb();
+      var batch = db.batch();
+      batch.delete(db.collection("friends").doc(targetUid).collection("requests").doc(myUid));
+      batch.delete(db.collection("users").doc(myUid).collection("sentRequests").doc(targetUid));
+      await batch.commit();
+      return { ok: true };
+    } catch (e) {
+      console.warn("[FirestoreService] cancelSentRequest failed", e);
+      return { ok: false, reason: "network" };
+    }
+  }
+
+  function onSentRequestsChange(myUid, callback) {
+    if (!isFirestoreEnabled() || !myUid || typeof callback !== "function") { return function () {}; }
+    try {
+      var db = window.FirebaseInit.getDb();
+      return db.collection("users").doc(myUid)
+        .collection("sentRequests").orderBy("sentAt", "desc")
+        .onSnapshot(function (snapshot) {
+          var rows = [];
+          snapshot.forEach(function (doc) {
+            var data = doc.data() || {};
+            rows.push({
+              targetUid:         doc.id,
+              targetDisplayName: String(data.targetDisplayName || ""),
+              sentAt:            String(data.sentAt || "")
+            });
+          });
+          callback(rows);
+        }, function (err) {
+          console.warn("[FirestoreService] onSentRequestsChange error", err);
+          callback([]);
+        });
+    } catch (e) {
+      console.warn("[FirestoreService] onSentRequestsChange failed", e);
+      return function () {};
+    }
+  }
+
+  function onFriendFeedChange(myUid, callback, limit) {
+    var fallbackUnsubscribe = null;
+    try {
+      var db = window.FirebaseInit.getDb();
+      var query = db.collection("global_feed")
+        .where("audience", "array-contains", myUid)
+        .orderBy("timestamp", "desc")
+        .limit(limit);
+
+      var unsubscribe = query.onSnapshot(function (snapshot) {
+        var rows = (snapshot && snapshot.docs ? snapshot.docs : []).map(function (doc) {
+          return Object.assign({ id: doc.id }, doc.data() || {});
+        });
+        callback(rows);
+      }, function () {
+        if (fallbackUnsubscribe) { return; }
+        fallbackUnsubscribe = db.collection("feed").doc(myUid)
+          .collection("entries")
+          .orderBy("timestamp", "desc")
+          .limit(limit)
+          .onSnapshot(function (snapshot) {
+            var rows = (snapshot && snapshot.docs ? snapshot.docs : []).map(function (doc) {
+              return Object.assign({ id: doc.id }, doc.data() || {});
+            });
+            callback(rows);
+          }, function () {
+            callback([]);
+          });
+      });
+
+      return function () {
+        try { if (typeof unsubscribe === "function") { unsubscribe(); } } catch (_) {}
+        try { if (typeof fallbackUnsubscribe === "function") { fallbackUnsubscribe(); } } catch (_) {}
+      };
+    } catch (_) {
+      return function () {};
     }
   }
 
@@ -468,6 +892,13 @@
       batch.delete(db.collection("friends").doc(myUserId).collection("friends").doc(friendId));
       batch.delete(db.collection("friends").doc(friendId).collection("friends").doc(myUserId));
       await batch.commit();
+
+      // Invalidate cached friend UID lists so feed audience refreshes immediately.
+      try {
+        localStorage.removeItem(getFriendCacheKey(myUserId));
+        localStorage.removeItem(getFriendCacheKey(friendId));
+      } catch (_) {}
+
       return { ok: true };
     } catch (e) {
       console.error("[FirestoreService] removeFriend error:", e);
@@ -669,9 +1100,125 @@
     }
   }
 
+  async function searchUsersByName(prefix, currentUserId) {
+    if (!isFirestoreEnabled()) { return []; }
+    var normalizedPrefix = String(prefix || "").trim().toLowerCase();
+    if (normalizedPrefix.length < 2) { return []; }
+
+    try {
+      var db = window.FirebaseInit.getDb();
+      var snapshot = await db.collection("users")
+        .where("publicProfile.displayNameLower", ">=", normalizedPrefix)
+        .where("publicProfile.displayNameLower", "<", normalizedPrefix + "\uf8ff")
+        .limit(10)
+        .get();
+
+      return snapshot.docs.map(function (doc) {
+        var data = doc.data() || {};
+        var profile = data.publicProfile || {};
+        var displayName = String(profile.displayName || data.displayName || "").trim();
+        return {
+          uid: doc.id,
+          displayName: displayName,
+          displayNameLower: String(profile.displayNameLower || displayName.toLowerCase()),
+          avatar: String(profile.avatar || data.avatar || ""),
+          friendCode: String(profile.friendCode || ""),
+          firstName: String(profile.firstName || data.firstName || "")
+        };
+      }).filter(function (row) {
+        if (!row || !row.uid || !row.displayName) { return false; }
+        if (currentUserId && row.uid === currentUserId) { return false; }
+        return true;
+      });
+    } catch (e) {
+      console.warn("[FirestoreService] searchUsersByName error:", e);
+      return [];
+    }
+  }
+
+  // ── Reset helper: nuke every social-graph artifact for `userId` ───────────
+  // Used by StorageAPI.resetCurrentUserData() so a reset truly behaves like a
+  // brand-new account: no friends, no pending requests (in either direction),
+  // and no orphaned friend-feed entries.
+  // Best-effort: each step is wrapped in its own try/catch so a single
+  // permission glitch on one subcollection does not abort the others.
+  async function purgeAllUserSocialData(userId) {
+    if (!isFirestoreEnabled() || !userId) { return; }
+    var db = window.FirebaseInit.getDb();
+
+    // Helper: delete every doc in a collection ref in batches of 400.
+    async function wipeCollection(ref) {
+      try {
+        var snap = await ref.get();
+        if (!snap || snap.empty) { return; }
+        var docs = snap.docs.slice();
+        while (docs.length > 0) {
+          var chunk = docs.splice(0, 400);
+          var batch = db.batch();
+          chunk.forEach(function (d) { batch.delete(d.ref); });
+          await batch.commit();
+        }
+      } catch (e) {
+        console.warn("[FirestoreService] purgeAllUserSocialData wipeCollection error:", e);
+      }
+    }
+
+    // 1. Friends: bidirectional. For every friend F, delete both
+    //    friends/{userId}/friends/{F} AND friends/{F}/friends/{userId}.
+    try {
+      var myFriendsRef = db.collection("friends").doc(userId).collection("friends");
+      var myFriendsSnap = await myFriendsRef.get().catch(function () { return null; });
+      if (myFriendsSnap && !myFriendsSnap.empty) {
+        var friendIds = myFriendsSnap.docs.map(function (d) { return d.id; });
+        // Delete reciprocal entries on each friend's side.
+        for (var i = 0; i < friendIds.length; i++) {
+          try {
+            await db.collection("friends").doc(friendIds[i])
+              .collection("friends").doc(userId).delete();
+          } catch (e) {
+            console.warn("[FirestoreService] reciprocal friend delete failed for", friendIds[i], e);
+          }
+        }
+        // Delete our side in one batch.
+        await wipeCollection(myFriendsRef);
+      }
+    } catch (e) {
+      console.warn("[FirestoreService] purgeAllUserSocialData friends error:", e);
+    }
+
+    // 2. Incoming requests: friends/{userId}/requests/*
+    await wipeCollection(db.collection("friends").doc(userId).collection("requests"));
+
+    // 3. Outgoing requests: users/{userId}/sentRequests/* AND the mirror on the
+    //    recipient side (friends/{recipient}/requests/{userId}).
+    try {
+      var sentRef = db.collection("users").doc(userId).collection("sentRequests");
+      var sentSnap = await sentRef.get().catch(function () { return null; });
+      if (sentSnap && !sentSnap.empty) {
+        var recipients = sentSnap.docs.map(function (d) { return d.id; });
+        for (var j = 0; j < recipients.length; j++) {
+          try {
+            await db.collection("friends").doc(recipients[j])
+              .collection("requests").doc(userId).delete();
+          } catch (e) {
+            console.warn("[FirestoreService] mirror request delete failed for", recipients[j], e);
+          }
+        }
+        await wipeCollection(sentRef);
+      }
+    } catch (e) {
+      console.warn("[FirestoreService] purgeAllUserSocialData sentRequests error:", e);
+    }
+
+    // 4. Friend feed: feed entries authored by this user (best-effort —
+    //    schema may live under users/{userId}/feed or a flat collection).
+    await wipeCollection(db.collection("users").doc(userId).collection("feed"));
+  }
+
   window.FirestoreService = {
     getUserDoc:              getUserDoc,
     setUserDoc:              setUserDoc,
+    seedUserDoc:             seedUserDoc,
     addExpenseDoc:           addExpenseDoc,
     getExpenseDocs:          getExpenseDocs,
     clearExpenseDocs:        clearExpenseDocs,
@@ -684,14 +1231,24 @@
     acceptFriendRequest:     acceptFriendRequest,
     declineFriendRequest:    declineFriendRequest,
     getFriends:              getFriends,
+    getCachedFriends:        getCachedFriends,
     getFriendRequests:       getFriendRequests,
+    onPublicProfileChange:   onPublicProfileChange,
+    onFriendsChange:         onFriendsChange,
+    onFriendRequestsChange:  onFriendRequestsChange,
+    getSentRequests:         getSentRequests,
+    cancelSentRequest:       cancelSentRequest,
+    onSentRequestsChange:    onSentRequestsChange,
+    onFriendFeedChange:      onFriendFeedChange,
     getFriendStatus:         getFriendStatus,
     removeFriend:            removeFriend,
     writeFeedEntry:          writeFeedEntry,
     writeGlobalFeedEntry:    writeGlobalFeedEntry,
     getMyFeedEntries:        getMyFeedEntries,
     getFriendsFeedEntries:   getFriendsFeedEntries,
+    searchUsersByName:       searchUsersByName,
     claimFriendCode:         claimFriendCode,
-    findUserByCode:          findUserByCode
+    findUserByCode:          findUserByCode,
+    purgeAllUserSocialData:  purgeAllUserSocialData
   };
 })();

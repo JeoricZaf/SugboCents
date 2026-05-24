@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;700;800&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/dark-mode.css" />
   <script>(function () { if (localStorage.getItem("darkModeEnabled") === "true") document.documentElement.classList.add("dark-mode"); }());</script>
@@ -67,7 +67,7 @@
         <!-- Profile content -->
         <div id="pageContent" class="mx-auto max-w-6xl space-y-6 px-4 py-5 sm:px-6 lg:px-8" style="display:none">
 
-          <!-- ── Profile Hero Card ───────────────────────── -->
+          <!-- â”€â”€ Profile Hero Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
           <section class="rounded-[2rem] bg-white p-6 shadow-sm sm:p-8" style="outline:1px solid #ded7c6">
             <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex items-center gap-5">
@@ -95,7 +95,7 @@
             </div>
           </section>
 
-          <!-- ── 4 Stat Tiles ───────────────────────────── -->
+          <!-- â”€â”€ 4 Stat Tiles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
           <section class="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Your statistics">
             <div class="rounded-[1.7rem] bg-white p-4 shadow-sm" style="outline:1px solid #ded7c6">
               <p class="text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">Current streak</p>
@@ -115,7 +115,7 @@
             </div>
           </section>
 
-          <!-- ── Badge Shelf + Week Map ─────────────────── -->
+          <!-- â”€â”€ Badge Shelf + Week Map â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
           <div class="grid gap-6 lg:grid-cols-[1fr_0.86fr]">
 
             <!-- Badge shelf -->
@@ -143,7 +143,7 @@
 
           </div>
 
-          <!-- ── Personal Records (Money Memories) ─────── -->
+          <!-- â”€â”€ Personal Records (Money Memories) â”€â”€â”€â”€â”€â”€â”€ -->
           <section>
             <div class="mb-4">
               <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Personal records</p>
@@ -168,11 +168,14 @@
             </div>
           </section>
 
-          <!-- ── Friends (Barkada List) ─────────────────── -->
+          <!-- â”€â”€ Friends (Barkada List) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
           <section class="rounded-[2rem] bg-white p-5 shadow-sm sm:p-6" style="outline:1px solid #ded7c6" aria-label="Friends" id="friendsSection">
             <div class="mb-4">
               <p class="text-xs font-extrabold uppercase tracking-[0.2em]" style="color:#6b756c">Friends</p>
-              <h2 class="font-display text-2xl font-black tracking-tight" style="color:#102b1d">Barkada list</h2>
+              <h2 class="font-display text-2xl font-black tracking-tight" style="color:#102b1d">
+                Barkada list
+                <span id="friendsCountInline" class="ml-2 text-sm font-extrabold" style="color:#617063;display:none"></span>
+              </h2>
             </div>
 
             <!-- Own profile: friend code + add form -->
@@ -185,6 +188,22 @@
                 <button id="friendCodeCopy" type="button"
                   class="shrink-0 rounded-full px-3 py-1.5 text-xs font-black text-white"
                   style="background:#164f33">&#128203; Copy</button>
+                <button id="friendCodeQrBtn" type="button"
+                  class="shrink-0 rounded-full px-3 py-1.5 text-xs font-black"
+                  style="background:#ffffff;color:#164f33;border:1px solid #d8d1bd">Show my QR</button>
+              </div>
+
+              <div class="mb-3">
+                <label for="friendSearchInput" class="mb-1.5 block text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">Search by name</label>
+                <div class="relative">
+                  <span aria-hidden="true" style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);font-size:0.9rem;color:#6b756c">ðŸ”Ž</span>
+                  <input id="friendSearchInput" type="text" maxlength="32"
+                    placeholder="Type at least 2 letters"
+                    class="min-w-0 w-full rounded-2xl pl-8 pr-4 py-3 text-sm font-semibold outline-none"
+                    style="background:#faf8f1;border:1px solid #d8d1bd;color:#102b1d" />
+                  <div id="friendSearchResults"
+                    style="display:none;position:absolute;left:0;right:0;top:calc(100% + 0.35rem);max-height:20rem;overflow:auto;background:#fff;border:1px solid #d8d1bd;border-radius:0.9rem;box-shadow:0 18px 36px rgba(15,23,42,0.12);z-index:30"></div>
+                </div>
               </div>
 
               <!-- Add friend form -->
@@ -199,9 +218,21 @@
               </form>
               <div id="friendAddStatus" role="status" aria-live="polite" class="mb-4 text-sm font-semibold" style="color:#617063"></div>
 
+              <!-- Sent (outgoing) requests -->
+              <div id="sentRequestsWrap" style="display:none;margin-bottom:1rem">
+                <p class="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">
+                  Sent Requests
+                  <span id="sentRequestsCount" class="rounded-full px-1.5 py-0.5 text-[0.62rem] font-black text-white sent-count-pulse" style="background:#f59e0b;display:none"></span>
+                </p>
+                <div id="sentRequestsList" class="space-y-2"></div>
+              </div>
+
               <!-- Pending requests -->
               <div id="friendRequestsWrap" style="display:none;margin-bottom:1rem">
-                <p class="mb-2 text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">Pending Requests</p>
+                <p class="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.16em]" style="color:#6b756c">
+                  Pending Requests
+                  <span id="friendRequestsCount" class="rounded-full px-1.5 py-0.5 text-[0.62rem] font-black text-white" style="background:#dc2626;display:none"></span>
+                </p>
                 <div id="friendRequestsList"></div>
               </div>
 
@@ -226,6 +257,18 @@
                 class="rounded-full px-5 py-3 text-sm font-black text-white"
                 style="background:#164f33">Add Friend</button>
             </div>
+
+            <section id="publicProfileDetailSection" class="mt-5" style="display:none" aria-label="Public profile details">
+              <div class="rounded-[1.5rem] p-3 sm:p-4" style="background:#faf8f1;outline:1px solid #ded7c6">
+                <div id="publicProfileTabs" class="flex flex-wrap gap-2" role="tablist" aria-label="Public profile tabs">
+                  <button type="button" data-public-tab="overview" class="rounded-full px-3 py-1.5 text-xs font-black" role="tab" style="background:#164f33;color:#fff">Overview</button>
+                  <button type="button" data-public-tab="achievements" class="rounded-full px-3 py-1.5 text-xs font-black" role="tab" style="background:#ffffff;color:#164f33;border:1px solid #d8d1bd">Achievements</button>
+                  <button type="button" data-public-tab="streak" class="rounded-full px-3 py-1.5 text-xs font-black" role="tab" style="background:#ffffff;color:#164f33;border:1px solid #d8d1bd">Streak</button>
+                  <button type="button" data-public-tab="weekly" class="rounded-full px-3 py-1.5 text-xs font-black" role="tab" style="background:#ffffff;color:#164f33;border:1px solid #d8d1bd">Weekly chart</button>
+                </div>
+                <div id="publicProfileTabContent" class="mt-4"></div>
+              </div>
+            </section>
           </section>
 
         </div><!-- /page content -->
@@ -271,39 +314,31 @@
     </div>
   </nav>
 
-  <!-- FLOATING TIGOM CHAT FAB -->
-  <a href="chat.html" class="fixed z-30 grid place-items-center rounded-full shadow-2xl transition lg:bottom-6"
-    style="bottom:5.5rem;right:1rem;height:4rem;width:4rem;background:white;outline:2px solid rgba(22,79,51,0.15);box-shadow:0 8px 32px rgba(16,43,29,0.2);text-decoration:none"
-    aria-label="Open Tigom AI chat">
-    <div class="relative h-10 w-10" aria-hidden="true">
-      <div class="absolute left-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>
-      <div class="absolute right-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>
-      <div class="absolute inset-1 rounded-[38%_38%_44%_44%]"
-        style="background:#2b8259;box-shadow:inset 0 -8px 0 rgba(22,79,51,0.26)"></div>
-      <div class="absolute left-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
-      <div class="absolute right-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)"></div>
-      <div class="absolute left-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>
-      <div class="absolute right-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>
-      <div class="absolute bottom-[26%] left-1/2 rounded-b-full"
-        style="height:3px;width:1.5rem;border-bottom:3px solid #102b1d;transform:translateX(-50%)"></div>
-      <div class="absolute -bottom-1 left-1/2 flex h-5 w-6 items-center justify-center rounded-full text-[0.55rem] font-black"
-        style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>
+  <script defer src="js/chrome.js"></script>
+  <script defer src="js/firebase-init.js"></script>
+  <script defer src="js/firebase-auth-service.js"></script>
+  <script defer src="js/firestore-service.js"></script>
+  <script defer src="js/storage.js"></script>
+  <script defer src="js/motion.js"></script>
+  <script defer src="js/app.js"></script>
+  <script defer src="js/gamification.js"></script>
+  <script defer src="js/dark-mode.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script defer src="js/profile.js"></script>
+
+  <div id="friendQrModal" class="hidden" style="position:fixed;inset:0;z-index:120;background:rgba(15,23,42,0.45);padding:1rem;display:none;align-items:center;justify-content:center">
+    <div style="width:min(100%,22rem);border-radius:1.25rem;background:#ffffff;padding:1.25rem;box-shadow:0 20px 50px rgba(15,23,42,0.28)">
+      <p class="text-xs font-extrabold uppercase tracking-[0.18em]" style="color:#6b756c">Share your code</p>
+      <h3 class="mt-1 font-display text-2xl font-black" style="color:#102b1d">Scan to add friend</h3>
+      <div id="friendQrCode" class="mt-4 grid place-items-center rounded-2xl" style="background:#ffffff;padding:0.75rem;outline:1px solid #ded7c6;min-height:19rem"></div>
+      <p id="friendQrCodeValue" class="mt-3 text-center font-display text-xl font-black" style="color:#164f33"></p>
+      <div class="mt-4 flex items-center justify-end gap-2">
+        <button id="friendQrCopyCode" type="button" class="rounded-full px-3 py-2 text-xs font-black text-white" style="background:#164f33">Copy code</button>
+        <button id="friendQrClose" type="button" class="rounded-full px-3 py-2 text-xs font-black" style="background:#ffffff;color:#164f33;border:1px solid #d8d1bd">Close</button>
+      </div>
     </div>
-  </a>
-
-
-  <script src="js/chrome.js"></script>
-  <script src="js/firebase-init.js"></script>
-  <script src="js/firebase-auth-service.js"></script>
-  <script src="js/firestore-service.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/motion.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/gamification.js"></script>
-  <script src="js/dark-mode.js"></script>
-  <script src="js/profile.js"></script>
-  <script src="js/mascot.js"></script>
-  <script src="js/dev-tools.js"></script>
+  </div>
 </body>
 </html>
+
 

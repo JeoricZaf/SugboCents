@@ -176,6 +176,12 @@
 
   var XP_LOG_DAILY_CAP = 25;
 
+  var AVATAR_PRESETS = [
+    "🐯", "🐼", "🦊", "🐸",
+    "🐨", "🦁", "🐰", "🐹",
+    "🐻", "🐵", "🦄", "🐧"
+  ];
+
   // Minimal daily quest specs for cross-page badge computation.
   // Mirrors DAILY_QUEST_STORAGE_CONDITIONS in quests.js — keep in sync if daily quests change.
   var DAILY_QUEST_SPECS_INTERNAL = [
@@ -184,6 +190,7 @@
     { id: "daily-categories",   condType: "category_count_today", target: 3 }
   ];
 
+  // SYNC: must match XP_LEVELS_BACKEND in functions/dev-tools.js
   var XP_LEVELS = [
     { level: 1, name: "Rookie Saver", minXp: 0 },
     { level: 2, name: "Budget Aware", minXp: 50 },
@@ -269,7 +276,90 @@
   }
 
   function saveStore(store) {
-    localStorage.setItem(APP_KEY, JSON.stringify(store));
+    try {
+      localStorage.setItem(APP_KEY, JSON.stringify(store));
+      return { ok: true };
+    } catch (error) {
+      var isQuotaError = error && (
+        error.name === "QuotaExceededError" ||
+        error.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+        error.code === 22 ||
+        error.code === 1014
+      );
+
+      if (!isQuotaError) {
+        return { ok: false, error: "storage-write-failed" };
+      }
+
+      var compacted = JSON.parse(JSON.stringify(store || {}));
+      var users = Array.isArray(compacted.users) ? compacted.users : [];
+      var changed = false;
+
+      function compactUserThreads(user) {
+        if (!user || !user.preferences || !Array.isArray(user.preferences.chatThreads)) {
+          return false;
+        }
+        var threads = user.preferences.chatThreads.slice();
+        if (threads.length === 0) { return false; }
+
+        var oldestIndex = -1;
+        var oldestTime = null;
+        for (var i = 0; i < threads.length; i++) {
+          var thread = threads[i];
+          if (!thread || !Array.isArray(thread.messages)) { continue; }
+          if (thread.messages.length === 0) { continue; }
+          var t = String(thread.updatedAt || thread.createdAt || "");
+          if (oldestTime === null || t < oldestTime) {
+            oldestTime = t;
+            oldestIndex = i;
+          }
+        }
+
+        if (oldestIndex === -1) {
+          if (threads.length <= 1) { return false; }
+          threads.pop();
+          user.preferences.chatThreads = threads;
+          return true;
+        }
+
+        var target = Object.assign({}, threads[oldestIndex]);
+        target.messages = [];
+        target.updatedAt = new Date().toISOString();
+        threads[oldestIndex] = target;
+        user.preferences.chatThreads = threads;
+        return true;
+      }
+
+      var sessionUserId = compacted && compacted.session ? compacted.session.userId : null;
+      if (sessionUserId) {
+        for (var a = 0; a < users.length; a++) {
+          if (users[a] && users[a].id === sessionUserId) {
+            changed = compactUserThreads(users[a]) || changed;
+            break;
+          }
+        }
+      }
+
+      if (!changed) {
+        for (var b = 0; b < users.length; b++) {
+          if (compactUserThreads(users[b])) {
+            changed = true;
+            break;
+          }
+        }
+      }
+
+      if (!changed) {
+        return { ok: false, error: "storage-full" };
+      }
+
+      try {
+        localStorage.setItem(APP_KEY, JSON.stringify(compacted));
+        return { ok: true, compacted: true };
+      } catch (_) {
+        return { ok: false, error: "storage-full" };
+      }
+    }
   }
 
   function sanitizeEmail(email) {
@@ -278,6 +368,33 @@
 
   function sanitizeName(value) {
     return String(value || "").trim().replace(/\s+/g, " ");
+  }
+
+  function sanitizeDisplayName(value) {
+    var cleaned = String(value || "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .replace(/[^A-Za-z0-9._\- ]/g, "");
+    if (cleaned.length > 24) {
+      cleaned = cleaned.slice(0, 24).trim();
+    }
+    return cleaned;
+  }
+
+  function getFallbackDisplayName(firstName, lastName, email) {
+    var fromNames = sanitizeName([firstName, lastName].filter(Boolean).join(" "));
+    if (fromNames) { return fromNames; }
+    if (email) {
+      return String(email).split("@")[0].slice(0, 24);
+    }
+    return "SugboCents User";
+  }
+
+  function normalizeAvatar(value) {
+    var avatar = String(value || "").trim();
+    if (!avatar) { return ""; }
+    if (AVATAR_PRESETS.indexOf(avatar) === -1) { return ""; }
+    return avatar;
   }
 
   function sanitizeAmount(amount) {
@@ -289,18 +406,59 @@
     return new Date().toISOString();
   }
 
-  function getLocalDateKey(input) {
+  function getManilaDateParts(input) {
     var d = input ? new Date(input) : new Date();
-    var y = d.getFullYear();
-    var m = String(d.getMonth() + 1).padStart(2, "0");
-    var day = String(d.getDate()).padStart(2, "0");
-    return y + "-" + m + "-" + day;
+    var parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Manila",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(d);
+
+    var out = { year: "1970", month: "01", day: "01" };
+    parts.forEach(function (part) {
+      if (part.type === "year") { out.year = part.value; }
+      if (part.type === "month") { out.month = part.value; }
+      if (part.type === "day") { out.day = part.value; }
+    });
+    return out;
+  }
+
+  function getManilaWeekday(input) {
+    var d = input ? new Date(input) : new Date();
+    var token = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Manila",
+      weekday: "short"
+    }).format(d);
+    var map = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    return map[token] === undefined ? 1 : map[token];
+  }
+
+  function getManilaDayKey(input) {
+    var p = getManilaDateParts(input);
+    return p.year + "-" + p.month + "-" + p.day;
+  }
+
+  function getManilaMondayKey(input) {
+    var p = getManilaDateParts(input);
+    var dayIndex = getManilaWeekday(input);
+    var diff = dayIndex === 0 ? -6 : 1 - dayIndex;
+    var utcDate = new Date(Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), 12, 0, 0));
+    utcDate.setUTCDate(utcDate.getUTCDate() + diff);
+    return utcDate.getUTCFullYear() + "-" +
+      String(utcDate.getUTCMonth() + 1).padStart(2, "0") + "-" +
+      String(utcDate.getUTCDate()).padStart(2, "0");
+  }
+
+  function getLocalDateKey(input) {
+    return getManilaDayKey(input);
   }
 
   function ensureGamificationFields(user) {
     if (!user) { return; }
     if (!Array.isArray(user.unlockedAchievements)) { user.unlockedAchievements = []; }
     if (!Array.isArray(user.notifiedAchievements)) { user.notifiedAchievements = []; }
+    if (!Array.isArray(user.pendingAchievementClaims)) { user.pendingAchievementClaims = []; }
     if (typeof user.xp !== "number") { user.xp = 0; }
     if (!user.dailyXpLog || typeof user.dailyXpLog !== "object") {
       user.dailyXpLog = { dateKey: getLocalDateKey(), xpFromLogging: 0 };
@@ -315,11 +473,14 @@
     if (user.monthlyChallenge === undefined) { user.monthlyChallenge = null; }
     if (typeof user.weeklyXpStart !== "number") { user.weeklyXpStart = user.totalXp || user.xp || 0; }
     if (!user.weeklyXpStartDate) { user.weeklyXpStartDate = null; }
+    if (typeof user.questStateLastUpdated !== "string") { user.questStateLastUpdated = nowIso(); }
     // Sprint 3 Phase 4: Sentimos currency
     if (typeof user.sentimos !== "number") { user.sentimos = 0; }
     if (!Array.isArray(user.sentimosLog)) { user.sentimosLog = []; }
     if (typeof user.streakFreezeCount !== "number") { user.streakFreezeCount = 0; }
     if (typeof user.streakFreezeActive !== "boolean") { user.streakFreezeActive = false; }
+    if (typeof user.streakBrokenFlag !== "boolean") { user.streakBrokenFlag = false; }
+    if (typeof user.lastStreakLength !== "number") { user.lastStreakLength = 0; }
     // Sprint 3 Phase 2: Budget weeks counter
     if (typeof user.underBudgetWeeksCount !== "number") { user.underBudgetWeeksCount = 0; }
     if (user.lastBudgetWeekCreditedKey === undefined) { user.lastBudgetWeekCreditedKey = null; }
@@ -333,6 +494,32 @@
     }
     if (!user.preferences || typeof user.preferences !== "object") {
       user.preferences = {};
+    }
+    if (typeof user.displayName !== "string") {
+      user.displayName = getFallbackDisplayName(user.firstName, user.lastName, user.email);
+    }
+    user.displayName = sanitizeDisplayName(user.displayName) || getFallbackDisplayName(user.firstName, user.lastName, user.email);
+    if (typeof user.avatar !== "string") {
+      user.avatar = "";
+    }
+    user.avatar = normalizeAvatar(user.avatar);
+    var prefStreakNotifications = (typeof user.preferences.streakNotifications === "boolean")
+      ? user.preferences.streakNotifications
+      : undefined;
+    var prefStreakWeeklySummary = (typeof user.preferences.streakWeeklySummary === "boolean")
+      ? user.preferences.streakWeeklySummary
+      : undefined;
+    var prefStreakEnabled = (typeof user.preferences.streakEnabled === "boolean")
+      ? user.preferences.streakEnabled
+      : undefined;
+    if (typeof user.streakNotifications !== "boolean") {
+      user.streakNotifications = (prefStreakNotifications !== undefined) ? prefStreakNotifications : true;
+    }
+    if (typeof user.streakWeeklySummary !== "boolean") {
+      user.streakWeeklySummary = (prefStreakWeeklySummary !== undefined) ? prefStreakWeeklySummary : true;
+    }
+    if (typeof user.streakEnabled !== "boolean") {
+      user.streakEnabled = (prefStreakEnabled !== undefined) ? prefStreakEnabled : true;
     }
     if (user.clearedQuestAt === undefined) { user.clearedQuestAt = null; }
     if (!Array.isArray(user.claimedQuestIds)) { user.claimedQuestIds = []; }
@@ -388,26 +575,36 @@
     return count;
   }
 
+  function getMostRecentStreakLengthFromExpenses(expenses) {
+    var daySet = {};
+    var latestKey = "";
+    (expenses || []).forEach(function (e) {
+      var key = getLocalDateKey(e.timestamp);
+      daySet[key] = true;
+      if (!latestKey || key > latestKey) {
+        latestKey = key;
+      }
+    });
+    if (!latestKey) { return 0; }
+
+    var cursor = new Date(latestKey + "T12:00:00");
+    var count = 0;
+    while (daySet[getLocalDateKey(cursor)]) {
+      count += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return count;
+  }
+
   function getThisWeekTotal(expenses) {
-    var now = new Date();
-    var dayOfWeek = now.getDay();
-    var monday = new Date(now);
-    monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
-    monday.setHours(0, 0, 0, 0);
+    var mondayKey = getCurrentWeekMondayKey();
     return expenses.reduce(function (sum, e) {
-      return new Date(e.timestamp) >= monday ? sum + (Number(e.amount) || 0) : sum;
+      return getManilaMondayKey(e.timestamp) === mondayKey ? sum + (Number(e.amount) || 0) : sum;
     }, 0);
   }
 
   function getCurrentWeekMondayKey() {
-    var now = new Date();
-    var dayOfWeek = now.getDay();
-    var monday = new Date(now);
-    monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
-    monday.setHours(0, 0, 0, 0);
-    return monday.getFullYear() + "-" +
-      String(monday.getMonth() + 1).padStart(2, "0") + "-" +
-      String(monday.getDate()).padStart(2, "0");
+    return getManilaMondayKey(new Date());
   }
 
   function getWeeklyQuestCountFromHistory(questHistory, mondayKey) {
@@ -431,9 +628,11 @@
     if (sorted.length === 0) { return 0; }
     var count = 1;
     for (var i = 1; i < sorted.length; i++) {
-      var prev = new Date(sorted[i - 1].assignedAt);
-      var curr = new Date(sorted[i].assignedAt);
-      var diff = Math.round((prev - curr) / (7 * 24 * 3600 * 1000));
+      var prev = getManilaMondayKey(sorted[i - 1].assignedAt || sorted[i - 1].completedAt);
+      var curr = getManilaMondayKey(sorted[i].assignedAt || sorted[i].completedAt);
+      var prevDate = new Date(prev + "T12:00:00Z");
+      var currDate = new Date(curr + "T12:00:00Z");
+      var diff = Math.round((prevDate - currDate) / (7 * 24 * 3600 * 1000));
       if (diff === 1) { count++; } else { break; }
     }
     return count;
@@ -512,6 +711,7 @@
 
       var claimed = user.unlockedAchievements.indexOf(a.id) !== -1;
       var notified = user.notifiedAchievements.indexOf(a.id) !== -1;
+      var pendingClaim = user.pendingAchievementClaims.indexOf(a.id) !== -1;
       return {
         id: a.id,
         name: a.name,
@@ -523,6 +723,7 @@
         unlockable: unlockable,
         claimed: claimed,
         notified: notified,
+        pendingClaim: pendingClaim,
         series: a.series || null,
         tier: a.tier || null,
         totalTiers: a.totalTiers || null,
@@ -532,16 +733,45 @@
     });
   }
 
+  function touchQuestState(user) {
+    if (!user) { return; }
+    user.questStateLastUpdated = nowIso();
+  }
+
   function syncGamificationFields(userId, user) {
     if (!window.FirestoreService) { return; }
     ensureGamificationFields(user);
     var xpInfo = getXpInfoFromUser(user);
+    var streakPrefs = getStreakPreferencesFromUser(user);
+    var fallbackDisplayName = getFallbackDisplayName(user.firstName, user.lastName, user.email);
+    var displayName = sanitizeDisplayName(user.displayName) || fallbackDisplayName;
+    var avatar = normalizeAvatar(user.avatar);
+    var displayNameLower = displayName.toLowerCase();
     window.FirestoreService.setUserDoc(userId, {
       xp: user.xp,
       level: xpInfo.level,
+      sentimos: user.sentimos || 0,
+      sentimosLog: Array.isArray(user.sentimosLog) ? user.sentimosLog.slice(0, 50) : [],
+      streakFreezeCount: Number(user.streakFreezeCount || 0),
       unlockedAchievements: user.unlockedAchievements,
       notifiedAchievements: user.notifiedAchievements,
-      dailyXpLog: user.dailyXpLog
+      dailyXpLog: user.dailyXpLog,
+      activeQuest: user.activeQuest || null,
+      questHistory: Array.isArray(user.questHistory) ? user.questHistory.slice(0, 100) : [],
+      questsCompleted: Number(user.questsCompleted || 0),
+      claimedQuestIds: Array.isArray(user.claimedQuestIds) ? user.claimedQuestIds.slice(0, 200) : [],
+      pendingDailyReward: user.pendingDailyReward || null,
+      questStateLastUpdated: String(user.questStateLastUpdated || nowIso()),
+      displayName: displayName,
+      avatar: avatar || null,
+      streakNotifications: streakPrefs.streakNotifications,
+      streakWeeklySummary: streakPrefs.streakWeeklySummary,
+      streakEnabled: streakPrefs.streakEnabled,
+      publicProfile: {
+        displayName: displayName,
+        displayNameLower: displayNameLower,
+        avatar: avatar || null
+      }
     });
   }
 
@@ -562,7 +792,9 @@
     // overwriting any local quest progress, expense additions, or XP changes
     // the user made while the round-trip was in flight.
     var firestoreUser     = await window.FirestoreService.getUserDoc(userId);
-    var firestoreExpenses = await window.FirestoreService.getExpenseDocs(userId);
+    var page = document.body ? String(document.body.getAttribute("data-page") || "") : "";
+    var expenseLimit = page === "activity" ? null : 200;
+    var firestoreExpenses = await window.FirestoreService.getExpenseDocs(userId, expenseLimit);
     var firestoreQuickAdd = await window.FirestoreService.getQuickAddItemDocs(userId);
 
     // Load the store NOW — after all awaits — so we get the freshest local
@@ -572,6 +804,7 @@
     if (!user) {
       return;
     }
+    ensureGamificationFields(user);
 
     if (firestoreUser) {
       if (typeof firestoreUser.weeklyBudget === "number") {
@@ -582,6 +815,12 @@
       }
       if (firestoreUser.lastName) {
         user.lastName = sanitizeName(firestoreUser.lastName);
+      }
+      if (typeof firestoreUser.displayName === "string") {
+        user.displayName = sanitizeDisplayName(firestoreUser.displayName);
+      }
+      if (typeof firestoreUser.avatar === "string") {
+        user.avatar = normalizeAvatar(firestoreUser.avatar);
       }
       if (typeof firestoreUser.xp === "number") {
         user.xp = Math.max(0, Math.floor(firestoreUser.xp));
@@ -605,6 +844,55 @@
       if (typeof firestoreUser.lastEmailSentAt === "string") {
         user.preferences = user.preferences || {};
         user.preferences.lastEmailSentAt = firestoreUser.lastEmailSentAt;
+      }
+      if (typeof firestoreUser.streakNotifications === "boolean") {
+        user.streakNotifications = firestoreUser.streakNotifications;
+      }
+      if (typeof firestoreUser.streakWeeklySummary === "boolean") {
+        user.streakWeeklySummary = firestoreUser.streakWeeklySummary;
+      }
+      if (typeof firestoreUser.streakEnabled === "boolean") {
+        user.streakEnabled = firestoreUser.streakEnabled;
+      }
+      if (firestoreUser.publicProfile && typeof firestoreUser.publicProfile === "object") {
+        if (typeof firestoreUser.publicProfile.displayName === "string") {
+          user.displayName = sanitizeDisplayName(firestoreUser.publicProfile.displayName);
+        }
+        if (typeof firestoreUser.publicProfile.avatar === "string") {
+          user.avatar = normalizeAvatar(firestoreUser.publicProfile.avatar);
+        }
+      }
+
+      var remoteQuestStamp = String(firestoreUser.questStateLastUpdated || "");
+      var localQuestStamp = String(user.questStateLastUpdated || "");
+      var shouldUseRemoteQuestState = !!remoteQuestStamp && (!localQuestStamp || remoteQuestStamp >= localQuestStamp);
+      if (shouldUseRemoteQuestState) {
+        if (firestoreUser.activeQuest === null || (firestoreUser.activeQuest && typeof firestoreUser.activeQuest === "object")) {
+          user.activeQuest = firestoreUser.activeQuest;
+        }
+        if (Array.isArray(firestoreUser.questHistory)) {
+          user.questHistory = firestoreUser.questHistory.slice();
+        }
+        if (typeof firestoreUser.questsCompleted === "number") {
+          user.questsCompleted = Math.max(0, Math.floor(firestoreUser.questsCompleted));
+        }
+        if (Array.isArray(firestoreUser.claimedQuestIds)) {
+          user.claimedQuestIds = firestoreUser.claimedQuestIds.slice();
+        }
+        if (firestoreUser.pendingDailyReward === null || (firestoreUser.pendingDailyReward && typeof firestoreUser.pendingDailyReward === "object")) {
+          user.pendingDailyReward = firestoreUser.pendingDailyReward;
+        }
+        user.questStateLastUpdated = remoteQuestStamp;
+      }
+
+      if (typeof firestoreUser.sentimos === "number") {
+        user.sentimos = Math.max(0, Math.floor(firestoreUser.sentimos));
+      }
+      if (Array.isArray(firestoreUser.sentimosLog)) {
+        user.sentimosLog = firestoreUser.sentimosLog.slice(0, 50);
+      }
+      if (typeof firestoreUser.streakFreezeCount === "number") {
+        user.streakFreezeCount = Math.max(0, Math.floor(firestoreUser.streakFreezeCount));
       }
     }
 
@@ -630,7 +918,7 @@
     var existing = getUserById(store, sessionUser.id);
     var firstName = "";
     var lastName = "";
-    var displayName = sanitizeName(sessionUser.displayName);
+    var displayName = sanitizeDisplayName(sessionUser.displayName);
 
     if (displayName) {
       var parts = displayName.split(" ");
@@ -638,13 +926,17 @@
       lastName = sanitizeName(parts.join(" "));
     }
 
+    var resolvedDisplayName = displayName || getFallbackDisplayName(firstName, lastName, sessionUser.email);
+
     if (!existing) {
       var newFriendCode = generateFriendCode(firstName || sessionUser.id);
       store.users.push({
         id: sessionUser.id,
         firstName: firstName,
         lastName: lastName,
-        username: displayName,
+        username: resolvedDisplayName,
+        displayName: resolvedDisplayName,
+        avatar: "",
         email: sanitizeEmail(sessionUser.email),
         password: "",
         weeklyBudget: 0,
@@ -662,19 +954,8 @@
       });
 
       if (window.FirestoreService) {
-        window.FirestoreService.setUserDoc(sessionUser.id, {
-          firstName: firstName,
-          lastName: lastName,
-          email: sanitizeEmail(sessionUser.email),
-      weeklyBudget: 0,
-      xp: 0,
-      level: 1,
-      unlockedAchievements: [],
-      notifiedAchievements: [],
-      dailyXpLog: { dateKey: getLocalDateKey(), xpFromLogging: 0 },
-          createdAt: nowIso()
-        });
-        // Claim the friend code in Firestore (fire-and-forget, non-blocking)
+        // Never push local default counters/budget on first local bootstrap.
+        // Existing cloud users may already have real values from another device.
         window.FirestoreService.claimFriendCode(sessionUser.id, newFriendCode).catch(function () {});
       }
     } else {
@@ -688,8 +969,11 @@
       if (sessionUser.email) {
         existing.email = sanitizeEmail(sessionUser.email);
       }
-      if (displayName) {
-        existing.username = displayName;
+      if (resolvedDisplayName) {
+        existing.username = resolvedDisplayName;
+        if (!existing.displayName) {
+          existing.displayName = resolvedDisplayName;
+        }
         if (!existing.firstName) {
           existing.firstName = firstName;
         }
@@ -705,6 +989,14 @@
       provider: "firebase"
     };
     saveStore(store);
+
+    if (window.FirestoreService && window.FirestoreService.seedUserDoc) {
+      window.FirestoreService.seedUserDoc(sessionUser.id, {
+        firstName: firstName,
+        lastName: lastName,
+        email: sanitizeEmail(sessionUser.email)
+      }).catch(function () {});
+    }
   }
 
   function clearSession() {
@@ -749,6 +1041,17 @@
 
       return new Promise(function (resolve) {
         var resolved = false;
+        var cleanedUp = false;
+        var cleanupTimer = null;
+        function cleanup() {
+          if (cleanedUp) { return; }
+          cleanedUp = true;
+          if (cleanupTimer) {
+            clearTimeout(cleanupTimer);
+            cleanupTimer = null;
+          }
+          try { unsubscribe(); } catch (_) {}
+        }
         var unsubscribe = window.FirebaseAuthService.onAuthStateChanged(function (user) {
           if (user) {
             ensureLocalUserFromSession(user);
@@ -762,9 +1065,15 @@
             ? syncFromFirestore(currentUserId)
             : Promise.resolve();
           syncPromise.then(function () {
+            cleanup();
             if (!resolved) {
               resolved = true;
-              unsubscribe();
+              resolve();
+            }
+          }).catch(function () {
+            cleanup();
+            if (!resolved) {
+              resolved = true;
               resolve();
             }
           });
@@ -773,10 +1082,15 @@
         setTimeout(function () {
           if (!resolved) {
             resolved = true;
-            unsubscribe();
             resolve();
           }
         }, 1200);
+
+        // Keep the listener alive briefly after fallback resolve so slow devices
+        // can still complete first auth sync and hydrate cloud-backed data.
+        cleanupTimer = setTimeout(function () {
+          cleanup();
+        }, 15000);
       });
     }).catch(function () {
       // Ignore init errors and keep local fallback behavior.
@@ -802,6 +1116,9 @@
     var firstName = sanitizeName(user.firstName);
     var lastName = sanitizeName(user.lastName);
     ensureGamificationFields(user);
+    var fallbackDisplayName = getFallbackDisplayName(firstName, lastName, user.email);
+    var displayName = sanitizeDisplayName(user.displayName) || fallbackDisplayName;
+    var avatar = normalizeAvatar(user.avatar);
     var mondayKey = getCurrentWeekMondayKey();
     var weeklyQuestsCompleted = getWeeklyQuestCountFromHistory(user.questHistory, mondayKey);
 
@@ -810,7 +1127,9 @@
       email: user.email,
       firstName: firstName,
       lastName: lastName,
-      username: sanitizeName(user.username) || [firstName, lastName].filter(Boolean).join(" "),
+      username: displayName,
+      displayName: displayName,
+      avatar: avatar,
       weeklyBudget: user.weeklyBudget || 0,
       expenses: Array.isArray(user.expenses) ? user.expenses : [],
       xp: user.xp || 0,
@@ -821,7 +1140,8 @@
       questsCompleted: user.questsCompleted || 0,
       weeklyQuestsCompleted: weeklyQuestsCompleted,
       weeklyXpStart: typeof user.weeklyXpStart === "number" ? user.weeklyXpStart : 0,
-      weeklyXpStartDate: user.weeklyXpStartDate || null
+      weeklyXpStartDate: user.weeklyXpStartDate || null,
+      createdAt: user.createdAt || null
     };
   }
 
@@ -872,6 +1192,8 @@
       firstName: firstName,
       lastName: lastName,
       username: username,
+      displayName: username,
+      avatar: "",
       email: cleanEmail,
       password: cleanPassword,
       weeklyBudget: 0,
@@ -943,6 +1265,15 @@
     });
 
     var user = getCurrentUser();
+    if (window.FirestoreService && result.user && result.user.id) {
+      window.FirestoreService.setUserDoc(result.user.id, {
+        createdAt: user && user.createdAt ? user.createdAt : nowIso(),
+        lastLoginAt: nowIso(),
+        weeklyBudget: user && user.weeklyBudget ? user.weeklyBudget : 0,
+        expenseCount: user && Array.isArray(user.expenses) ? user.expenses.length : 0,
+        currentStreak: user && user.expenses ? getCurrentStreakFromExpenses(user.expenses) : 0
+      });
+    }
     return {
       ok: true,
       user: user || result.user
@@ -964,6 +1295,12 @@
       email: result.user.email,
       displayName: result.user.displayName
     });
+
+    if (window.FirestoreService && result.user && result.user.id) {
+      window.FirestoreService.setUserDoc(result.user.id, {
+        lastLoginAt: nowIso()
+      });
+    }
 
     return { ok: true, user: getCurrentUser() || result.user };
   }
@@ -1046,6 +1383,10 @@
       user.expenses = [];
     }
 
+    var streakBeforeLog = getCurrentStreakFromExpenses(user.expenses || []);
+    var lastClosedStreak = getMostRecentStreakLengthFromExpenses(user.expenses || []);
+    var shouldMarkStreakBroken = streakBeforeLog === 0 && lastClosedStreak >= 2;
+
     // First expense of the day earns a bonus (10 XP vs 5 XP) — daily opening hook.
     var todayDateKey = getLocalDateKey();
     var isFirstLogToday = !user.expenses.some(function (e) {
@@ -1060,6 +1401,10 @@
     if (isFirstLogToday) { addSentimosInternal(user, 2, "first-log-bonus"); }
     // Streak milestone Sentimos rewards
     var newStreak = getCurrentStreakFromExpenses(user.expenses);
+    user.streakBrokenFlag = shouldMarkStreakBroken;
+    if (shouldMarkStreakBroken) {
+      user.lastStreakLength = lastClosedStreak;
+    }
     var STREAK_MILESTONES = { 7: 10, 14: 20, 30: 50, 100: 100 };
     if (STREAK_MILESTONES[newStreak]) {
       addSentimosInternal(user, STREAK_MILESTONES[newStreak], "streak-" + newStreak);
@@ -1090,9 +1435,22 @@
       var currentStreak = getCurrentStreakFromExpenses(user.expenses || []);
       var xpInfoForSync = getXpInfoFromUser(user);
       var weeklyQuestCount = getWeeklyQuestCountFromHistory(user.questHistory, getCurrentWeekMondayKey());
+      var budgetSummary = getBudgetSummary();
+      window.FirestoreService.setUserDoc(store.session.userId, {
+        weeklyBudget: user.weeklyBudget || 0,
+        expenseCount: Array.isArray(user.expenses) ? user.expenses.length : 0,
+        weekSpent: Number(budgetSummary.totalSpentThisWeek || 0),
+        currentStreak: currentStreak,
+        streakBrokenFlag: user.streakBrokenFlag === true,
+        lastStreakLength: Number(user.lastStreakLength || 0),
+        lastExpenseDate: getManilaDayKey(entry.timestamp || nowIso()),
+        lastLoginAt: nowIso()
+      });
       window.FirestoreService.syncPublicProfile(store.session.userId, {
         firstName: user.firstName,
         lastName: user.lastName,
+        displayName: user.displayName,
+        avatar: user.avatar,
         streak: currentStreak,
         questsCompleted: user.questsCompleted || 0,
         weeklyQuestsCompleted: weeklyQuestCount,
@@ -1192,6 +1550,120 @@
       totalSpentThisWeek: totalSpentThisWeek,
       remaining: remaining,
       percentageSpent: percentageSpent
+    };
+  }
+
+  // ── AI Context ────────────────────────────────────────────────────
+  // Returns a strictly typed, sanitized snapshot of the current user's
+  // real financial + gamification state for the chat AI to ground its
+  // replies on. Every value is computed from existing StorageAPI data —
+  // no defaults, no fake numbers. Missing/unset fields are reported as
+  // `null` and listed under `missing[]` so the server prompt can tell
+  // the LLM "you don't have this info, do not invent it".
+  //
+  // SECURITY NOTE: This object travels client → Cloud Function as a
+  // structured JSON payload (NOT a free-text systemPrompt). The server
+  // re-validates every field against a whitelist before it builds the
+  // system prompt, so prompt-injection via these values is impossible
+  // (numbers are coerced to numbers, strings are length-capped, the
+  // goals array is cardinality-capped). See functions/index.js → chat.
+  function getAiContext() {
+    var user = getCurrentUser();
+    if (!user) {
+      return { hasData: false, missing: ["user"] };
+    }
+
+    var missing = [];
+
+    var budgetSummary = getBudgetSummary();
+    var weeklyBudget = Number(budgetSummary.weeklyBudget) || 0;
+    var totalSpentThisWeek = Number(budgetSummary.totalSpentThisWeek) || 0;
+    var remaining = Number(budgetSummary.remaining) || 0;
+    var percentageSpent = Number(budgetSummary.percentageSpent) || 0;
+
+    if (weeklyBudget <= 0) { missing.push("weeklyBudget"); }
+
+    var streak = 0;
+    try { streak = Number(getCurrentStreak()) || 0; } catch (_) { streak = 0; }
+
+    var levelInfo = { level: 1, levelName: "Sentimo", xp: 0 };
+    try {
+      var info = getXpInfo();
+      if (info && typeof info === "object") {
+        levelInfo.level = Number(info.level) || 1;
+        levelInfo.levelName = String(info.levelName || "Sentimo");
+        levelInfo.xp = Number(info.xp) || 0;
+      }
+    } catch (_) { /* keep defaults */ }
+
+    // Top spending category this week
+    var weekStart = new Date();
+    var dayOfWeek = weekStart.getDay();
+    weekStart.setDate(weekStart.getDate() - ((dayOfWeek + 6) % 7));
+    weekStart.setHours(0, 0, 0, 0);
+    var weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+
+    var allExpenses = Array.isArray(user.expenses) ? user.expenses : [];
+    var weekExpenses = allExpenses.filter(function (e) {
+      var d = new Date(e.timestamp);
+      return d >= weekStart && d < weekEnd;
+    });
+    var byCat = {};
+    weekExpenses.forEach(function (e) {
+      var cat = String(e.category || "other");
+      byCat[cat] = (byCat[cat] || 0) + (Number(e.amount) || 0);
+    });
+    var topCategory = null;
+    var topCategoryAmount = 0;
+    Object.keys(byCat).forEach(function (cat) {
+      if (byCat[cat] > topCategoryAmount) {
+        topCategory = cat;
+        topCategoryAmount = byCat[cat];
+      }
+    });
+    if (!topCategory) { missing.push("topCategory"); }
+
+    // Goals — cap at 5 to keep payload small
+    var goals = [];
+    try {
+      var rawGoals = getGoals();
+      if (Array.isArray(rawGoals) && rawGoals.length > 0) {
+        goals = rawGoals.slice(0, 5).map(function (g) {
+          var target = Number(g.targetAmount || g.target || 0) || 0;
+          var saved = Number(g.savedAmount || g.saved || 0) || 0;
+          var pct = target > 0 ? Math.min(100, Math.round((saved / target) * 100)) : 0;
+          return {
+            name: String(g.name || g.title || "Goal").slice(0, 40),
+            target: target,
+            saved: saved,
+            percent: pct,
+            completed: Boolean(g.completed)
+          };
+        });
+      }
+    } catch (_) { goals = []; }
+    if (goals.length === 0) { missing.push("goals"); }
+
+    var firstName = String(user.firstName || "").slice(0, 30);
+    if (!firstName) { missing.push("firstName"); }
+
+    return {
+      hasData: true,
+      firstName: firstName || null,
+      currency: "PHP",
+      weeklyBudget: weeklyBudget,
+      totalSpentThisWeek: totalSpentThisWeek,
+      remaining: remaining,
+      percentageSpent: percentageSpent,
+      expenseCountThisWeek: weekExpenses.length,
+      topCategory: topCategory,
+      topCategoryAmount: topCategoryAmount,
+      currentStreak: streak,
+      level: levelInfo.level,
+      levelName: levelInfo.levelName,
+      goals: goals,
+      missing: missing
     };
   }
 
@@ -1412,7 +1884,63 @@
     return { ok: true };
   }
 
-  function claimAchievement(id) {
+  function getClaimAchievementEndpoint() {
+    return "https://us-central1-sugbocents.cloudfunctions.net/claimAchievement";
+  }
+
+  async function callClaimAchievementServer(achievementId) {
+    if (!(window.FirebaseInit && window.FirebaseInit.isFirebaseMode && window.FirebaseInit.isFirebaseMode())) {
+      return { ok: false, error: "firebase_unavailable" };
+    }
+
+    var auth = window.FirebaseInit.getAuth ? window.FirebaseInit.getAuth() : null;
+    var firebaseUser = auth && auth.currentUser ? auth.currentUser : null;
+    if (!firebaseUser || !firebaseUser.getIdToken) {
+      return { ok: false, error: "unauthenticated" };
+    }
+
+    try {
+      var idToken = await firebaseUser.getIdToken();
+      var response = await fetch(getClaimAchievementEndpoint(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + idToken
+        },
+        body: JSON.stringify({ id: achievementId })
+      });
+
+      var payload = null;
+      try {
+        payload = await response.json();
+      } catch (_) {
+        payload = null;
+      }
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          error: (payload && payload.error) ? payload.error : "claim_failed"
+        };
+      }
+
+      return payload && payload.ok
+        ? payload
+        : { ok: false, error: (payload && payload.error) ? payload.error : "claim_failed" };
+    } catch (_) {
+      return { ok: false, error: "network_error" };
+    }
+  }
+
+  function removePendingAchievementClaim(user, achievementId) {
+    if (!user || !Array.isArray(user.pendingAchievementClaims)) { return; }
+    var idx = user.pendingAchievementClaims.indexOf(achievementId);
+    if (idx !== -1) {
+      user.pendingAchievementClaims.splice(idx, 1);
+    }
+  }
+
+  async function claimAchievement(id) {
     var store = loadStore();
     if (!store.session) { return { ok: false, error: "No active session." }; }
     var user = getUserById(store, store.session.userId);
@@ -1423,13 +1951,61 @@
     if (!achievement) { return { ok: false, error: "Achievement not found." }; }
     if (!achievement.unlockable) { return { ok: false, error: "Achievement not yet unlocked." }; }
     if (achievement.claimed) { return { ok: false, error: "Achievement already claimed." }; }
-    user.unlockedAchievements.push(id);
-    var xpAwarded = addXpInternal(user, 15, "achievement_claim");
+
+    if (user.pendingAchievementClaims.indexOf(id) !== -1) {
+      return { ok: false, error: "Achievement claim already in progress." };
+    }
+
+    user.pendingAchievementClaims.push(id);
+    saveStore(store);
+    window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+
+    var isFirebaseMode = window.FirebaseInit && window.FirebaseInit.isFirebaseMode && window.FirebaseInit.isFirebaseMode();
+    if (!isFirebaseMode) {
+      removePendingAchievementClaim(user, id);
+      user.unlockedAchievements.push(id);
+      var localXpAwarded = addXpInternal(user, 15, "achievement_claim");
+      addSentimosInternal(user, 25, "badge-" + id);
+      saveStore(store);
+      window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+      syncGamificationFields(store.session.userId, user);
+      return { ok: true, xpAwarded: localXpAwarded, xpInfo: getXpInfoFromUser(user) };
+    }
+
+    var serverResult = await callClaimAchievementServer(id);
+    if (!serverResult || !serverResult.ok) {
+      removePendingAchievementClaim(user, id);
+      saveStore(store);
+      window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+      return {
+        ok: false,
+        error: (serverResult && serverResult.error) ? serverResult.error : "Claim failed. Please try again."
+      };
+    }
+
+    removePendingAchievementClaim(user, id);
+    if (user.unlockedAchievements.indexOf(id) === -1) {
+      user.unlockedAchievements.push(id);
+    }
+    if (typeof serverResult.newXp === "number") {
+      user.xp = Math.max(0, Math.floor(serverResult.newXp));
+    }
+    if (typeof serverResult.newLevel === "number") {
+      user.level = Math.max(1, Math.floor(serverResult.newLevel));
+    }
+
+    // Sentimos reward remains client-side but now runs only after server-validated claim success.
     addSentimosInternal(user, 25, "badge-" + id);
+
     saveStore(store);
     window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
     syncGamificationFields(store.session.userId, user);
-    return { ok: true, xpAwarded: xpAwarded, xpInfo: getXpInfoFromUser(user) };
+
+    return {
+      ok: true,
+      xpAwarded: Number(serverResult.awardedXp || 15),
+      xpInfo: getXpInfoFromUser(user)
+    };
   }
 
   async function resetCurrentUserData() {
@@ -1444,45 +2020,218 @@
     }
 
     var userId = store.session.userId;
-    user.weeklyBudget = 0;
-    user.expenses = [];
-    user.quickAddItems = [];
-    user.goals = [];
-    user.preferences = {};
-    user.xp = 0;
-    user.level = 1;
-    user.unlockedAchievements = [];
-    user.notifiedAchievements = [];
-    user.dailyXpLog = { dateKey: getLocalDateKey(), xpFromLogging: 0 };
-    user.streakCount = 0;
-    user.lastMilestone = null;
-    user.activeQuest = null;
-    user.questHistory = [];
-    user.questsCompleted = 0;
-    user.clearedQuestAt = null;
+
+    // ── 1. Preserve immutable identity fields ─────────────────────────────────
+    // Everything else is destroyed so the account behaves like a brand-new sign-up.
+    var preserved = {
+      id:          user.id,
+      firstName:   user.firstName,
+      lastName:    user.lastName,
+      email:       user.email,
+      friendCode:  user.friendCode,
+      displayName: user.displayName,
+      avatar:      user.avatar,
+      createdAt:   user.createdAt
+    };
+
+    // ── 2. Wipe ALL user fields locally ───────────────────────────────────────
+    // Explicitly null every known gamification / social / state field. Listing
+    // each one (rather than blasting the whole object) keeps the contract
+    // auditable and avoids accidentally nuking identity fields above.
+    var defaultDailyXpLog = { dateKey: getLocalDateKey(), xpFromLogging: 0 };
+    Object.assign(user, preserved, {
+      // Core financial
+      weeklyBudget:                0,
+      expenses:                    [],
+      quickAddItems:               [],
+      goals:                       [],
+      preferences:                 {},
+      // XP / level
+      xp:                          0,
+      totalXp:                     0,
+      level:                       1,
+      dailyXpLog:                  defaultDailyXpLog,
+      // Achievements
+      unlockedAchievements:        [],
+      notifiedAchievements:        [],
+      pendingAchievementClaims:    [],
+      // Streaks
+      streakCount:                 0,
+      lastMilestone:               null,
+      streakFreezeCount:           0,
+      streakFreezeActive:          false,
+      streakBrokenFlag:            false,
+      lastStreakLength:            0,
+      streakNotifications:         true,
+      streakWeeklySummary:         true,
+      streakEnabled:               true,
+      // Quests
+      activeQuest:                 null,
+      questHistory:                [],
+      questsCompleted:             0,
+      missionsCompleted:           0,
+      lastMissionCreditedDate:     null,
+      monthlyChallenge:            null,
+      clearedQuestAt:              null,
+      claimedQuestIds:             [],
+      pendingDailyReward:          null,
+      questStateLastUpdated:       nowIso(),
+      // Weekly XP tracker
+      weeklyXpStart:               0,
+      weeklyXpStartDate:           null,
+      // Budget weeks
+      underBudgetWeeksCount:       0,
+      lastBudgetWeekCreditedKey:   null,
+      // Sentimos currency
+      sentimos:                    0,
+      sentimosLog:                 [],
+      // Personal records
+      records: {
+        longestStreak:  { value: 0, date: null },
+        bestWeekXp:     { value: 0, weekStart: null },
+        bestMonthSaved: { value: 0, month: null }
+      }
+    });
+    // Re-apply defaults to backfill anything not enumerated above.
+    ensureGamificationFields(user);
+    // Pin the starter "Log 1 expense today" daily quest so a reset behaves
+    // exactly like a brand-new account — see getCurrentQuest() for the
+    // matching auto-pin path on first dashboard render.
+    user.activeQuest = _buildStarterDailyQuest();
+    touchQuestState(user);
     saveStore(store);
 
+    // ── 3. Wipe Firestore: user doc fields + subcollections + social graph ───
     if (window.FirestoreService) {
       try {
-        await window.FirestoreService.clearExpenseDocs(userId);
+        // 3a. Reset all stored fields on the user doc (merge:true with explicit
+        //     null/empty defaults so leftover server-side fields are overwritten).
         await window.FirestoreService.setUserDoc(userId, {
-          weeklyBudget: 0,
-          quickAddItems: [],
-          goals: [],
-          preferences: {},
-          xp: 0,
-          level: 1,
-          unlockedAchievements: [],
-          notifiedAchievements: [],
-          dailyXpLog: { dateKey: getLocalDateKey(), xpFromLogging: 0 },
-          streakCount: 0,
-          lastMilestone: null
+          weeklyBudget:               0,
+          quickAddItems:              [],
+          goals:                      [],
+          preferences:                {},
+          xp:                         0,
+          totalXp:                    0,
+          level:                      1,
+          dailyXpLog:                 defaultDailyXpLog,
+          unlockedAchievements:       [],
+          notifiedAchievements:       [],
+          pendingAchievementClaims:   [],
+          streakCount:                0,
+          lastMilestone:              null,
+          streakFreezeCount:          0,
+          streakFreezeActive:         false,
+          streakBrokenFlag:           false,
+          lastStreakLength:           0,
+          questHistory:               [],
+          questsCompleted:            0,
+          missionsCompleted:          0,
+          lastMissionCreditedDate:    null,
+          monthlyChallenge:           null,
+          clearedQuestAt:             null,
+          claimedQuestIds:            [],
+          pendingDailyReward:         null,
+          // activeQuest + questStateLastUpdated reflect the starter quest that
+          // was pinned locally above — pushing null here would overwrite it on
+          // the server and cause syncFromFirestore to wipe it on the next load.
+          activeQuest:                user.activeQuest || null,
+          questStateLastUpdated:      String(user.questStateLastUpdated || nowIso()),
+          weeklyXpStart:              0,
+          weeklyXpStartDate:          null,
+          underBudgetWeeksCount:      0,
+          lastBudgetWeekCreditedKey:  null,
+          sentimos:                   0,
+          sentimosLog:                [],
+          records: {
+            longestStreak:  { value: 0, date: null },
+            bestWeekXp:     { value: 0, weekStart: null },
+            bestMonthSaved: { value: 0, month: null }
+          }
         });
-        await window.FirestoreService.setQuickAddItems(userId, []);
       } catch (e) {
-        console.warn("[StorageAPI] resetCurrentUserData Firebase error:", e);
+        console.warn("[StorageAPI] resetCurrentUserData user doc reset error:", e);
+      }
+
+      // 3b. Delete the expenses subcollection.
+      try {
+        if (window.FirestoreService.clearExpenseDocs) {
+          await window.FirestoreService.clearExpenseDocs(userId);
+        }
+      } catch (e) {
+        console.warn("[StorageAPI] resetCurrentUserData clearExpenseDocs error:", e);
+      }
+
+      // 3c. Wipe quickAdd subcollection / field.
+      try {
+        if (window.FirestoreService.setQuickAddItems) {
+          await window.FirestoreService.setQuickAddItems(userId, []);
+        }
+      } catch (e) {
+        console.warn("[StorageAPI] resetCurrentUserData setQuickAddItems error:", e);
+      }
+
+      // 3d. Re-sync the public profile so leaderboard / friend cards see XP=0, level=1.
+      try {
+        if (window.FirestoreService.syncPublicProfile) {
+          await window.FirestoreService.syncPublicProfile(userId, user);
+        }
+      } catch (e) {
+        console.warn("[StorageAPI] resetCurrentUserData syncPublicProfile error:", e);
+      }
+
+      // 3e. Purge social graph: friends (bidirectional), incoming requests,
+      //     outgoing requests, and the friend feed.
+      try {
+        if (window.FirestoreService.purgeAllUserSocialData) {
+          await window.FirestoreService.purgeAllUserSocialData(userId);
+        }
+      } catch (e) {
+        console.warn("[StorageAPI] resetCurrentUserData purgeAllUserSocialData error:", e);
       }
     }
+
+    // ── 4. Clear ALL non-store localStorage caches scoped to this user ────────
+    // These caches survive a partial reset and cause stale UI (leaderboard
+    // rank, friend list, prefetch flags, dev-tools snapshots, etc.).
+    try {
+      var legacyKeys = [
+        "sugbocents_friend_cache",
+        "sugbocents_lb_players_v2",
+        "sugbocents_lb_snapshot",
+        "sugbocents_unclaimed_quests"
+      ];
+      legacyKeys.forEach(function (k) {
+        try { localStorage.removeItem(k); } catch (_) {}
+      });
+      var prefixes = [
+        "sugbocents_friend_cache_",
+        "sugbocents_friend_profiles_",
+        "sugbocents_lb_players_v3_",
+        "sugbocents_lb_snapshot_v2_",
+        "sugbocents_friends_prefetched_",
+        "sugbocents.devtools."   // dev snapshots: budget, gam, quest, fakefriends
+      ];
+      var toRemove = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k) { continue; }
+        for (var p = 0; p < prefixes.length; p++) {
+          if (k.indexOf(prefixes[p]) === 0) { toRemove.push(k); break; }
+        }
+      }
+      toRemove.forEach(function (k) {
+        try { localStorage.removeItem(k); } catch (_) {}
+      });
+    } catch (e) {
+      console.warn("[StorageAPI] resetCurrentUserData localStorage cleanup error:", e);
+    }
+
+    // ── 5. Tell every listening view to re-render from scratch ────────────────
+    try {
+      window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+      window.dispatchEvent(new CustomEvent("sugbocents:userReset", { detail: { userId: userId } }));
+    } catch (_) {}
 
     return { ok: true };
   }
@@ -1577,6 +2326,7 @@
     if (!user) {
       return { ok: false, error: "User not found." };
     }
+    var previousFallback = getFallbackDisplayName(user.firstName, user.lastName, user.email);
     if (data && data.firstName !== undefined) {
       user.firstName = sanitizeName(data.firstName);
     }
@@ -1586,12 +2336,25 @@
     if (data && data.username !== undefined) {
       user.username = sanitizeName(data.username);
     }
+    if (!user.displayName || sanitizeDisplayName(user.displayName) === sanitizeDisplayName(previousFallback)) {
+      user.displayName = getFallbackDisplayName(user.firstName, user.lastName, user.email);
+    }
+    user.displayName = sanitizeDisplayName(user.displayName) || getFallbackDisplayName(user.firstName, user.lastName, user.email);
     saveStore(store);
     if (window.FirestoreService) {
       window.FirestoreService.setUserDoc(store.session.userId, {
         firstName: user.firstName,
-        lastName: user.lastName
+        lastName: user.lastName,
+        displayName: user.displayName,
+        publicProfile: {
+          displayName: user.displayName,
+          displayNameLower: user.displayName.toLowerCase()
+        }
       });
+      syncGamificationFields(store.session.userId, user);
+      if (window.FirestoreService.syncPublicProfile) {
+        window.FirestoreService.syncPublicProfile(store.session.userId, user);
+      }
     }
     return { ok: true };
   }
@@ -1607,7 +2370,114 @@
     if (!user) {
       return {};
     }
-    return user.preferences ? Object.assign({}, user.preferences) : {};
+    ensureGamificationFields(user);
+    var prefs = user.preferences ? Object.assign({}, user.preferences) : {};
+    var streakPrefs = getStreakPreferencesFromUser(user);
+    prefs.streakNotifications = streakPrefs.streakNotifications;
+    prefs.streakWeeklySummary = streakPrefs.streakWeeklySummary;
+    prefs.streakEnabled = streakPrefs.streakEnabled;
+    return prefs;
+  }
+
+  function getStreakPreferencesFromUser(user) {
+    ensureGamificationFields(user);
+    return {
+      streakNotifications: user.streakNotifications !== false,
+      streakWeeklySummary: user.streakWeeklySummary !== false,
+      streakEnabled: user.streakEnabled !== false
+    };
+  }
+
+  function getStreakPreferences() {
+    var store = loadStore();
+    if (!store.session) {
+      return {
+        streakNotifications: true,
+        streakWeeklySummary: true,
+        streakEnabled: true
+      };
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return {
+        streakNotifications: true,
+        streakWeeklySummary: true,
+        streakEnabled: true
+      };
+    }
+    return getStreakPreferencesFromUser(user);
+  }
+
+  function getAvatarPresets() {
+    return AVATAR_PRESETS.slice();
+  }
+
+  function getDefaultNotificationPrefs() {
+    return {
+      pushEnabled: false,
+      emailEnabled: true,
+      dailyReminderEnabled: false,
+      dailyReminderHour: 20,
+      socialEnabled: true,
+      quietHoursStart: 21,
+      quietHoursEnd: 8,
+      setupDone: false,
+      lastUpdated: null
+    };
+  }
+
+  function getNotificationPrefs() {
+    var store = loadStore();
+    if (!store.session) {
+      return Object.assign({}, getDefaultNotificationPrefs());
+    }
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return Object.assign({}, getDefaultNotificationPrefs());
+    }
+    var prefs = user.notificationPrefs;
+    if (!prefs && user.preferences && typeof user.preferences.notificationPrefs === "object") {
+      prefs = user.preferences.notificationPrefs;
+    }
+    return Object.assign({}, getDefaultNotificationPrefs(), prefs || {});
+  }
+
+  function setNotificationPrefs(prefs) {
+    if (!prefs || typeof prefs !== "object") {
+      return Promise.resolve({ ok: false, error: "Notification preferences must be an object." });
+    }
+
+    var store = loadStore();
+    if (!store.session) {
+      return Promise.resolve({ ok: false, error: "No active session." });
+    }
+
+    var user = getUserById(store, store.session.userId);
+    if (!user) {
+      return Promise.resolve({ ok: false, error: "User not found." });
+    }
+
+    if (!user.preferences) {
+      user.preferences = {};
+    }
+
+    var next = Object.assign({}, getDefaultNotificationPrefs(), user.notificationPrefs || {}, prefs || {});
+    user.notificationPrefs = next;
+    user.preferences.notificationPrefs = next;
+
+    var saveResult = saveStore(store);
+    if (!saveResult || !saveResult.ok) {
+      return Promise.resolve(saveResult || { ok: false, error: "storage-write-failed" });
+    }
+
+    if (window.FirestoreService) {
+      window.FirestoreService.setUserDoc(store.session.userId, {
+        notificationPrefs: next,
+        preferences: user.preferences
+      });
+    }
+
+    return Promise.resolve({ ok: true, prefs: next });
   }
 
   function savePreferences(prefs) {
@@ -1625,11 +2495,38 @@
     if (!user.preferences) {
       user.preferences = {};
     }
+    ensureGamificationFields(user);
     var keys = Object.keys(prefs);
+    var profileIdentityChanged = false;
     for (var i = 0; i < keys.length; i++) {
-      user.preferences[keys[i]] = prefs[keys[i]];
+      var key = keys[i];
+      var value = prefs[key];
+      if (key === "streakNotifications" || key === "streakWeeklySummary" || key === "streakEnabled") {
+        var boolValue = value === true;
+        user[key] = boolValue;
+        user.preferences[key] = boolValue;
+      } else if (key === "displayName") {
+        var nextDisplayName = sanitizeDisplayName(value);
+        if (!nextDisplayName) {
+          nextDisplayName = getFallbackDisplayName(user.firstName, user.lastName, user.email);
+        }
+        user.displayName = nextDisplayName;
+        user.username = nextDisplayName;
+        user.preferences.displayName = nextDisplayName;
+        profileIdentityChanged = true;
+      } else if (key === "avatar") {
+        var nextAvatar = normalizeAvatar(value);
+        user.avatar = nextAvatar;
+        user.preferences.avatar = nextAvatar;
+        profileIdentityChanged = true;
+      } else {
+        user.preferences[key] = value;
+      }
     }
-    saveStore(store);
+    var saveResult = saveStore(store);
+    if (!saveResult || !saveResult.ok) {
+      return saveResult || { ok: false, error: "storage-write-failed" };
+    }
 
     if (window.FirestoreService) {
       var cloudPatch = { preferences: user.preferences };
@@ -1641,7 +2538,30 @@
           ? user.preferences.lastEmailSentAt
           : null;
       }
+      if (Object.prototype.hasOwnProperty.call(prefs, "streakNotifications")) {
+        cloudPatch.streakNotifications = user.streakNotifications === true;
+      }
+      if (Object.prototype.hasOwnProperty.call(prefs, "streakWeeklySummary")) {
+        cloudPatch.streakWeeklySummary = user.streakWeeklySummary === true;
+      }
+      if (Object.prototype.hasOwnProperty.call(prefs, "streakEnabled")) {
+        cloudPatch.streakEnabled = user.streakEnabled === true;
+      }
+      if (profileIdentityChanged) {
+        var fallbackDisplayName = getFallbackDisplayName(user.firstName, user.lastName, user.email);
+        var safeDisplayName = sanitizeDisplayName(user.displayName) || fallbackDisplayName;
+        cloudPatch.displayName = safeDisplayName;
+        cloudPatch.avatar = normalizeAvatar(user.avatar) || null;
+        cloudPatch.publicProfile = {
+          displayName: safeDisplayName,
+          displayNameLower: safeDisplayName.toLowerCase(),
+          avatar: normalizeAvatar(user.avatar) || null
+        };
+      }
       window.FirestoreService.setUserDoc(store.session.userId, cloudPatch);
+      if (profileIdentityChanged && window.FirestoreService.syncPublicProfile) {
+        window.FirestoreService.syncPublicProfile(store.session.userId, user);
+      }
     }
 
     return { ok: true };
@@ -1860,17 +2780,21 @@
     var threads = Array.isArray(prefs.chatThreads) ? prefs.chatThreads : null;
 
     if (threads && threads.length > 0) {
-      var activeId = prefs.activeChatThreadId || threads[0].id;
-      var hasActive = false;
-      for (var i = 0; i < threads.length; i++) {
-        if (threads[i].id === activeId) {
-          hasActive = true;
-          break;
+      var activeId = prefs.activeChatThreadId || null;
+      if (activeId) {
+        var hasActive = false;
+        for (var i = 0; i < threads.length; i++) {
+          if (threads[i].id === activeId) {
+            hasActive = true;
+            break;
+          }
         }
-      }
-      if (!hasActive) {
+        if (!hasActive) {
+          activeId = null;
+          savePreferences({ activeChatThreadId: null });
+        }
+      } else {
         activeId = threads[0].id;
-        savePreferences({ activeChatThreadId: activeId });
       }
       prefs.activeChatThreadId = activeId;
       return prefs;
@@ -1947,9 +2871,8 @@
         break;
       }
     }
-    if (!active && threads.length > 0) {
-      active = threads[0];
-      savePreferences({ activeChatThreadId: active.id });
+    if (!active && activeId) {
+      savePreferences({ activeChatThreadId: null });
     }
     return active ? cloneThread(active) : null;
   }
@@ -1965,7 +2888,10 @@
       messages: []
     };
     threads.unshift(thread);
-    savePreferences({ chatThreads: threads, activeChatThreadId: thread.id });
+    var saveResult = savePreferences({ chatThreads: threads, activeChatThreadId: thread.id });
+    if (!saveResult || !saveResult.ok) {
+      return saveResult || { ok: false, error: "storage-write-failed" };
+    }
     return { ok: true, thread: cloneThread(thread) };
   }
 
@@ -1991,13 +2917,19 @@
         updatedAt: nowIso(),
         messages: []
       };
-      savePreferences({ chatThreads: [fresh], activeChatThreadId: fresh.id });
+      var freshSave = savePreferences({ chatThreads: [fresh], activeChatThreadId: fresh.id });
+      if (!freshSave || !freshSave.ok) {
+        return freshSave || { ok: false, error: "storage-write-failed" };
+      }
       return { ok: true, activeThreadId: fresh.id };
     }
 
     var activeId = prefs.activeChatThreadId;
     var nextActive = activeId === threadId ? next[0].id : activeId;
-    savePreferences({ chatThreads: next, activeChatThreadId: nextActive });
+    var saveResult = savePreferences({ chatThreads: next, activeChatThreadId: nextActive });
+    if (!saveResult || !saveResult.ok) {
+      return saveResult || { ok: false, error: "storage-write-failed" };
+    }
     return { ok: true, activeThreadId: nextActive };
   }
 
@@ -2074,7 +3006,11 @@
     if (!cleared) {
       return { ok: false, error: "Thread not found." };
     }
-    return savePreferences({ chatThreads: updatedThreads, activeChatThreadId: activeId });
+    var saveResult = savePreferences({ chatThreads: updatedThreads, activeChatThreadId: activeId });
+    if (!saveResult || !saveResult.ok) {
+      return saveResult || { ok: false, error: "storage-write-failed" };
+    }
+    return { ok: true };
   }
 
   function updateChatThreadTitle(threadId, title) {
@@ -2089,7 +3025,11 @@
       }
     }
     if (!found) { return { ok: false, error: "Thread not found." }; }
-    return savePreferences({ chatThreads: threads });
+    var saveResult = savePreferences({ chatThreads: threads });
+    if (!saveResult || !saveResult.ok) {
+      return saveResult || { ok: false, error: "storage-write-failed" };
+    }
+    return { ok: true };
   }
 
   function seedDemoData() {
@@ -2194,7 +3134,7 @@
     return { ok: true };
   }
 
-  // ── Dev-only: restore gamification snapshot (used by dev-tools.js Reset) ──
+  // ── Dev-only: restore gamification snapshot (used by Dev Tools restore flows) ──
   function devRestoreGamState(snapshot) {
     if (!snapshot) { return { ok: false }; }
     var store = loadStore();
@@ -2227,6 +3167,7 @@
     user.activeQuest     = null;
     user.claimedQuestIds = [];   // wipe ALL claim locks (daily + weekly) so every quest can be re-tested
     delete user.clearedQuestAt;
+    touchQuestState(user);
     saveStore(store);
     localStorage.setItem("sugbocents_unclaimed_quests", "0");
     window.dispatchEvent(new CustomEvent("sugbocents:questBadgeUpdate", { detail: { count: 0 } }));
@@ -2244,6 +3185,7 @@
     user.activeQuest     = null;
     user.claimedQuestIds = [];
     user.clearedQuestAt  = null;
+    touchQuestState(user);
     saveStore(store);
     window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
     return { ok: true };
@@ -2287,12 +3229,8 @@
   }
 
   function getWeekMondayDate(date) {
-    var d = new Date(date);
-    var day = d.getDay();
-    var diff = (day === 0) ? -6 : 1 - day;
-    d.setDate(d.getDate() + diff);
-    d.setHours(0, 0, 0, 0);
-    return d;
+    var mondayKey = getManilaMondayKey(date || new Date());
+    return new Date(mondayKey + "T00:00:00+08:00");
   }
 
   function _buildFreshQuest(weekNum) {
@@ -2318,6 +3256,30 @@
       completedAt: null
     };
     return quest;
+  }
+
+  // Starter daily quest — pinned automatically for brand-new accounts and after
+  // a full data reset. Mirrors the canonical "daily-first-log" definition in
+  // quests.js so the dashboard / quests page render the exact same card. We
+  // duplicate the literals here (rather than import from quests.js) because
+  // storage.js loads before quests.js and must work on pages where quests.js
+  // is not loaded at all (e.g. settings.html during reset).
+  function _buildStarterDailyQuest() {
+    var now = new Date();
+    var endOfDay = new Date(getManilaDayKey(now) + "T23:59:59.999+08:00");
+    return {
+      id: "daily-first-log",
+      type: "daily",
+      title: "First Log",
+      description: "Log at least 1 expense today",
+      icon: "\uD83D\uDCDD",
+      xpReward: 10,
+      sentimosReward: 10,
+      conditions: [{ type: "log_count_today", target: 1, progress: 0 }],
+      assignedAt: now.toISOString(),
+      expiresAt: endOfDay.toISOString(),
+      completedAt: null
+    };
   }
 
   function getCurrentQuest() {
@@ -2347,6 +3309,7 @@
         user.questHistory.unshift(expiredDailyQuest);
         user.activeQuest = null;
         user.clearedQuestAt = null;
+        touchQuestState(user);
         saveStore(store);
         return null;
       }
@@ -2366,21 +3329,34 @@
       user.questHistory.unshift(user.activeQuest);
       user.activeQuest = null;
       user.clearedQuestAt = null;
+      touchQuestState(user);
       saveStore(store);
       return null; // Let user choose from the new week's pool
     }
 
-    // User explicitly cleared/abandoned their quest — respect that, don't auto-assign
+    // User explicitly cleared/abandoned their quest — respect that, don't auto-assign.
     if (user.clearedQuestAt) { return null; }
 
-    // First-ever use: no active quest, no cleared flag, no history — auto-assign once
-    if (!user.questHistory || user.questHistory.length === 0) {
-      user.activeQuest = _buildFreshQuest(weekNum);
+    // Truly-fresh account: no active quest, no history, no claimed keys, no
+    // cleared flag. This matches a brand-new sign-up OR a full data reset.
+    // Auto-pin the starter "Log at least 1 expense today" daily quest so the
+    // user immediately sees the completion hooray UI after their first log.
+    // Any other state (has history, has claim keys, or explicitly cleared)
+    // falls through to the empty state below — users must pick their own.
+    var hasHistory     = Array.isArray(user.questHistory) && user.questHistory.length > 0;
+    var hasClaimedKeys = Array.isArray(user.claimedQuestIds) && user.claimedQuestIds.length > 0;
+    if (!hasHistory && !hasClaimedKeys) {
+      user.activeQuest = _buildStarterDailyQuest();
+      touchQuestState(user);
       saveStore(store);
+      // Immediately reconcile progress against any expenses already logged today
+      // so the pinned card reflects reality (e.g. user logged 1 expense before
+      // dashboard render, quest should already be completed).
+      updateDailyQuestProgressInternal(store, user);
       return user.activeQuest;
     }
 
-    // Has history but no active quest and no cleared flag — slot is intentionally empty
+    // Has history or claim keys but no active quest — slot is intentionally empty.
     return null;
   }
 
@@ -2416,12 +3392,19 @@
       user.activeQuest = questObj;
       delete user.clearedQuestAt;
     }
+    touchQuestState(user);
     saveStore(store);
 
-    // Recompute weekly quest progress immediately after equipping so dashboard
-    // renders persisted, up-to-date progress instead of an initial 0/N snapshot.
-    if (questObj && questObj.type !== "daily") {
-      updateQuestProgress();
+    // Recompute quest progress immediately after equipping so the dashboard
+    // renders persisted, up-to-date progress instead of a fresh 0/N snapshot.
+    // Critical for daily quests too: if a user already logged 2 expenses today
+    // and then pins "Log 3 expenses today", the card should show 2/3 — not 0/3.
+    if (questObj) {
+      if (questObj.type === "daily") {
+        updateDailyQuestProgressInternal(store, user);
+      } else {
+        updateQuestProgress();
+      }
     }
 
     window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
@@ -2482,6 +3465,7 @@
     if (user.pendingDailyReward && user.pendingDailyReward.id === questId) {
       user.pendingDailyReward = null;
     }
+    touchQuestState(user);
     saveStore(store);
 
     var defaultSentimos = questType === "daily" ? 10 : 25;
@@ -2507,6 +3491,7 @@
       user.activeQuest = null;
     }
 
+    touchQuestState(user);
     saveStore(store);
     if (store.session && window.FirestoreService && window.FirestoreService.syncPublicProfile) {
       window.FirestoreService.syncPublicProfile(store.session.userId, user);
@@ -2524,6 +3509,7 @@
     user.questsCompleted = (user.questsCompleted || 0) + 1;
     user.questHistory.unshift(Object.assign({}, quest));
     user.activeQuest = null;
+    touchQuestState(user);
     saveStore(store);
     if (store.session && window.FirestoreService && window.FirestoreService.syncPublicProfile) {
       window.FirestoreService.syncPublicProfile(store.session.userId, user);
@@ -2555,6 +3541,7 @@
       user.questHistory.unshift(user.activeQuest);
       user.activeQuest = null;
       user.clearedQuestAt = null;
+      touchQuestState(user);
       saveStore(store);
       return;
     }
@@ -2563,13 +3550,13 @@
     var todayEnd   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
     var expenses   = Array.isArray(user.expenses) ? user.expenses : [];
 
-    // Forward-looking: only count expenses logged after the quest was assigned
-    var assignedCutoff = user.activeQuest.assignedAt ? new Date(user.activeQuest.assignedAt) : todayStart;
-    if (assignedCutoff < todayStart) { assignedCutoff = todayStart; }
-
+    // Daily-quest semantics are "log N expenses TODAY" — count from midnight,
+    // regardless of when the quest was pinned. Using assignedAt as a cutoff
+    // would exclude expenses logged before the user tapped "Track", making
+    // progress appear to reset on every pin.
     var todayExp   = expenses.filter(function (e) {
       var d = new Date(e.timestamp);
-      return d >= assignedCutoff && d < todayEnd;
+      return d >= todayStart && d < todayEnd;
     });
 
     var cond = user.activeQuest.conditions && user.activeQuest.conditions[0];
@@ -2595,6 +3582,7 @@
     if (cond.progress >= cond.target) {
       // Note: caller (addExpense / removeExpense) dispatches dataChanged after this returns.
       user.activeQuest.completedAt = new Date().toISOString();
+      touchQuestState(user);
       saveStore(store);
       window.dispatchEvent(new CustomEvent("sugbocents:questCompleted", {
         detail: {
@@ -2607,6 +3595,7 @@
     } else {
       // If progress dropped below target (e.g., an expense was deleted), un-complete the quest.
       if (user.activeQuest.completedAt) { user.activeQuest.completedAt = null; }
+      touchQuestState(user);
       saveStore(store);
     }
   }
@@ -2632,6 +3621,7 @@
       user.questHistory.unshift(user.activeQuest);
       user.activeQuest = null;
       user.clearedQuestAt = null;
+      touchQuestState(user);
       saveStore(store);
       return;
     }
@@ -2745,6 +3735,7 @@
       // Mark as completed — user claims rewards via claimQuestReward()
       // Note: caller (addExpense / removeExpense) dispatches dataChanged after this returns.
       user.activeQuest.completedAt = new Date().toISOString();
+      touchQuestState(user);
       saveStore(store);
       window.dispatchEvent(new CustomEvent("sugbocents:questCompleted", {
         detail: {
@@ -2757,6 +3748,7 @@
     } else {
       // If progress dropped below target (e.g., an expense was deleted), un-complete the quest.
       if (user.activeQuest.completedAt) { user.activeQuest.completedAt = null; }
+      touchQuestState(user);
       saveStore(store);
       if (anyTick) {
         var questSnap = JSON.parse(JSON.stringify(user.activeQuest));
@@ -2779,6 +3771,7 @@
     var claimKey = q.id + ":" + getLocalDateKey(new Date(q.assignedAt));
     if (user.claimedQuestIds.indexOf(claimKey) !== -1) {
       user.pendingDailyReward = null;
+      touchQuestState(user);
       saveStore(store);
       return null;
     }
@@ -2879,7 +3872,13 @@
       // ── Weekly quests (5-quest rotating pool) ─────────────
       var monday = getWeekMondayDate(now);
       var mondayKey = getLocalDateKey(monday);
-      var weekExp = expenses.filter(function (e) { return new Date(e.timestamp) >= monday; });
+      // Use the same assignedAt boundary that updateQuestProgress uses so
+      // the badge never claims completion before the tracker agrees.
+      var questAssignedAt = (user.activeQuest && user.activeQuest.assignedAt)
+        ? new Date(user.activeQuest.assignedAt)
+        : monday;
+      var weekCutoff = questAssignedAt > monday ? questAssignedAt : monday;
+      var weekExp = expenses.filter(function (e) { return new Date(e.timestamp) >= weekCutoff; });
 
       var logDays = {};
       weekExp.forEach(function (e) { logDays[getLocalDateKey(e.timestamp)] = true; });
@@ -2955,12 +3954,17 @@
     addExpense: addExpense,
     getExpenses: getExpenses,
     getBudgetSummary: getBudgetSummary,
+    getAiContext: getAiContext,
     resetCurrentUserData: resetCurrentUserData,
     removeExpense: removeExpense,
     getQuickAddItems: getQuickAddItems,
     saveQuickAddItems: saveQuickAddItems,
     updateUserProfile: updateUserProfile,
     getPreferences: getPreferences,
+    getAvatarPresets: getAvatarPresets,
+    getStreakPreferences: getStreakPreferences,
+    getNotificationPrefs: getNotificationPrefs,
+    setNotificationPrefs: setNotificationPrefs,
     savePreferences: savePreferences,
     getEmailOptIn: getEmailOptIn,
     setEmailOptIn: setEmailOptIn,
@@ -2999,6 +4003,8 @@
     getPendingDailyReward: getPendingDailyReward,
     updateQuestProgress: updateQuestProgress,
     creditDailyMission: creditDailyMission,
+    getManilaDayKey: getManilaDayKey,
+    getManilaMondayKey: getManilaMondayKey,
     // Sprint 3 Phase 4: Sentimos
     getSentimosBalance: getSentimosBalance,
     addSentimos: addSentimos,

@@ -167,47 +167,72 @@
   }
 
   // ── Notify: show modal(s) for newly unlockable achievements ───────────────
+  // TEMPORARILY DISABLED (Phase 4 audit): the celebration modal for newly
+  // unlocked badges has multiple unresolved UX issues (incorrect copy after
+  // claim, queue contention with level-up, focus-trap regressions). Until the
+  // redesign lands, this function is a safe no-op that STILL marks the badges
+  // as notified — so:
+  //   • achievement unlocking continues to work end-to-end
+  //   • badges still appear unlocked-but-unclaimed in the grid (gold pulse)
+  //   • the queue does not back-pressure when many badges unlock at once
+  //   • re-enabling later only requires restoring the modal-queueing block
+  //
+  // Do NOT remove the marking step — without it, every page reload would
+  // re-attempt to notify the same achievements, polluting analytics and
+  // (when re-enabled) re-popping modals the user already dismissed.
   function maybeNotifyNewAchievements(ids) {
     if (!Array.isArray(ids) || ids.length === 0) { return; }
-    if (!window.StorageAPI || !window.StorageAPI.getAchievements) { return; }
-
-    var all = window.StorageAPI.getAchievements();
-    var badges = ids.map(function (id) {
-      return all.filter(function (a) { return a.id === id; })[0] || null;
-    }).filter(Boolean);
-
-    if (badges.length === 0) { return; }
-
+    if (!window.StorageAPI) { return; }
     if (window.StorageAPI.markAchievementsNotified) {
-      window.StorageAPI.markAchievementsNotified(ids);
+      try { window.StorageAPI.markAchievementsNotified(ids); } catch (_) {}
     }
-
-    // Batch if 3 or more fire at once
-    if (badges.length >= 3) {
-      queueModal({
-        iconClass: "bi-trophy-fill",
-        superText: "Achievement unlocked",
-        title: badges.length + " new badges!",
-        desc: badges.map(function (b) { return b.name; }).join(", ") + "\n\nHead to Profile to claim your XP!",
-        cta: "See Achievements",
-        href: "stats.html",
-        showXpBar: false
-      });
-      return;
-    }
-
-    badges.forEach(function (badge) {
-      queueModal({
-        iconClass: badge.icon || "bi-award-fill",
-        superText: "Achievement unlocked",
-        title: badge.name,
-        desc: badge.description + "\n\nHead to Profile to claim your +15 XP!",
-        cta: "See Achievements",
-        href: "stats.html",
-        showXpBar: false
-      });
-    });
+    // Intentionally no queueModal() call — popup disabled at the trigger level.
+    // Achievement unlocking + claim flow remains fully functional via
+    // achievements.html / stats.html / dashboard claim buttons.
   }
+
+  // ── (Disabled implementation preserved below for the future redesign) ────
+  // function _maybeNotifyNewAchievements_original(ids) {
+  //   if (!Array.isArray(ids) || ids.length === 0) { return; }
+  //   if (!window.StorageAPI || !window.StorageAPI.getAchievements) { return; }
+  //
+  //   var all = window.StorageAPI.getAchievements();
+  //   var badges = ids.map(function (id) {
+  //     return all.filter(function (a) { return a.id === id; })[0] || null;
+  //   }).filter(Boolean);
+  //
+  //   if (badges.length === 0) { return; }
+  //
+  //   if (window.StorageAPI.markAchievementsNotified) {
+  //     window.StorageAPI.markAchievementsNotified(ids);
+  //   }
+  //
+  //   if (badges.length >= 3) {
+  //     queueModal({
+  //       iconClass: "bi-trophy-fill",
+  //       superText: "Achievement unlocked",
+  //       title: badges.length + " new badges!",
+  //       desc: badges.map(function (b) { return b.name; }).join(", ") +
+  //         "\n\nHead to Profile to claim your XP!",
+  //       cta: "See Achievements",
+  //       href: "stats.html",
+  //       showXpBar: false
+  //     });
+  //     return;
+  //   }
+  //
+  //   badges.forEach(function (badge) {
+  //     queueModal({
+  //       iconClass: badge.icon || "bi-award-fill",
+  //       superText: "Achievement unlocked",
+  //       title: badge.name,
+  //       desc: badge.description + "\n\nHead to Profile to claim your +15 XP!",
+  //       cta: "See Achievements",
+  //       href: "stats.html",
+  //       showXpBar: false
+  //     });
+  //   });
+  // }
 
   // ── Level-up notification ──────────────────────────────────────────────────
   function notifyLevelUp(prevLevel, newLevel, newLevelName) {

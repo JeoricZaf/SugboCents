@@ -20,6 +20,29 @@
   var isOffline = false;
   var pendingDeleteThreadId = null;
   var isPendingNewThread = false;
+  var TRUSTED_APP_ORIGINS = [
+    "https://sugbocents.netlify.app",
+    "https://sugbocents.web.app",
+    "https://sugbocents.firebaseapp.com",
+    "http://127.0.0.1:5500",
+    "http://localhost:5500"
+  ];
+
+  function isTrustedOrigin(origin) {
+    if (!origin || typeof origin !== "string") { return false; }
+    return TRUSTED_APP_ORIGINS.indexOf(origin) !== -1;
+  }
+
+  function getTrustedParentOrigin() {
+    if (document.referrer) {
+      try {
+        var refOrigin = new URL(document.referrer).origin;
+        if (isTrustedOrigin(refOrigin)) { return refOrigin; }
+      } catch (_) {}
+    }
+    if (isTrustedOrigin(window.location.origin)) { return window.location.origin; }
+    return TRUSTED_APP_ORIGINS[0];
+  }
 
   function fmt(n) {
     return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(n);
@@ -354,6 +377,60 @@
     renderThreadSidebar();
   }
 
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function renderInlineMarkdownSafe(text) {
+    return String(text || "")
+      .replace(/`([^`\n]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+  }
+
+  function renderMarkdownSafe(text) {
+    var normalized = escapeHtml(text).replace(/\r\n/g, "\n");
+    var lines = normalized.split("\n");
+    var parts = [];
+    var inList = false;
+
+    lines.forEach(function (line) {
+      var trimmed = line.trim();
+      if (/^-\s+/.test(trimmed)) {
+        if (!inList) {
+          parts.push("<ul>");
+          inList = true;
+        }
+        parts.push("<li>" + renderInlineMarkdownSafe(trimmed.replace(/^-\s+/, "")) + "</li>");
+        return;
+      }
+
+      if (inList) {
+        parts.push("</ul>");
+        inList = false;
+      }
+
+      if (!trimmed) {
+        parts.push("<br>");
+      } else {
+        parts.push("<p>" + renderInlineMarkdownSafe(trimmed) + "</p>");
+      }
+    });
+
+    if (inList) {
+      parts.push("</ul>");
+    }
+
+    return parts.join("")
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+      .replace(/javascript:/gi, "");
+  }
+
   function appendMsg(role, text, timestamp, skipStore, avatarState) {
     var container = getMessageContainer();
     if (!container) { return; }
@@ -370,7 +447,11 @@
     inner.className = "chat-msg-body";
     var bubble = document.createElement("div");
     bubble.className = "chat-bubble";
-    bubble.textContent = text;
+    if (role === "bot") {
+      bubble.innerHTML = renderMarkdownSafe(text);
+    } else {
+      bubble.textContent = text;
+    }
 
     inner.appendChild(bubble);
     if (timestamp) {
@@ -385,9 +466,16 @@
     scrollToBottom();
 
     if (!skipStore && window.StorageAPI && window.StorageAPI.saveChatMessage) {
-      window.StorageAPI.saveChatMessage(role, text);
-      renderThreadSidebar();
+      var saveResult = window.StorageAPI.saveChatMessage(role, text);
+      if (saveResult && saveResult.ok) {
+        renderThreadSidebar();
+      } else if (saveResult && saveResult.error === "storage-full") {
+        showInfoToast("Storage is full. Delete older chats to keep saving messages.");
+      }
+      return saveResult;
     }
+
+    return { ok: true };
   }
 
   function addTypingIndicator() {
@@ -520,13 +608,22 @@
       window.StorageAPI.savePreferences({ lastChatAt: new Date().toISOString() });
     }
 
+    var trimmed = text.trim();
+    var history = buildConversationHistory();
+
     // Notify parent frame that a message was sent (clears isPanelNewPending)
     if (window.parent && window.parent !== window) {
-      window.parent.postMessage({ type: "sugbocents:messageSent" }, "*");
+      window.parent.postMessage({ type: "sugbocents:messageSent" }, getTrustedParentOrigin());
     }
 
-    var trimmed = text.trim();
-    appendMsg("user", trimmed, new Date().toISOString(), false);
+    var saveUserResult = appendMsg("user", trimmed, new Date().toISOString(), false);
+    if (!saveUserResult || !saveUserResult.ok) {
+      showInfoToast("Could not save this message. Please try again.");
+    }
+
+    if (window.StorageAPI && window.StorageAPI.getActiveChatThreadId) {
+      activeThreadId = window.StorageAPI.getActiveChatThreadId();
+    }
 
     if (window.StorageAPI && window.StorageAPI.getPreferences && window.StorageAPI.savePreferences) {
       var _prefs = window.StorageAPI.getPreferences();
@@ -549,7 +646,6 @@
     var typingId = addTypingIndicator();
 
     if (window.ChatAI && window.ChatAI.isAvailable()) {
-      var history = buildConversationHistory();
       window.ChatAI.send(trimmed, history).then(function (result) {
         removeTypingIndicator(typingId);
         setInputState(false);
@@ -683,8 +779,9 @@
     backBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     backBtn.addEventListener("click", function (e) {
       e.preventDefault();
+      e.stopImmediatePropagation();
       if (window.parent) {
-        window.parent.postMessage({ type: "sugbocents:closeChat" }, "*");
+        window.parent.postMessage({ type: "sugbocents:closeChat" }, getTrustedParentOrigin());
       }
     });
   }
@@ -697,6 +794,7 @@
 
   // Wire the back button on the full chat page (history.back with fallback)
   function initBackBtn() {
+    if (window.self !== window.top) { return; }
     var backBtn = document.getElementById("chatBackBtn");
     if (!backBtn) { return; }
     backBtn.addEventListener("click", function () {
@@ -787,6 +885,7 @@
 
     // Handle messages from parent frame (new chat trigger from compose button)
     window.addEventListener("message", function (event) {
+      if (!isTrustedOrigin(event.origin)) { return; }
       if (!event || !event.data || event.data.type !== "sugbocents:newChat") { return; }
       var currentThread = window.StorageAPI && window.StorageAPI.getActiveChatThread
         ? window.StorageAPI.getActiveChatThread()

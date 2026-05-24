@@ -356,10 +356,10 @@
     gridEl.innerHTML = html;
 
     gridEl.querySelectorAll(".badge-claim-btn").forEach(function (btn) {
-      btn.addEventListener("click", function () {
+      btn.addEventListener("click", async function () {
         var id = btn.getAttribute("data-badge-id");
         if (!id || !window.StorageAPI.claimAchievement) { return; }
-        window.StorageAPI.claimAchievement(id);
+        await window.StorageAPI.claimAchievement(id);
         renderBadgeGrid();
         renderXpWidget();
         updateSummaryStats();

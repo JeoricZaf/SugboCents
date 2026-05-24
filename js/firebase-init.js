@@ -4,8 +4,13 @@
     reason: "",
     app: null,
     auth: null,
-    db: null
+    db: null,
+    functions: null,
+    messaging: null,
+    vapidKey: ""
   };
+
+  var VAPID_PUBLIC_KEY = "BHXYx7Kf5dxOGPj61UfwzIanYyWyV90SHkpBEl80K0oB9nVT4J3Q9dudEOvp8hRzVOWqIAdwAy0fw7KL8zaR78U";
 
   // Replace this object in production, or set window.__SUGBOCENTS_FIREBASE_CONFIG before this script runs.
   var defaultConfig = {
@@ -70,6 +75,12 @@
           return loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js");
         })
         .then(function () {
+          return loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js");
+        })
+        .then(function () {
+          return loadScript("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js");
+        })
+        .then(function () {
           if (!window.firebase) {
             throw new Error("Firebase SDK unavailable");
           }
@@ -79,6 +90,9 @@
             : window.firebase.initializeApp(config);
           state.auth = window.firebase.auth();
           state.db = window.firebase.firestore();
+          state.functions = window.firebase.functions ? window.firebase.functions() : null;
+          state.messaging = window.firebase.messaging ? window.firebase.messaging() : null;
+          state.vapidKey = VAPID_PUBLIC_KEY;
 
           // Enable offline persistence so writes queued while offline are
           // flushed automatically when connectivity is restored.
@@ -111,6 +125,15 @@
     },
     getDb: function () {
       return state.db;
+    },
+    getFunctions: function () {
+      return state.functions;
+    },
+    getMessaging: function () {
+      return state.messaging;
+    },
+    getVapidKey: function () {
+      return state.vapidKey;
     }
   };
 })();

@@ -53,6 +53,8 @@
 
       var email = String(payload.email || "").trim();
       var password = String(payload.password || "");
+      var firstName = sanitizeName(payload.firstName);
+      var lastName = sanitizeName(payload.lastName);
       var displayName = buildDisplayName(payload.firstName, payload.lastName);
 
       var credential = await auth.createUserWithEmailAndPassword(email, password);
@@ -60,6 +62,14 @@
       if (credential.user && displayName) {
         await credential.user.updateProfile({
           displayName: displayName
+        });
+      }
+
+      if (window.FirestoreService && window.FirestoreService.seedUserDoc) {
+        await window.FirestoreService.seedUserDoc(credential.user.uid, {
+          firstName: firstName,
+          lastName: lastName,
+          email: email
         });
       }
 
@@ -85,12 +95,25 @@
       var auth = getAuthOrThrow();
       var credential = await auth.signInWithEmailAndPassword(String(email || "").trim(), String(password || ""));
 
+      var displayName = credential.user.displayName || "";
+      var parts = String(displayName).trim().split(/\s+/).filter(Boolean);
+      var firstName = parts.length ? sanitizeName(parts[0]) : "";
+      var lastName = parts.length > 1 ? sanitizeName(parts.slice(1).join(" ")) : "";
+
+      if (window.FirestoreService && window.FirestoreService.seedUserDoc) {
+        await window.FirestoreService.seedUserDoc(credential.user.uid, {
+          firstName: firstName,
+          lastName: lastName,
+          email: credential.user.email || String(email || "").trim()
+        });
+      }
+
       return {
         ok: true,
         user: {
           id: credential.user.uid,
           email: credential.user.email || "",
-          displayName: credential.user.displayName || ""
+          displayName: displayName
         }
       };
     } catch (error) {
@@ -139,6 +162,22 @@
           callback(null);
           return;
         }
+
+        // Stamp lastLoginAt once per browser session so the lapsed-ladder reset can fire server-side.
+        try {
+          if (user.uid && !sessionStorage.getItem("sugbocents:lastLoginStamped")) {
+            sessionStorage.setItem("sugbocents:lastLoginStamped", "1");
+            if (window.FirestoreService && typeof window.FirestoreService.setUserDoc === "function") {
+              window.FirestoreService.setUserDoc(user.uid, {
+                lastLoginAt: new Date().toISOString()
+              }).catch(function (err) {
+                if (window.console && console.warn) {
+                  console.warn("[Auth] failed to stamp lastLoginAt:", err);
+                }
+              });
+            }
+          }
+        } catch (_) {}
 
         callback({
           id: user.uid,

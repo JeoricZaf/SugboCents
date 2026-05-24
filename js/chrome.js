@@ -179,6 +179,10 @@
     '<p class="text-xs font-semibold" style="color:#5f6f63">Habit finance game</p>',
     '</div>',
     '<div id="resourceBar" class="flex-1" aria-label="Your stats" style="min-height:4rem"></div>',
+    '<button id="notifBellButton" class="notif-bell-btn is-hidden" type="button" aria-label="Open notifications">',
+    '  <span aria-hidden="true">&#128276;</span>',
+    '  <span id="notifBellBadge" class="notif-bell-badge is-hidden"></span>',
+    '</button>',
     '</div>',
     '</header>'
   ].join('');

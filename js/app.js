@@ -32,12 +32,17 @@
       var nowHour = new Date().getHours();
       if (nowHour >= 17 && window.StorageAPI.getExpenses) {
         var expenses = window.StorageAPI.getExpenses();
-        var todayKey = (function () {
-          var d = new Date();
-          return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-        }());
+        var todayKey = window.StorageAPI.getManilaDayKey
+          ? window.StorageAPI.getManilaDayKey(new Date())
+          : (function () {
+              var d = new Date();
+              return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+            }());
         var loggedToday = expenses.some(function (e) {
           if (!e.timestamp) { return false; }
+          if (window.StorageAPI.getManilaDayKey) {
+            return window.StorageAPI.getManilaDayKey(e.timestamp) === todayKey;
+          }
           var ed = new Date(e.timestamp);
           return ed.getFullYear() + "-" + String(ed.getMonth() + 1).padStart(2, "0") + "-" + String(ed.getDate()).padStart(2, "0") === todayKey;
         });
@@ -141,6 +146,88 @@
     // Insert at top of app-main > main, or at top of body
     var main = document.querySelector(".app-main main") || document.querySelector("main") || document.body;
     main.insertBefore(bar, main.firstChild);
+  }
+
+  function injectAiBuddy() {
+    var needsAuth = document.body.getAttribute("data-protected") === "true";
+    if (!needsAuth) { return; }
+    if (document.body.getAttribute("data-page") === "chat") { return; }
+    if (document.getElementById("aiBuddyFab")) { return; }
+
+    var fab = document.createElement("a");
+    fab.id = "aiBuddyFab";
+    fab.href = "chat.html";
+    fab.className = "sc-chat-fab";
+    fab.setAttribute("aria-label", "Open Tigom AI chat");
+    fab.innerHTML =
+      '<div class="relative h-10 w-10" aria-hidden="true">' +
+        '<div class="absolute left-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>' +
+        '<div class="absolute right-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>' +
+        '<div class="absolute inset-1 rounded-[38%_38%_44%_44%]" style="background:#2b8259;box-shadow:inset 0 -8px 0 rgba(22,79,51,0.26)"></div>' +
+        '<div class="absolute left-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)"></div>' +
+        '<div class="absolute right-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)"></div>' +
+        '<div class="absolute left-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>' +
+        '<div class="absolute right-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>' +
+        '<div class="absolute bottom-[26%] left-1/2 rounded-b-full" style="height:3px;width:1.5rem;border-bottom:3px solid #102b1d;transform:translateX(-50%)"></div>' +
+        '<div class="absolute -bottom-1 left-1/2 flex h-5 w-6 items-center justify-center rounded-full text-[0.55rem] font-black" style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">\u20B1</div>' +
+      '</div>';
+
+    document.body.appendChild(fab);
+  }
+
+  function ensureNotificationsScript() {
+    var needsAuth = document.body.getAttribute("data-protected") === "true";
+    if (!needsAuth) { return; }
+    if (document.querySelector('script[data-sugbocents-notifications="1"]')) { return; }
+    if (window.NotificationsAPI) { return; }
+
+    var script = document.createElement("script");
+    script.src = "js/notifications.js";
+    script.defer = true;
+    script.setAttribute("data-sugbocents-notifications", "1");
+    document.head.appendChild(script);
+  }
+
+  function updateAiBuddyState() {
+    var fab = document.getElementById("aiBuddyFab");
+    if (!fab || !window.StorageAPI) { return; }
+
+    var mood = "neutral";
+    if (window.StorageAPI.getTigomMood) {
+      mood = String(window.StorageAPI.getTigomMood() || "neutral");
+    }
+    fab.dataset.mood = mood;
+
+    var unread = 0;
+    if (window.StorageAPI.getAiUnreadCount) {
+      unread = Number(window.StorageAPI.getAiUnreadCount() || 0);
+    }
+    fab.dataset.unread = unread > 0 ? String(Math.min(99, unread)) : "";
+  }
+
+  function preloadFriendCacheOnce() {
+    var needsAuth = document.body.getAttribute("data-protected") === "true";
+    if (!needsAuth) { return; }
+    if (!window.StorageAPI || !window.FirestoreService || !window.FirestoreService.getFriends) { return; }
+    if (!window.FirebaseInit || !window.FirebaseInit.isFirebaseMode || !window.FirebaseInit.isFirebaseMode()) { return; }
+
+    var session = window.StorageAPI.getSession ? window.StorageAPI.getSession() : null;
+    var userId = session && session.userId ? String(session.userId) : "";
+    if (!userId) { return; }
+
+    var prefetchKey = "sugbocents_friends_prefetched_" + userId;
+    try {
+      if (sessionStorage.getItem(prefetchKey) === "1") { return; }
+      sessionStorage.setItem(prefetchKey, "1");
+    } catch (_) {}
+
+    window.FirestoreService.getFriends(userId)
+      .then(function () {
+        window.dispatchEvent(new CustomEvent("sugbocents:friendsPrefetched", { detail: { userId: userId } }));
+      })
+      .catch(function () {
+        try { sessionStorage.removeItem(prefetchKey); } catch (_) {}
+      });
   }
 
   // ── Bottom Sheets ─────────────────────────────────────────
@@ -294,6 +381,12 @@
     var needsAuth = document.body.getAttribute("data-protected") === "true";
     var guestOnly = document.body.getAttribute("data-guest-only") === "true";
     var session = window.StorageAPI.getSession();
+    var hasPendingAddFriend = false;
+    try {
+      hasPendingAddFriend = Boolean(sessionStorage.getItem("sugbocents_pending_add_friend_code"));
+    } catch (_) {
+      hasPendingAddFriend = false;
+    }
 
     if (needsAuth && !session) {
       window.location.replace("login.html");
@@ -301,7 +394,7 @@
     }
 
     if (guestOnly && session) {
-      window.location.replace("dashboard.html");
+      window.location.replace(hasPendingAddFriend ? "profile.html" : "dashboard.html");
       return;
     }
 
@@ -311,14 +404,20 @@
       var sidebarName = document.getElementById("sidebarName");
       var sidebarAvatar = document.getElementById("sidebarAvatar");
       if (sidebarName) {
-        sidebarName.textContent = user.firstName ? user.firstName + (user.lastName ? " " + user.lastName : "") : user.email;
+        var displayName = String(user.displayName || "").trim();
+        sidebarName.textContent = displayName || (user.firstName ? user.firstName + (user.lastName ? " " + user.lastName : "") : user.email);
       }
       if (sidebarAvatar) {
-        var initials = user.firstName ? user.firstName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : "U");
-        if (user.lastName) {
-          initials += user.lastName.charAt(0).toUpperCase();
+        var avatar = String(user.avatar || "").trim();
+        if (avatar) {
+          sidebarAvatar.textContent = avatar;
+        } else {
+          var initials = user.firstName ? user.firstName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : "U");
+          if (user.lastName) {
+            initials += user.lastName.charAt(0).toUpperCase();
+          }
+          sidebarAvatar.textContent = initials;
         }
-        sidebarAvatar.textContent = initials;
       }
     }
   }
@@ -430,6 +529,40 @@
     });
   }
 
+  function injectProfileBadgeSpans() {
+    document.querySelectorAll("a[href='profile.html'], a[href='./profile.html']").forEach(function (link) {
+      if (link.querySelector(".profile-nav-badge")) { return; }
+      link.style.position = "relative";
+      var span = document.createElement("span");
+      span.className = "profile-nav-badge is-hidden";
+      span.textContent = "0";
+      span.setAttribute("aria-hidden", "true");
+      link.appendChild(span);
+    });
+  }
+
+  var profileRequestsUnsubscribe = null;
+
+  function clearProfileBadgeSubscription() {
+    if (typeof profileRequestsUnsubscribe === "function") {
+      try { profileRequestsUnsubscribe(); } catch (_) {}
+    }
+    profileRequestsUnsubscribe = null;
+  }
+
+  function refreshProfileBadgeRealtime() {
+    if (!window.StorageAPI || !window.FirestoreService || !window.FirestoreService.onFriendRequestsChange) { return; }
+    var session = window.StorageAPI.getSession ? window.StorageAPI.getSession() : null;
+    var myUid = session && session.userId ? session.userId : null;
+    if (!myUid) { return; }
+
+    clearProfileBadgeSubscription();
+    profileRequestsUnsubscribe = window.FirestoreService.onFriendRequestsChange(myUid, function (requests) {
+      var count = Array.isArray(requests) ? requests.length : 0;
+      window.dispatchEvent(new CustomEvent("sugbocents:profileBadgeUpdate", { detail: { count: count } }));
+    });
+  }
+
   function getQuestBadgeCacheKey() {
     var session = (window.StorageAPI && window.StorageAPI.getSession) ? window.StorageAPI.getSession() : null;
     var userId = session && session.userId ? String(session.userId) : "anon";
@@ -496,14 +629,38 @@
     // regardless of browser history or late DOM insertions.
     window.scrollTo(0, 0);
     await protectRoutes();
-    revealPageContent();
+
+    // Keep skeleton until Firestore sync completes so users never see a stale-then-fresh
+    // data jump. A 4-second fallback ensures the page always reveals even on slow connections.
+    var syncRevealed = false;
+    var syncRevealTimeout = setTimeout(function () {
+      if (!syncRevealed) { syncRevealed = true; revealPageContent(); }
+    }, 4000);
+    window.addEventListener("sugbocents:synced", function onSyncedReveal() {
+      window.removeEventListener("sugbocents:synced", onSyncedReveal);
+      clearTimeout(syncRevealTimeout);
+      if (!syncRevealed) { syncRevealed = true; revealPageContent(); }
+    });
+    // If there is no active session (guest pages or local-only), reveal immediately
+    // so the page is never stuck waiting for a sync that will never fire.
+    if (!window.StorageAPI || !window.StorageAPI.getSession || !window.StorageAPI.getSession()) {
+      clearTimeout(syncRevealTimeout);
+      syncRevealed = true;
+      revealPageContent();
+    }
+
     activateBottomNav();
     injectResourceBar();
+    ensureNotificationsScript();
+    injectAiBuddy();
     renderResourceBar();
+    updateAiBuddyState();
+    preloadFriendCacheOnce();
     initSidebarToggle();
     initSidebarTooltip();
     registerServiceWorker();
     injectQuestBadgeSpans();
+    injectProfileBadgeSpans();
     clearLegacyQuestBadgeCache();
     // Apply cached badge count immediately (before async StorageAPI resolves)
     try {
@@ -513,12 +670,30 @@
       }
     } catch (_) {}
     refreshQuestBadge();
+    refreshProfileBadgeRealtime();
+    window.addEventListener("pagehide", clearProfileBadgeSubscription);
+    window.addEventListener("beforeunload", clearProfileBadgeSubscription);
 
     // Re-render resource bar on any data change; also refresh badge
     window.addEventListener("sugbocents:dataChanged", function () {
       renderResourceBar();
       refreshQuestBadge();
+      updateAiBuddyState();
     });
+    window.addEventListener("sugbocents:devStateChanged", function () {
+      if (!window.StorageAPI) {
+        renderResourceBar();
+        return;
+      }
+      if (typeof window.StorageAPI.resolveAuthState === "function") {
+        window.StorageAPI.resolveAuthState()
+          .then(function () { renderResourceBar(); })
+          .catch(function () { renderResourceBar(); });
+        return;
+      }
+      renderResourceBar();
+    });
+    window.addEventListener("sugbocents:moodChanged", updateAiBuddyState);
 
     // Quest completion banner (shown on pages other than quests.html)
     window.addEventListener("sugbocents:questCompleted", function (e) {
@@ -545,6 +720,31 @@
       document.querySelectorAll(".quest-nav-badge").forEach(function (el) {
         if (count > 0) { el.classList.remove("is-hidden"); }
         else           { el.classList.add("is-hidden"); }
+      });
+    });
+
+    window.addEventListener("sugbocents:profileBadgeUpdate", function (e) {
+      var count = e.detail && Number(e.detail.count || 0) ? Number(e.detail.count || 0) : 0;
+      document.querySelectorAll(".profile-nav-badge").forEach(function (el) {
+        if (count > 0) {
+          el.textContent = count > 99 ? "99+" : String(count);
+          el.classList.remove("is-hidden");
+        } else {
+          el.classList.add("is-hidden");
+        }
+        var link = el.parentElement;
+        if (link && link.tagName === "A") {
+          var base = link.getAttribute("data-aria-base");
+          if (!base) {
+            base = link.getAttribute("aria-label") || "Profile";
+            link.setAttribute("data-aria-base", base);
+          }
+          if (count > 0) {
+            link.setAttribute("aria-label", base + ", " + count + " pending friend " + (count === 1 ? "request" : "requests"));
+          } else {
+            link.setAttribute("aria-label", base);
+          }
+        }
       });
     });
   });

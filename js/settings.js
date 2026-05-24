@@ -135,24 +135,137 @@
       : "Tip: Server limit is up to 5 sends/day per network.";
   }
 
+  function sanitizeDisplayNameInput(value) {
+    var cleaned = String(value || "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .replace(/[^A-Za-z0-9._\- ]/g, "");
+    if (cleaned.length > 24) {
+      cleaned = cleaned.slice(0, 24).trim();
+    }
+    return cleaned;
+  }
+
+  function getFallbackDisplayName(user) {
+    if (!user) { return "SugboCents User"; }
+    var full = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+    if (full) { return full; }
+    if (user.email) { return String(user.email).split("@")[0].slice(0, 24); }
+    return "SugboCents User";
+  }
+
+  function getAvatarOptions() {
+    if (window.StorageAPI && window.StorageAPI.getAvatarPresets) {
+      var options = window.StorageAPI.getAvatarPresets();
+      if (Array.isArray(options) && options.length) { return options; }
+    }
+    return ["🐯", "🐼", "🦊", "🐸", "🐨", "🦁", "🐰", "🐹", "🐻", "🐵", "🦄", "🐧"];
+  }
+
   // ── Profile basics ───────────────────────────────────────
   function initProfileSection() {
     var form = document.getElementById("profileForm");
     if (!form) { return; }
 
+    var firstNameEl = document.getElementById("profileFirstName");
+    var lastNameEl = document.getElementById("profileLastName");
+    var displayNameEl = document.getElementById("profileDisplayName");
+    var displayNameErr = document.getElementById("profileDisplayNameError");
+    var displayNameCounter = document.getElementById("displayNameCounter");
+    var avatarGrid = document.getElementById("avatarPickerGrid");
+
     var user = window.StorageAPI ? window.StorageAPI.getCurrentUser() : null;
+    var selectedAvatar = user && user.avatar ? String(user.avatar) : "";
+
+    function updateCounter() {
+      if (!displayNameCounter || !displayNameEl) { return; }
+      displayNameCounter.textContent = String((displayNameEl.value || "").length) + "/24";
+    }
+
+    function setDisplayNameError(message) {
+      if (!displayNameErr || !displayNameEl) { return; }
+      if (message) {
+        displayNameErr.textContent = message;
+        displayNameErr.classList.remove("hidden");
+        displayNameEl.classList.add("is-invalid");
+        return;
+      }
+      displayNameErr.textContent = "";
+      displayNameErr.classList.add("hidden");
+      displayNameEl.classList.remove("is-invalid");
+    }
+
+    function renderAvatarPicker() {
+      if (!avatarGrid) { return; }
+      var options = getAvatarOptions();
+      avatarGrid.innerHTML = options.map(function (avatar) {
+        var isSelected = avatar === selectedAvatar;
+        return (
+          '<button type="button" class="avatar-option" data-avatar="' + avatar + '" style="height:4rem;width:4rem;border-radius:9999px;border:' + (isSelected ? "3px solid #2b8259" : "1px solid #d8d1bd") + ';background:#faf8f1;display:grid;place-items:center;font-size:1.55rem;box-shadow:' + (isSelected ? "0 0 0 3px rgba(43,130,89,0.15)" : "none") + '">' + avatar + '</button>'
+        );
+      }).join("");
+
+      avatarGrid.querySelectorAll(".avatar-option").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var nextAvatar = String(btn.getAttribute("data-avatar") || "");
+          selectedAvatar = nextAvatar;
+          renderAvatarPicker();
+          if (window.StorageAPI && window.StorageAPI.savePreferences) {
+            var result = window.StorageAPI.savePreferences({ avatar: nextAvatar });
+            if (!result || result.ok === false) {
+              showMessage("profileSaveMsg", (result && result.error) || "Couldn't save avatar.", true);
+              return;
+            }
+            showMessage("profileSaveMsg", "Avatar updated ✓", false);
+          }
+        });
+      });
+    }
+
+    function saveDisplayNameIfNeeded() {
+      if (!displayNameEl || !window.StorageAPI || !window.StorageAPI.savePreferences) {
+        return { ok: true };
+      }
+      var raw = displayNameEl.value || "";
+      var sanitized = sanitizeDisplayNameInput(raw);
+      displayNameEl.value = sanitized;
+      updateCounter();
+      setDisplayNameError("");
+      var result = window.StorageAPI.savePreferences({ displayName: sanitized });
+      if (!result || result.ok === false) {
+        setDisplayNameError((result && result.error) || "Couldn't save display name.");
+        return { ok: false, error: (result && result.error) || "save-failed" };
+      }
+      return { ok: true };
+    }
+
     if (user) {
-      var firstNameEl = document.getElementById("profileFirstName");
-      var lastNameEl  = document.getElementById("profileLastName");
       if (firstNameEl) { firstNameEl.value = user.firstName || ""; }
       if (lastNameEl)  { lastNameEl.value  = user.lastName  || ""; }
+      if (displayNameEl) {
+        displayNameEl.value = user.displayName || user.username || getFallbackDisplayName(user);
+      }
+    }
+
+    renderAvatarPicker();
+    updateCounter();
+
+    if (displayNameEl) {
+      displayNameEl.addEventListener("input", function () {
+        updateCounter();
+        setDisplayNameError("");
+      });
+      displayNameEl.addEventListener("blur", function () {
+        if (!displayNameEl.value.trim()) {
+          displayNameEl.value = user ? getFallbackDisplayName(window.StorageAPI.getCurrentUser() || user) : "SugboCents User";
+        }
+        saveDisplayNameIfNeeded();
+      });
     }
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
 
-      var firstNameEl = document.getElementById("profileFirstName");
-      var lastNameEl  = document.getElementById("profileLastName");
       var firstNameErr = document.getElementById("profileFirstNameError");
       var lastNameErr  = document.getElementById("profileLastNameError");
 
@@ -188,6 +301,12 @@
         return;
       }
 
+      var displayResult = saveDisplayNameIfNeeded();
+      if (!displayResult.ok) {
+        showMessage("profileSaveMsg", displayResult.error || "Couldn't save display name.", true);
+        return;
+      }
+
       showMessage("profileSaveMsg", "Profile updated!", false);
     });
   }
@@ -215,10 +334,15 @@
 
   // ── Streak preferences ───────────────────────────────────
   function initStreakSection() {
-    var prefs = window.StorageAPI ? window.StorageAPI.getPreferences() : {};
+    var prefs = {};
+    if (window.StorageAPI && window.StorageAPI.getStreakPreferences) {
+      prefs = window.StorageAPI.getStreakPreferences() || {};
+    } else if (window.StorageAPI && window.StorageAPI.getPreferences) {
+      prefs = window.StorageAPI.getPreferences() || {};
+    }
 
     // Streak risk reminder → streakNotifications
-    var notifChecked = prefs.streakNotifications === true;
+    var notifChecked = prefs.streakNotifications !== false;
     var notifInput = document.getElementById("streakReminderInput");
     if (notifInput) { notifInput.checked = notifChecked; }
     wireVisualToggle("streakReminderTrack", "streakReminderThumb", "streakReminderInput",
@@ -264,6 +388,112 @@
         }
         showMessage("displaySaveMsg", "Display preference saved.", false);
       });
+    }
+  }
+
+  function initNotificationSection() {
+    if (!window.NotificationsAPI) { return; }
+
+    var prefs = window.NotificationsAPI.getPrefs ? window.NotificationsAPI.getPrefs() : {};
+
+    var pushInput = document.getElementById("notifPushToggle");
+    var emailInput = document.getElementById("notifEmailToggle");
+    var dailyInput = document.getElementById("notifDailyToggle");
+    var socialInput = document.getElementById("notifSocialToggle");
+    var dailyHour = document.getElementById("notifDailyHour");
+    var quietStart = document.getElementById("notifQuietStart");
+    var quietEnd = document.getElementById("notifQuietEnd");
+    var iosNote = document.getElementById("notifIosNote");
+
+    function buildHourOptions(selectEl, selectedHour) {
+      if (!selectEl) { return; }
+      var selected = Number(selectedHour);
+      if (!Number.isFinite(selected)) { selected = 0; }
+      var html = "";
+      for (var h = 0; h < 24; h++) {
+        var labelHour = (h % 12) || 12;
+        var period = h < 12 ? "AM" : "PM";
+        var selectedAttr = h === selected ? " selected" : "";
+        html += '<option value="' + h + '"' + selectedAttr + '>' + labelHour + ':00 ' + period + '</option>';
+      }
+      selectEl.innerHTML = html;
+    }
+
+    function savePatch(patch, okMessage) {
+      window.NotificationsAPI.updatePrefs(patch).then(function () {
+        showMessage("streakSaveMsg", okMessage || "Notification preference saved.", false);
+      }).catch(function () {
+        showMessage("streakSaveMsg", "Couldn't save notification preference.", true);
+      });
+    }
+
+    function applyTrackState(trackId, thumbId, checked) {
+      var track = document.getElementById(trackId);
+      var thumb = document.getElementById(thumbId);
+      if (!track || !thumb) { return; }
+      track.style.background = checked ? "#2b8259" : "#cbd5e1";
+      thumb.style.transform = checked ? "translateX(1.25rem)" : "translateX(0)";
+    }
+
+    buildHourOptions(dailyHour, prefs.dailyReminderHour);
+    buildHourOptions(quietStart, prefs.quietHoursStart);
+    buildHourOptions(quietEnd, prefs.quietHoursEnd);
+
+    if (pushInput) { pushInput.checked = prefs.pushEnabled === true; }
+    if (emailInput) { emailInput.checked = prefs.emailEnabled !== false; }
+    if (dailyInput) { dailyInput.checked = prefs.dailyReminderEnabled === true; }
+    if (socialInput) { socialInput.checked = prefs.socialEnabled !== false; }
+
+    wireVisualToggle("notifPushTrack", "notifPushThumb", "notifPushToggle", true, false, function (checked) {
+      if (!checked) {
+        savePatch({ pushEnabled: false, setupDone: true }, "Push notifications disabled.");
+        return;
+      }
+      window.NotificationsAPI.requestPermissionAndRegister().then(function (result) {
+        if (result && result.ok) {
+          showMessage("streakSaveMsg", "Push notifications enabled.", false);
+          return;
+        }
+        if (pushInput) { pushInput.checked = false; }
+        applyTrackState("notifPushTrack", "notifPushThumb", false);
+        showMessage("streakSaveMsg", "Push permission not granted.", true);
+      }).catch(function () {
+        if (pushInput) { pushInput.checked = false; }
+        applyTrackState("notifPushTrack", "notifPushThumb", false);
+        showMessage("streakSaveMsg", "Couldn't enable push right now.", true);
+      });
+    });
+
+    wireVisualToggle("notifEmailTrack", "notifEmailThumb", "notifEmailToggle", true, false, function (checked) {
+      savePatch({ emailEnabled: checked, setupDone: true }, "Email reminder preference saved.");
+    });
+
+    wireVisualToggle("notifDailyTrack", "notifDailyThumb", "notifDailyToggle", true, false, function (checked) {
+      savePatch({ dailyReminderEnabled: checked, setupDone: true }, "Daily reminder preference saved.");
+    });
+
+    wireVisualToggle("notifSocialTrack", "notifSocialThumb", "notifSocialToggle", true, false, function (checked) {
+      savePatch({ socialEnabled: checked, setupDone: true }, "Social alert preference saved.");
+    });
+
+    if (dailyHour) {
+      dailyHour.addEventListener("change", function () {
+        savePatch({ dailyReminderHour: Number(dailyHour.value), setupDone: true }, "Daily reminder time saved.");
+      });
+    }
+    if (quietStart) {
+      quietStart.addEventListener("change", function () {
+        savePatch({ quietHoursStart: Number(quietStart.value), setupDone: true }, "Quiet hours start saved.");
+      });
+    }
+    if (quietEnd) {
+      quietEnd.addEventListener("change", function () {
+        savePatch({ quietHoursEnd: Number(quietEnd.value), setupDone: true }, "Quiet hours end saved.");
+      });
+    }
+
+    if (iosNote && window.NotificationsAPI.isIosUnsupported && window.NotificationsAPI.isIosUnsupported()) {
+      iosNote.classList.remove("hidden");
     }
   }
 
@@ -332,6 +562,27 @@
       } finally {
         setSendButtonState(sendBtn, false);
       }
+    });
+  }
+
+  function initDevToolsShortcut() {
+    var shortcut = document.getElementById("devToolsShortcut");
+    if (!shortcut) { return; }
+
+    if (!window.FirebaseInit || !window.FirebaseInit.ready) { return; }
+
+    window.FirebaseInit.ready.then(function () {
+      if (!window.firebase || !window.firebase.functions) { return; }
+      var callable = window.firebase.functions().httpsCallable("devCheckAccess");
+      return callable().then(function (res) {
+        if (res && res.data && res.data.authorized === true) {
+          shortcut.classList.remove("hidden");
+        }
+      }).catch(function () {
+        // Non-allowlisted users keep this shortcut hidden.
+      });
+    }).catch(function () {
+      // Ignore bootstrap failures for this optional shortcut.
     });
   }
 
@@ -444,8 +695,10 @@
     initProfileSection();
     initStreakSection();
     initDisplaySection();
+    initNotificationSection();
     initWeeklyReportSection();
     initBudgetAndAccountSection();
+    initDevToolsShortcut();
 
     // ── Demo seed button ─────────────────────────────────────
     var seedBtn = document.getElementById("seedDemoBtn");

@@ -310,10 +310,10 @@
       '</div>';
 
     sheet.querySelector(".sheet-close-btn").addEventListener("click", closeClaimSheet);
-    sheet.querySelector(".badge-claim-confirm-btn").addEventListener("click", function () {
+    sheet.querySelector(".badge-claim-confirm-btn").addEventListener("click", async function () {
       var id = this.getAttribute("data-badge-id");
       if (!id || !window.StorageAPI.claimAchievement) { return; }
-      var result = window.StorageAPI.claimAchievement(id);
+      var result = await window.StorageAPI.claimAchievement(id);
       if (result.ok) {
         closeClaimSheet();
         renderBadgeGrid();

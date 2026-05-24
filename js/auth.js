@@ -1,4 +1,47 @@
 ﻿(function () {
+  var ADD_FRIEND_SESSION_KEY = "sugbocents_pending_add_friend_code";
+
+  function readAddFriendCodeFromUrl() {
+    var params = new URLSearchParams(window.location.search || "");
+    var code = String(params.get("addFriend") || "").trim();
+    return code || "";
+  }
+
+  function writePendingAddFriendCode(code) {
+    if (!code) { return; }
+    try {
+      sessionStorage.setItem(ADD_FRIEND_SESSION_KEY, code);
+    } catch (_) {}
+  }
+
+  function hasPendingAddFriendCode() {
+    try {
+      return Boolean(sessionStorage.getItem(ADD_FRIEND_SESSION_KEY));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function getPostAuthRedirect() {
+    return hasPendingAddFriendCode() ? "profile.html" : "dashboard.html";
+  }
+
+  function preserveAddFriendInAuthLinks(code) {
+    if (!code) { return; }
+    document.querySelectorAll("a[href]").forEach(function (link) {
+      var href = String(link.getAttribute("href") || "");
+      if (!href || href.indexOf("#") === 0 || /^https?:/i.test(href)) { return; }
+      if (href.indexOf("login.html") !== 0 && href.indexOf("register.html") !== 0 && href.indexOf("landing.html") !== 0) {
+        return;
+      }
+      var parts = href.split("?");
+      var path = parts[0];
+      var params = new URLSearchParams(parts[1] || "");
+      params.set("addFriend", code);
+      link.setAttribute("href", path + "?" + params.toString());
+    });
+  }
+
   function isEmailValid(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
   }
@@ -72,7 +115,7 @@
         return;
       }
 
-      window.location.replace("dashboard.html");
+      window.location.replace(getPostAuthRedirect());
     });
   }
 
@@ -159,11 +202,17 @@
         return;
       }
 
-      window.location.replace("dashboard.html");
+      window.location.replace(getPostAuthRedirect());
     });
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    var addFriendCode = readAddFriendCodeFromUrl();
+    if (addFriendCode) {
+      writePendingAddFriendCode(addFriendCode);
+      preserveAddFriendInAuthLinks(addFriendCode);
+    }
+
     handleLogin();
     handleRegister();
   });

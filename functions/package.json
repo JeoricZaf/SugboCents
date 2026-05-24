@@ -10,6 +10,7 @@
   },
   "main": "index.js",
   "dependencies": {
+    "@getbrevo/brevo": "^5.0.4",
     "firebase-admin": "^13.0.0",
     "firebase-functions": "^7.2.5"
   },

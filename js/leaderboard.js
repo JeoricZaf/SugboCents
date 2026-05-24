@@ -23,6 +23,19 @@
   var SNAPSHOT_KEY_BASE = "sugbocents_lb_snapshot_v2";
   var PLAYERS_CACHE_KEY_BASE = "sugbocents_lb_players_v3";
   var PAGE = document.body.dataset.page;
+  var leaderboardUnsubscribers = [];
+
+  function addLeaderboardSubscription(unsubscribe) {
+    if (typeof unsubscribe !== "function") { return; }
+    leaderboardUnsubscribers.push(unsubscribe);
+  }
+
+  function clearLeaderboardSubscriptions() {
+    while (leaderboardUnsubscribers.length) {
+      var unsubscribe = leaderboardUnsubscribers.pop();
+      try { unsubscribe(); } catch (_) {}
+    }
+  }
 
   // ── Utilities ─────────────────────────────────────────────────
 
@@ -74,6 +87,9 @@
   }
 
   function getWeekMondayKey(dateObj) {
+    if (window.StorageAPI && window.StorageAPI.getManilaMondayKey) {
+      return window.StorageAPI.getManilaMondayKey(dateObj || new Date());
+    }
     var now = dateObj ? new Date(dateObj) : new Date();
     var dayOfWeek = now.getDay();
     var monday = new Date(now);
@@ -153,12 +169,15 @@
     var firstName = (user && user.firstName) || (storedUser && storedUser.firstName) || "You";
     var lastName = (user && user.lastName) || (storedUser && storedUser.lastName) || "";
     var lastInitial = lastName ? lastName.charAt(0).toUpperCase() + "." : "";
-    var displayName = [firstName, lastInitial].filter(Boolean).join(" ");
+    var explicitDisplayName = (user && user.displayName) || (storedUser && storedUser.displayName) || "";
+    var displayName = String(explicitDisplayName || [firstName, lastInitial].filter(Boolean).join(" ")).trim();
+    var avatar = String((user && user.avatar) || (storedUser && storedUser.avatar) || "").trim();
 
     return {
       uid:             (user && user.id) || (storedUser && storedUser.id) || "self",
       displayName:     displayName,
       initial:         (firstName || "Y").charAt(0).toUpperCase(),
+      avatar:          avatar,
       streak:          streak,
       questsCompleted: quests,
       weeklyQuestsCompleted: weeklyQuestsCompleted,
@@ -292,6 +311,89 @@
     return '';
   }
 
+  function closeLeaderboardActionSheets() {
+    document.querySelectorAll(".lb-friend-action-sheet").forEach(function (sheet) {
+      sheet.style.display = "none";
+    });
+  }
+
+  var _lbFriendMenuDismissBound = false;
+
+  function bindLeaderboardRowActions(myUid) {
+    var rowsEl = document.getElementById("lbRows");
+    if (!rowsEl) { return; }
+
+    if (!_lbFriendMenuDismissBound) {
+      document.addEventListener("click", function () {
+        closeLeaderboardActionSheets();
+      });
+      _lbFriendMenuDismissBound = true;
+    }
+
+    rowsEl.querySelectorAll(".lb-friend-action-sheet").forEach(function (sheet) {
+      sheet.addEventListener("click", function (evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
+      });
+    });
+
+    rowsEl.querySelectorAll(".lb-friend-menu-btn").forEach(function (btn) {
+      btn.addEventListener("click", function (evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        var parent = btn.parentNode;
+        if (!parent) { return; }
+        var sheet = parent.querySelector(".lb-friend-action-sheet");
+        if (!sheet) { return; }
+        var wasOpen = sheet.style.display === "block";
+        closeLeaderboardActionSheets();
+        sheet.style.display = wasOpen ? "none" : "block";
+      });
+    });
+
+    rowsEl.querySelectorAll(".lb-friend-action-view").forEach(function (btn) {
+      btn.addEventListener("click", function (evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        var uid = btn.dataset.uid;
+        closeLeaderboardActionSheets();
+        if (uid) {
+          window.location.href = "profile.html?uid=" + encodeURIComponent(uid);
+        }
+      });
+    });
+
+    rowsEl.querySelectorAll(".lb-friend-action-remove").forEach(function (btn) {
+      btn.addEventListener("click", async function (evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        closeLeaderboardActionSheets();
+
+        var uid = btn.dataset.uid;
+        var name = btn.dataset.name || "this friend";
+        if (!uid || !myUid || !window.FirestoreService || !window.FirestoreService.removeFriend) { return; }
+
+        var shouldRemove = window.confirm("Remove " + name + " from your friends? Their activity will no longer appear in your feed.");
+        if (!shouldRemove) { return; }
+
+        btn.disabled = true;
+        try {
+          var result = await window.FirestoreService.removeFriend(myUid, uid);
+          if (result && result.ok) {
+            if (window.MotionSystem && window.MotionSystem.toast) {
+              window.MotionSystem.toast("Removed " + name + ".", "success");
+            }
+            window.dispatchEvent(new CustomEvent("sugbocents:dataChanged"));
+            return;
+          }
+          btn.disabled = false;
+        } catch (e) {
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
   // ── Row rendering ─────────────────────────────────────────────
 
   function renderRows(ranking, selfUid, snapshot) {
@@ -352,6 +454,9 @@
       // ── Movement symbol ──────────────────────────────────────────────────
       var moveSymbol = move === "up" ? "\u2191" : move === "down" ? "\u2193" : "";
       var moveClass  = "lb-v3-move lb-v3-move--" + move;
+      var rowAvatarHtml = player.avatar
+        ? '<div class="lb-v3-avatar' + avatarTierClass + '" aria-hidden="true" style="font-size:1.2rem">' + escHtml(player.avatar) + '</div>'
+        : '<div class="lb-v3-avatar' + avatarTierClass + '" aria-hidden="true">' + escHtml(player.initial) + '</div>';
 
       var rowClass = "lb-row-v3" + (isSelf ? " lb-row-v3--self" : "");
 
@@ -364,7 +469,7 @@
             '<span class="lb-v3-rank' + rankColorClass + '">' + (isSelf ? '\u25B6' : globalRank) + '</span>' +
             (moveSymbol ? '<span class="' + moveClass + '">' + moveSymbol + '</span>' : '') +
           '</div>' +
-          '<div class="lb-v3-avatar' + avatarTierClass + '" aria-hidden="true">' + escHtml(player.initial) + '</div>' +
+          rowAvatarHtml +
           '<div class="lb-v3-info">' +
             '<p class="lb-v3-name">' +
               escHtml(player.displayName) +
@@ -377,6 +482,15 @@
               '<span class="lb-v3-stat lb-v3-stat--xp">\u26A1 ' + (player.weeklyXP || 0) + '</span>' +
             '</div>' +
           '</div>' +
+          (isSelf ? '' :
+            '<div class="lb-row-actions" style="position:relative;display:flex;align-items:center;justify-content:center;margin-left:0.35rem">' +
+              '<button type="button" class="lb-friend-menu-btn" data-uid="' + escHtml(player.uid) + '" data-name="' + escHtml(player.displayName || 'Friend') + '" aria-label="More actions for ' + escHtml(player.displayName || 'Friend') + '" style="width:1.9rem;height:1.9rem;border-radius:9999px;border:1px solid #d8d1bd;background:#fff;color:#64748b;font-size:1rem;font-weight:900;line-height:1;display:grid;place-items:center">\u22EF</button>' +
+              '<div class="lb-friend-action-sheet" style="display:none;position:absolute;top:2.1rem;right:0;min-width:9.5rem;background:#fff;border:1px solid #e2e8f0;border-radius:0.75rem;box-shadow:0 14px 32px rgba(15,23,42,0.18);z-index:20;padding:0.25rem">' +
+                '<button type="button" class="lb-friend-action-view" data-uid="' + escHtml(player.uid) + '" style="display:block;width:100%;border:0;background:transparent;text-align:left;padding:0.45rem 0.55rem;border-radius:0.5rem;font-size:0.85rem;font-weight:700;color:#334155">View profile</button>' +
+                '<button type="button" class="lb-friend-action-remove" data-uid="' + escHtml(player.uid) + '" data-name="' + escHtml(player.displayName || 'Friend') + '" style="display:block;width:100%;border:0;background:transparent;text-align:left;padding:0.45rem 0.55rem;border-radius:0.5rem;font-size:0.85rem;font-weight:800;color:#c0392b">Remove friend</button>' +
+              '</div>' +
+            '</div>'
+          ) +
         '</' + tag + '>'
       );
 
@@ -395,6 +509,7 @@
     html += '</div>';
     rowsEl.innerHTML = html;
     rowsEl.style.display = "";
+    bindLeaderboardRowActions(selfUid);
   }
 
   // ── Pinned self card ──────────────────────────────────────────
@@ -411,10 +526,13 @@
     var move  = getMoveIndicator(self.uid, rank, snapshot);
     var moveHtml = renderMoveHtml(move);
     var score = selfInRanking.leagueScore || 0;
+    var pinnedAvatar = selfInRanking.avatar
+      ? '<div style="width:2.5rem;height:2.5rem;border-radius:9999px;background:rgba(255,255,255,0.25);display:grid;place-items:center;font-size:1.25rem;color:white;flex-shrink:0">' + escHtml(selfInRanking.avatar) + '</div>'
+      : '<div style="width:2.5rem;height:2.5rem;border-radius:9999px;background:rgba(255,255,255,0.25);display:grid;place-items:center;font-size:0.875rem;font-weight:900;color:white;flex-shrink:0">' + escHtml(self.initial) + '</div>';
 
     inner.innerHTML = (
       '<div style="width:1.75rem;text-align:center;font-size:1.1rem;font-weight:900;color:white;flex-shrink:0">' + rank + '</div>' +
-      '<div style="width:2.5rem;height:2.5rem;border-radius:9999px;background:rgba(255,255,255,0.25);display:grid;place-items:center;font-size:0.875rem;font-weight:900;color:white;flex-shrink:0">' + escHtml(self.initial) + '</div>' +
+      pinnedAvatar +
       '<div style="min-width:0;flex:1">' +
         '<p style="font-weight:800;color:white;margin:0;font-size:0.875rem">You \u2014 #' + rank + ' of ' + ranking.length + '</p>' +
         '<p style="font-size:0.7rem;color:rgba(255,255,255,0.75);margin:0.1rem 0 0;font-weight:600">' +
@@ -495,10 +613,13 @@
         (slotNum === 1 ? "first" : slotNum === 2 ? "second" : "third") +
         (player.isSelf ? " lb-podium-slot--self" : "");
       var avatarBg = avatarColor(player.level || 1);
+      var avatarHtml = player.avatar
+        ? '<div class="lb-podium-avatar" style="background:' + avatarBg + ';font-size:1.35rem">' + escHtml(player.avatar) + '</div>'
+        : '<div class="lb-podium-avatar" style="background:' + avatarBg + '">' + escHtml(player.initial) + '</div>';
       return (
         '<div class="' + slotClass + '">' +
           '<div class="lb-podium-medal">' + medals[slotNum] + '</div>' +
-          '<div class="lb-podium-avatar" style="background:' + avatarBg + '">' + escHtml(player.initial) + '</div>' +
+          avatarHtml +
           '<p class="lb-podium-name">' +
             escHtml(player.displayName) +
             (player.isSelf ? '<span style="font-size:0.55rem;color:var(--brand-700,#2b8259);display:block"> (You)</span>' : '') +
@@ -639,16 +760,17 @@
           showSection("lbLoading");
         }
 
-        // ── Sync our public profile with a bounded wait ───────────────────────
-        // Rankings should use one source-of-truth in Firebase mode, so we give
-        // self profile sync a short window before reading leaderboard data.
+        // ── Sync our public profile without blocking first render ─────────────
+        // The leaderboard should paint from cache immediately; profile sync is
+        // best-effort and should not delay friend fetches.
         var localUser = loadLocalUser();
-        var syncPromise = Promise.resolve();
         if (localUser && window.FirestoreService.syncPublicProfile) {
           var xpInfo = window.StorageAPI.getXpInfo ? window.StorageAPI.getXpInfo() : { level: 1, levelName: "Rookie Saver" };
-          syncPromise = window.FirestoreService.syncPublicProfile(myUserId, {
+          window.FirestoreService.syncPublicProfile(myUserId, {
             firstName: localUser.firstName || "",
             lastName:  localUser.lastName  || "",
+            displayName: localUser.displayName || "",
+            avatar: localUser.avatar || "",
             streak:    self.streak,
             questsCompleted: self.questsCompleted,
             weeklyQuestsCompleted: self.weeklyQuestsCompleted || 0,
@@ -660,21 +782,10 @@
           }).catch(function () {});
         }
 
-        await Promise.race([
-          syncPromise,
-          new Promise(function (resolve) { setTimeout(resolve, 1200); })
-        ]);
-
         // Keep feed skeleton visible while waiting for the friends list.
         // renderLiveFeed will be called with the real friend UIDs once getFriends resolves.
 
-        var friendFetch = window.FirestoreService.getFriends(myUserId);
-        var selfProfileFetch = window.FirestoreService.getPublicProfile
-          ? window.FirestoreService.getPublicProfile(myUserId).catch(function () { return null; })
-          : Promise.resolve(null);
-        var both = await Promise.all([friendFetch, selfProfileFetch]);
-        var friends = both[0] || [];
-        var selfProfile = both[1] || null;
+        var friends = await window.FirestoreService.getFriends(myUserId);
 
         if (friends.length === 0) {
           renderLiveFeed([], myUserId); // show "no friends" feed empty state
@@ -686,8 +797,9 @@
         var allPlayers = friends.map(function (f) {
           var p = {
             uid:            f.uid,
-            displayName:    f.displayName || "Friend",
-            initial:        (f.firstName || f.displayName || "F").charAt(0).toUpperCase(),
+            displayName:    f.displayName || [f.firstName, f.lastName].filter(Boolean).join(" ") || "Friend",
+            initial:        (f.displayName || f.firstName || "F").charAt(0).toUpperCase(),
+            avatar:         String(f.avatar || "").trim(),
             streak:         Number(f.streak  || 0),
             questsCompleted:Number(f.questsCompleted || 0),
             weeklyQuestsCompleted:Number(f.weeklyQuestsCompleted || 0),
@@ -699,15 +811,6 @@
           return p;
         });
         var selfWithScore = Object.assign({}, self);
-        if (selfProfile) {
-          selfWithScore.displayName = selfProfile.displayName || selfWithScore.displayName;
-          selfWithScore.initial = (selfProfile.firstName || selfWithScore.displayName || "Y").charAt(0).toUpperCase();
-          selfWithScore.streak = Number(selfProfile.streak || 0);
-          selfWithScore.questsCompleted = Number(selfProfile.questsCompleted || 0);
-          selfWithScore.weeklyQuestsCompleted = Number(selfProfile.weeklyQuestsCompleted || 0);
-          selfWithScore.weeklyXP = Number(selfProfile.weeklyXP || 0);
-          selfWithScore.level = Number(selfProfile.level || selfWithScore.level || 1);
-        }
         selfWithScore.leagueScore = computeLeagueScore(selfWithScore);
         allPlayers.push(selfWithScore);
         allPlayers = dedupePlayersByUid(allPlayers);
@@ -757,10 +860,54 @@
       return Math.floor(diffHr / 24) + "d ago";
     }
 
+    var liveFeedUnsubscribe = null;
+
+    function clearLiveFeedSubscription() {
+      if (typeof liveFeedUnsubscribe === "function") {
+        try { liveFeedUnsubscribe(); } catch (_) {}
+      }
+      liveFeedUnsubscribe = null;
+    }
+
+    function renderLiveFeedEntries(feedEl, entries) {
+      if (!entries || entries.length === 0) {
+        feedEl.innerHTML =
+          '<div class="rounded-3xl px-4 py-3 text-sm font-bold" style="background:#faf8f1;color:#334438">' +
+          'No activity yet \u2014 friends will show up here as they log expenses \uD83D\uDD25' +
+          '</div>';
+        return;
+      }
+
+      feedEl.innerHTML = entries.slice(0, 5).map(function (e) {
+        var initial = String(e.authorInitial || (e.authorName || "?").charAt(0)).toUpperCase();
+        var name    = escHtml(e.authorName || "Friend");
+        var msg     = escHtml(e.message   || "logged activity");
+        var emoji   = escHtml(e.emoji     || "\uD83D\uDCCA");
+        var time    = relativeTime(e.timestamp);
+        return (
+          '<div style="display:flex;align-items:flex-start;gap:0.6rem;padding:0.5rem 0;border-bottom:1px solid #f0ebe0">' +
+            '<div style="width:2rem;height:2rem;border-radius:50%;background:#164f33;display:grid;place-items:center;flex-shrink:0;font-size:0.75rem;font-weight:900;color:white;font-family:\'Sora\',sans-serif">' +
+              initial +
+            '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<p style="margin:0;font-size:0.8rem;font-weight:700;color:#102b1d;line-height:1.3">' +
+                emoji + '\u00a0' + msg +
+              '</p>' +
+              '<p style="margin:0.15rem 0 0;font-size:0.7rem;font-weight:600;color:#8a9e90">' +
+                name + (time ? ' \u00b7 ' + time : '') +
+              '</p>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join("");
+    }
+
     // friendUids — array of friend UIDs to fetch feed entries from (must NOT include own UID).
     async function renderLiveFeed(friendUids, myUid) {
       var feedEl = document.getElementById("lbLiveFeed");
       if (!feedEl) { return; }
+
+      clearLiveFeedSubscription();
 
       // Show skeleton while fetching
       feedEl.innerHTML =
@@ -808,38 +955,30 @@
         entries = await window.FirestoreService.getFriendsFeedEntries(friendUids, 5);
       }
 
-      if (!entries || entries.length === 0) {
-        feedEl.innerHTML =
-          '<div class="rounded-3xl px-4 py-3 text-sm font-bold" style="background:#faf8f1;color:#334438">' +
-          'No activity yet \u2014 friends will show up here as they log expenses \uD83D\uDD25' +
-          '</div>';
-        return;
-      }
+      var friendSet = {};
+      friendUids.forEach(function (uid) { friendSet[uid] = true; });
+      entries = (entries || []).filter(function (entry) {
+        if (!entry) { return false; }
+        if (entry.authorUid) { return !!friendSet[entry.authorUid]; }
+        if (entry.authorId) { return !!friendSet[entry.authorId]; }
+        return true;
+      });
 
-      // Take the 5 most recent entries (getFriendsFeedEntries already sorts + slices,
-      // but enforce the cap here as a safety net).
-      feedEl.innerHTML = entries.slice(0, 5).map(function (e) {
-        var initial = String(e.authorInitial || (e.authorName || "?").charAt(0)).toUpperCase();
-        var name    = escHtml(e.authorName || "Friend");
-        var msg     = escHtml(e.message   || "logged activity");
-        var emoji   = escHtml(e.emoji     || "\uD83D\uDCCA");
-        var time    = relativeTime(e.timestamp);
-        return (
-          '<div style="display:flex;align-items:flex-start;gap:0.6rem;padding:0.5rem 0;border-bottom:1px solid #f0ebe0">' +
-            '<div style="width:2rem;height:2rem;border-radius:50%;background:#164f33;display:grid;place-items:center;flex-shrink:0;font-size:0.75rem;font-weight:900;color:white;font-family:\'Sora\',sans-serif">' +
-              initial +
-            '</div>' +
-            '<div style="flex:1;min-width:0">' +
-              '<p style="margin:0;font-size:0.8rem;font-weight:700;color:#102b1d;line-height:1.3">' +
-                emoji + '\u00a0' + msg +
-              '</p>' +
-              '<p style="margin:0.15rem 0 0;font-size:0.7rem;font-weight:600;color:#8a9e90">' +
-                name + (time ? ' \u00b7 ' + time : '') +
-              '</p>' +
-            '</div>' +
-          '</div>'
-        );
-      }).join("");
+      renderLiveFeedEntries(feedEl, entries);
+
+      if (myUid && window.FirestoreService && window.FirestoreService.onFriendFeedChange) {
+        liveFeedUnsubscribe = window.FirestoreService.onFriendFeedChange(myUid, function (rows) {
+          var filtered = (rows || []).filter(function (entry) {
+            if (!entry) { return false; }
+            if (entry.authorUid) { return !!friendSet[entry.authorUid]; }
+            if (entry.authorId) { return !!friendSet[entry.authorId]; }
+            return false;
+          }).sort(function (a, b) {
+            return String(b.timestamp || "").localeCompare(String(a.timestamp || ""));
+          });
+          renderLiveFeedEntries(feedEl, filtered);
+        }, 5);
+      }
     } // end renderLiveFeed
 
     // ── Debounced re-render ────────────────────────────────────
@@ -862,6 +1001,8 @@
       var isFirebaseAvailable = window.FirebaseInit &&
                                 window.FirebaseInit.isFirebaseMode &&
                                 window.FirebaseInit.isFirebaseMode();
+
+      clearLeaderboardSubscriptions();
 
       if (isFirebaseAvailable) {
         var currentSession = window.StorageAPI && window.StorageAPI.getSession ? window.StorageAPI.getSession() : null;
@@ -922,6 +1063,31 @@
       window.addEventListener("sugbocents:dataChanged", scheduleRender);
       // sugbocents:synced after the initial one: also debounced
       window.addEventListener("sugbocents:synced", scheduleRender);
+      window.addEventListener("sugbocents:friendsRefreshed", scheduleRender);
+
+      var session = window.StorageAPI && window.StorageAPI.getSession ? window.StorageAPI.getSession() : null;
+      var myUid = session && session.userId ? session.userId : null;
+      if (myUid && window.FirestoreService) {
+        if (window.FirestoreService.onFriendsChange) {
+          addLeaderboardSubscription(window.FirestoreService.onFriendsChange(myUid, function () {
+            scheduleRender();
+          }));
+        }
+        if (window.FirestoreService.onPublicProfileChange) {
+          addLeaderboardSubscription(window.FirestoreService.onPublicProfileChange(myUid, function () {
+            scheduleRender();
+          }));
+        }
+      }
+    });
+
+    window.addEventListener("pagehide", function () {
+      clearLiveFeedSubscription();
+      clearLeaderboardSubscriptions();
+    });
+    window.addEventListener("beforeunload", function () {
+      clearLiveFeedSubscription();
+      clearLeaderboardSubscriptions();
     });
   }
 
@@ -931,13 +1097,130 @@
 
     var _lbFetching = false; // debounce: prevent simultaneous fetches
     var _lbDashDebounceTimer = null;
+    var _lbDashRenderKey = "";
 
     function scheduleDashboardRender() {
       if (_lbDashDebounceTimer) { clearTimeout(_lbDashDebounceTimer); }
       _lbDashDebounceTimer = setTimeout(function () {
         _lbDashDebounceTimer = null;
-        renderDashboardWidget();
+        renderDashboardLeaderboardWidget();
       }, 1200);
+    }
+
+    function getDashboardRankedPlayers(self, friends, myUserId) {
+      var allPlayers = (friends || []).map(function (friend) {
+        var player = {
+          uid: friend.uid,
+          displayName: friend.displayName || "Friend",
+          initial: (friend.firstName || friend.displayName || "F").charAt(0).toUpperCase(),
+          streak: Number(friend.streak || 0),
+          questsCompleted: Number(friend.questsCompleted || 0),
+          weeklyQuestsCompleted: Number(friend.weeklyQuestsCompleted || 0),
+          weeklyXP: Number(friend.weeklyXP || 0),
+          level: Number(friend.level || 1),
+          isSelf: false
+        };
+        player.leagueScore = computeLeagueScore(player);
+        return player;
+      });
+
+      var selfDash = Object.assign({}, self, { uid: myUserId });
+      selfDash.leagueScore = computeLeagueScore(selfDash);
+      allPlayers.push(selfDash);
+      allPlayers = dedupePlayersByUid(allPlayers);
+
+      return sortRanking(allPlayers).map(function (player, index) {
+        return Object.assign({}, player, { rank: index + 1 });
+      });
+    }
+
+    function buildDashboardRenderKey(ranked) {
+      return (ranked || []).map(function (player) {
+        return String(player.uid || "") + ":" + String(player.rank || 0) + ":" + String(player.leagueScore || 0);
+      }).join("|");
+    }
+
+    function setDashboardEmptyState(emptyEl, rowsEl, jaEl) {
+      if (emptyEl) { emptyEl.style.display = ""; }
+      if (rowsEl)  { rowsEl.style.display  = "none"; }
+      if (jaEl)    { jaEl.style.display    = "none"; }
+    }
+
+    function renderDashboardRows(self, myUserId, friends, force) {
+      var emptyEl = document.getElementById("lbDashV3Empty");
+      var rowsEl  = document.getElementById("lbDashV3Rows");
+      var jaEl    = document.getElementById("lbDashV3JustAhead");
+      var rankEl  = document.getElementById("lbDashV3RankChip");
+
+      var normalizedFriends = Array.isArray(friends) ? friends : [];
+      if (normalizedFriends.length === 0) {
+        setDashboardEmptyState(emptyEl, rowsEl, jaEl);
+        return false;
+      }
+
+      var ranked = getDashboardRankedPlayers(self, normalizedFriends, myUserId);
+      var renderKey = buildDashboardRenderKey(ranked);
+      if (!force && renderKey && renderKey === _lbDashRenderKey) {
+        return true;
+      }
+      _lbDashRenderKey = renderKey;
+
+      if (emptyEl) { emptyEl.style.display = "none"; }
+      if (rowsEl)  { rowsEl.style.display = ""; }
+
+      var selfInRanking = ranked.find(function (player) { return player.isSelf; });
+      var selfRank = selfInRanking ? selfInRanking.rank : ranked.length;
+
+      if (rankEl) { rankEl.textContent = "#" + selfRank + " of " + ranked.length; }
+
+      if (jaEl) {
+        if (selfRank === 1) {
+          jaEl.textContent = "\uD83D\uDD25 You're leading the pack this week!";
+          jaEl.style.display = "";
+        } else {
+          var aheadPlayer = ranked[selfRank - 2];
+          if (aheadPlayer) {
+            var selfScore = (selfInRanking && selfInRanking.leagueScore) || 0;
+            var scoreGap = Math.max(0, (aheadPlayer.leagueScore || 0) - selfScore);
+            jaEl.textContent = scoreGap > 0
+              ? "\u2B50 " + scoreGap + " pts from overtaking " + aheadPlayer.displayName
+              : "\uD83D\uDD25 Tied with " + aheadPlayer.displayName + " \u2014 log more!";
+            jaEl.style.display = "";
+          } else {
+            jaEl.style.display = "none";
+          }
+        }
+      }
+
+      var MEDALS = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
+      var topRows = ranked.slice(0, 5);
+      var rowHtml = topRows.map(function (player) {
+        var rankDisplay = MEDALS[player.rank - 1] || String(player.rank);
+        var rowCls = "lb-dash-v3-row" + (player.isSelf ? " lb-dash-v3-row--self" : "");
+        var avatarBgColor = avatarColor(player.level || 1);
+        return (
+          '<div class="' + rowCls + '">' +
+            '<span class="lb-dash-v3-rank">' + rankDisplay + '</span>' +
+            '<div class="lb-dash-v3-avatar" style="background:' + avatarBgColor + '">' + escHtml(player.initial) + '</div>' +
+            '<span class="lb-dash-v3-name">' + escHtml(player.displayName) + (player.isSelf ? '<span style="font-size:0.6rem;color:var(--brand-700,#2b8259);font-weight:700;"> (You)</span>' : '') + '</span>' +
+            '<span class="lb-dash-v3-score">\u26A1 ' + (player.weeklyXP || 0) + '</span>' +
+          '</div>'
+        );
+      }).join("");
+
+      if (selfRank > 5 && selfInRanking) {
+        rowHtml += (
+          '<div class="lb-dash-v3-row lb-dash-v3-row--self">' +
+            '<span class="lb-dash-v3-rank">' + selfRank + '</span>' +
+            '<div class="lb-dash-v3-avatar" style="background:' + avatarColor(selfInRanking.level || 1) + '">' + escHtml(selfInRanking.initial || self.initial || "Y") + '</div>' +
+            '<span class="lb-dash-v3-name">You</span>' +
+            '<span class="lb-dash-v3-score">\u26A1 ' + (selfInRanking.weeklyXP || self.weeklyXP || 0) + '</span>' +
+          '</div>'
+        );
+      }
+
+      if (rowsEl) { rowsEl.innerHTML = rowHtml; }
+      return true;
     }
 
     async function renderDashboardWidget() {
@@ -953,27 +1236,28 @@
       var emptyEl = document.getElementById("lbDashV3Empty");
       var rowsEl  = document.getElementById("lbDashV3Rows");
       var jaEl    = document.getElementById("lbDashV3JustAhead");
-      var rankEl  = document.getElementById("lbDashV3RankChip");
 
       var isFirebase = myUserId && window.FirestoreService &&
                        window.FirebaseInit && window.FirebaseInit.isFirebaseMode &&
                        window.FirebaseInit.isFirebaseMode();
 
       if (!isFirebase) {
-        if (emptyEl) { emptyEl.style.display = ""; }
-        if (rowsEl)  { rowsEl.style.display  = "none"; }
-        if (jaEl)    { jaEl.style.display     = "none"; }
+        setDashboardEmptyState(emptyEl, rowsEl, jaEl);
         return;
       }
+
+      var cachedFriends = window.FirestoreService.getCachedFriends
+        ? window.FirestoreService.getCachedFriends(myUserId)
+        : [];
+      var hasCachedRows = renderDashboardRows(self, myUserId, cachedFriends, false);
 
       // Guard: skip if a fetch is already in-flight
       if (_lbFetching) { return; }
       _lbFetching = true;
 
       try {
-        // Show skeleton while fetching
-        if (emptyEl) { emptyEl.style.display = "none"; }
-        if (rowsEl) {
+        if (!hasCachedRows && rowsEl) {
+          if (emptyEl) { emptyEl.style.display = "none"; }
           rowsEl.style.display = "";
           rowsEl.innerHTML = [1, 2, 3].map(function () {
             return '<div style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0;border-bottom:1px solid #f0ebe0">' +
@@ -987,102 +1271,29 @@
 
         var friends = await window.FirestoreService.getFriends(myUserId);
 
-        if (friends.length === 0) {
-          if (emptyEl) { emptyEl.style.display = ""; }
-          if (rowsEl)  { rowsEl.style.display  = "none"; }
-          if (jaEl)    { jaEl.style.display     = "none"; }
-          return;
-        }
-
-        if (emptyEl) { emptyEl.style.display = "none"; }
-        if (rowsEl)  { rowsEl.style.display  = ""; }
-
-        var allPlayers = friends.map(function (f) {
-          var p = {
-            uid:            f.uid,
-            displayName:    f.displayName || "Friend",
-            initial:        (f.firstName || f.displayName || "F").charAt(0).toUpperCase(),
-            streak:         Number(f.streak  || 0),
-            questsCompleted:Number(f.questsCompleted || 0),
-            weeklyQuestsCompleted:Number(f.weeklyQuestsCompleted || 0),
-            weeklyXP:       Number(f.weeklyXP || 0),
-            level:          Number(f.level   || 1),
-            isSelf:         false
-          };
-          p.leagueScore = computeLeagueScore(p);
-          return p;
-        });
-        var selfDash = Object.assign({}, self, { uid: myUserId });
-        selfDash.leagueScore = computeLeagueScore(selfDash);
-        allPlayers.push(selfDash);
-        allPlayers = dedupePlayersByUid(allPlayers);
-
-        var ranked = sortRanking(allPlayers).map(function (p, i) {
-          return Object.assign({}, p, { rank: i + 1 });
-        });
-
-        var selfInRanking = ranked.find(function (p) { return p.isSelf; });
-        var selfRank = selfInRanking ? selfInRanking.rank : ranked.length;
-
-        if (rankEl) { rankEl.textContent = "#" + selfRank + " of " + ranked.length; }
-
-        if (jaEl) {
-          if (selfRank === 1) {
-            jaEl.textContent = "\uD83D\uDD25 You're leading the pack this week!";
-            jaEl.style.display = "";
-          } else {
-            var aheadPlayer = ranked[selfRank - 2];
-            if (aheadPlayer) {
-              var scoreGap = Math.max(0, (aheadPlayer.leagueScore || 0) - ((selfInRanking && selfInRanking.leagueScore) || 0));
-              jaEl.textContent = scoreGap > 0
-                ? "\u2B50 " + scoreGap + " pts from overtaking " + aheadPlayer.displayName
-                : "\uD83D\uDD25 Tied with " + aheadPlayer.displayName + " \u2014 log more!";
-              jaEl.style.display = "";
-            }
-          }
-        }
-
-        var MEDALS = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
-        var top3 = ranked.slice(0, 3);
-        var rowHtml = top3.map(function (p) {
-          var rankDisplay = MEDALS[p.rank - 1] || String(p.rank);
-          var rowCls = "lb-dash-v3-row" + (p.isSelf ? " lb-dash-v3-row--self" : "");
-          var avatarBgColor = avatarColor(p.level || 1);
-          return (
-            '<div class="' + rowCls + '">' +
-              '<span class="lb-dash-v3-rank">' + rankDisplay + '</span>' +
-              '<div class="lb-dash-v3-avatar" style="background:' + avatarBgColor + '">' + escHtml(p.initial) + '</div>' +
-              '<span class="lb-dash-v3-name">' + escHtml(p.displayName) + (p.isSelf ? '<span style="font-size:0.6rem;color:var(--brand-700,#2b8259);font-weight:700;"> (You)</span>' : '') + '</span>' +
-              '<span class="lb-dash-v3-score">\u26A1 ' + (p.weeklyXP || 0) + '</span>' +
-            '</div>'
-          );
-        }).join("");
-
-        if (selfRank > 3 && selfInRanking) {
-          rowHtml += (
-            '<div class="lb-dash-v3-row lb-dash-v3-row--self">' +
-              '<span class="lb-dash-v3-rank">' + selfRank + '</span>' +
-              '<div class="lb-dash-v3-avatar">' + escHtml(self.initial) + '</div>' +
-              '<span class="lb-dash-v3-name">You</span>' +
-              '<span class="lb-dash-v3-score">\u26A1 ' + (self.weeklyXP || 0) + '</span>' +
-            '</div>'
-          );
-        }
-
-        if (rowsEl) { rowsEl.innerHTML = rowHtml; }
+        renderDashboardRows(self, myUserId, friends, false);
       } catch (e) {
-        if (emptyEl) { emptyEl.style.display = ""; }
-        if (rowsEl)  { rowsEl.style.display  = "none"; }
-        if (jaEl)    { jaEl.style.display     = "none"; }
+        if (!hasCachedRows) {
+          setDashboardEmptyState(emptyEl, rowsEl, jaEl);
+        }
       } finally {
         _lbFetching = false;
       }
     }
 
+    function renderDashboardLeaderboardWidget() {
+      return renderDashboardWidget();
+    }
+
+    window.LeaderboardUI = window.LeaderboardUI || {};
+    window.LeaderboardUI.renderDashboardLeaderboardWidget = renderDashboardLeaderboardWidget;
+
     document.addEventListener("DOMContentLoaded", function () {
-      renderDashboardWidget();
+      renderDashboardLeaderboardWidget();
       window.addEventListener("sugbocents:dataChanged", scheduleDashboardRender);
       window.addEventListener("sugbocents:synced",      scheduleDashboardRender);
+      window.addEventListener("sugbocents:friendsRefreshed", scheduleDashboardRender);
+      window.addEventListener("sugbocents:friendsPrefetched", scheduleDashboardRender);
     });
   }
 

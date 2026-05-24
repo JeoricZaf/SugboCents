@@ -39,9 +39,17 @@
       var resetMins = Math.ceil((RL_WINDOW_MS - (now - oldest)) / 60000);
       return { allowed: false, resetMins: resetMins };
     }
+    return { allowed: true };
+  }
+
+  function consumeRateLimit() {
+    var now = Date.now();
+    var data = getRateLimitData();
+    data.timestamps = data.timestamps.filter(function (t) {
+      return now - t < RL_WINDOW_MS;
+    });
     data.timestamps.push(now);
     saveRateLimitData(data);
-    return { allowed: true };
   }
 
   function getRateLimitStatus() {
@@ -58,49 +66,18 @@
     return true;
   }
 
+  // The system prompt is built SERVER-SIDE in the Cloud Function from a
+  // validated, whitelisted `context` object. Keeping a client-side prompt
+  // builder would let an attacker inject arbitrary instructions by tampering
+  // with the request body (the original Bug 4 vulnerability). We expose a
+  // stub for backward compatibility with any external caller that still
+  // probes for `ChatAI.buildSystemPrompt` — it returns an empty string and
+  // the value is never sent over the wire.
   function buildSystemPrompt() {
-    var base =
-      "You are Tigom, a friendly budget buddy for SugboCents, " +
-      "a Filipino personal budgeting app for students and young adults. " +
-      "Respond in English by default. If the user uses Filipino, you can mirror lightly. " +
-      "Keep responses SHORT (2-3 sentences), warm, and encouraging. " +
-      "Be coach-like and direct when the user is off-track or over budget. " +
-      "Currency is Philippine Peso (₱). Be practical, not preachy. " +
-      "Never give long financial lectures.";
-
-    if (!window.StorageAPI) { return base; }
-
-    try {
-      var fmt = function (n) {
-        return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(n);
-      };
-      var summary = window.StorageAPI.getBudgetSummary();
-      var streak = window.StorageAPI.getCurrentStreak();
-      var goals = window.StorageAPI.getGoals();
-      var xpInfo = window.StorageAPI.getXpInfo();
-
-      var ctx = "\n\nLive context about this user:";
-      ctx += "\n- Weekly budget: " + fmt(summary.weeklyBudget);
-      ctx += "\n- Spent this week: " + fmt(summary.totalSpentThisWeek) + " (" + summary.percentageSpent + "% used)";
-      ctx += "\n- Remaining this week: " + fmt(summary.remaining);
-      ctx += "\n- Consecutive logging streak: " + streak + " day(s)";
-      ctx += "\n- XP Level: " + xpInfo.level + " – " + xpInfo.levelName + " (" + xpInfo.xp + " XP total)";
-
-      var activeGoals = goals.filter(function (g) { return !g.completed; });
-      if (activeGoals.length > 0) {
-        ctx += "\n- Top active goal: " + activeGoals[0].name + " — " +
-          fmt(activeGoals[0].savedAmount) + " saved of " + fmt(activeGoals[0].targetAmount) + " target";
-      } else {
-        ctx += "\n- No active savings goals set yet";
-      }
-
-      return base + ctx;
-    } catch (e) {
-      return base;
-    }
+    return "";
   }
 
-  async function send(userMessage, history) {
+  async function send(userMessage, history, context) {
     // Client-side rate limit check before calling the Cloud Function
     var rl = checkRateLimit();
     if (!rl.allowed) {
@@ -111,6 +88,25 @@
       };
     }
 
+    var controller = new AbortController();
+    var didTimeout = false;
+    var timeoutId = setTimeout(function () {
+      didTimeout = true;
+      controller.abort();
+    }, 15000);
+
+    // Always recompute context from StorageAPI right before sending so the
+    // payload reflects the user's most recent state (e.g. an expense logged
+    // moments ago). The caller may pass a pre-built context to override.
+    var safeContext = null;
+    try {
+      if (context && typeof context === "object") {
+        safeContext = context;
+      } else if (window.StorageAPI && typeof window.StorageAPI.getAiContext === "function") {
+        safeContext = window.StorageAPI.getAiContext();
+      }
+    } catch (_) { safeContext = null; }
+
     try {
       var response = await fetch(CLOUD_FN_URL, {
         method: "POST",
@@ -118,8 +114,9 @@
         body: JSON.stringify({
           message: userMessage,
           history: history || [],
-          systemPrompt: buildSystemPrompt()
-        })
+          context: safeContext
+        }),
+        signal: controller.signal
       });
 
       if (!response.ok) {
@@ -131,9 +128,15 @@
       var data = await response.json();
       if (data.error) { return { ok: false, error: data.error }; }
       if (!data.reply) { return { ok: false, error: "Empty reply from server." }; }
+      consumeRateLimit();
       return { ok: true, reply: data.reply };
     } catch (e) {
+      if (didTimeout || (e && e.name === "AbortError")) {
+        return { ok: false, error: "Request timed out." };
+      }
       return { ok: false, error: e.message || "Network error." };
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
