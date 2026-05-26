@@ -17,7 +17,7 @@
     var data;
     try { data = JSON.parse(localStorage.getItem(EXP_RL_KEY)) || { timestamps: [] }; }
     catch (_) { data = { timestamps: [] }; }
-    
+
     data.timestamps = data.timestamps.filter(function (t) { return now - t < EXP_RL_WINDOW_MS; });
     if (data.timestamps.length >= EXP_RL_MAX) {
       var resetMins = Math.ceil((EXP_RL_WINDOW_MS - (now - data.timestamps[0])) / 60000);
@@ -200,8 +200,10 @@
     // Late-week guard (elapsed time ratio > LATE_WEEK_THRESHOLD)
     // Time can't be recovered; switch back to absolute pct
     LATE_WEEK_THRESHOLD:    0.85, // ~day 6-7
-    LATE_WEEK_WORRIED_MIN:  80,
-    LATE_WEEK_ALARMED_MIN:  95
+    LATE_WEEK_HAPPY_MIN:     0, 
+    LATE_WEEK_NEUTRAL_MIN:  30,
+    LATE_WEEK_WORRIED_MIN:  70,
+    LATE_WEEK_ALARMED_MIN:  90,
   };
 
   // ── 2a. Pure math — expected pace ────────────────────────
@@ -262,6 +264,8 @@
   // ── 3a. State evaluator — mascot ─────────────────────────
   // Pure function. Takes snapshot, returns { mood, title, message }.
   function determineMascotState(snapshot) {
+    // Simplified absolute-only logic: decide mood purely from absolute
+    // percentage thresholds (no deviation vs expected pace).
     if (snapshot.noBudget) {
       return {
         mood:    "neutral",
@@ -270,26 +274,17 @@
       };
     }
 
+    var pct = snapshot.actualPct || 0;
     var mood;
-    var pct = snapshot.actualPct;
 
-    if (snapshot.isOverBudget) {
+    if (pct >= BUDGET_CONSTANTS.LATE_WEEK_ALARMED_MIN) {
       mood = "alarmed";
-    } else if (snapshot.isEarlyWeek) {
-      mood = pct >= BUDGET_CONSTANTS.EARLY_WEEK_ALARMED_MIN ? "alarmed"
-           : pct >= BUDGET_CONSTANTS.EARLY_WEEK_WORRIED_MIN ? "worried"
-           : "happy";
-    } else if (snapshot.isLateWeek) {
-      mood = pct >= BUDGET_CONSTANTS.LATE_WEEK_ALARMED_MIN  ? "alarmed"
-           : pct >= BUDGET_CONSTANTS.LATE_WEEK_WORRIED_MIN  ? "worried"
-           : pct >= 30                                       ? "neutral"
-           : "happy";
+    } else if (pct >= BUDGET_CONSTANTS.LATE_WEEK_WORRIED_MIN) {
+      mood = "worried";
+    } else if (pct >= BUDGET_CONSTANTS.LATE_WEEK_NEUTRAL_MIN) {
+      mood = "neutral";
     } else {
-      var dev = snapshot.deviation;
-      mood = dev > BUDGET_CONSTANTS.DEVIATION_WORRIED_MAX  ? "alarmed"
-           : dev > BUDGET_CONSTANTS.DEVIATION_NEUTRAL_MAX  ? "worried"
-           : dev > BUDGET_CONSTANTS.DEVIATION_HAPPY_MAX    ? "neutral"
-           : "happy";
+      mood = "happy";
     }
 
     var titles = {
@@ -347,21 +342,30 @@
   function applyMascotUI(mascotState) {
     var titleEl = document.getElementById("tigomSaysTitle");
     var msgEl   = document.getElementById("tigomSaysMsg");
+
     if (titleEl) titleEl.textContent = mascotState.title;
     if (msgEl)   msgEl.textContent   = mascotState.message;
 
+    // applyTigomFaceMood(
+    //   document.getElementById("tigomCardMouth"),
+    //   document.getElementById("tigomCardLeftEye"),
+    //   document.getElementById("tigomCardRightEye"),
+    //   mascotState.mood
+    // );
+    // applyTigomFaceMood(
+    //   document.getElementById("heroTigomMouth"),
+    //   document.getElementById("heroTigomLeftEye"),
+    //   document.getElementById("heroTigomRightEye"),
+    //   mascotState.mood
+    // );
+
+    //updated version call with mascot pngs
     applyTigomFaceMood(
-      document.getElementById("tigomCardMouth"),
-      document.getElementById("tigomCardLeftEye"),
-      document.getElementById("tigomCardRightEye"),
+      document.getElementById("tigom-says-img-itself"),
       mascotState.mood
     );
-    applyTigomFaceMood(
-      document.getElementById("heroTigomMouth"),
-      document.getElementById("heroTigomLeftEye"),
-      document.getElementById("heroTigomRightEye"),
-      mascotState.mood
-    );
+
+
   }
 
   // ── 5. Orchestrator ───────────────────────────────────────
@@ -3413,7 +3417,8 @@
   // ── Tigom mood ───────────────────────────────────────────
   // Applies a mood shape to a single Tigom face (mouth + eyes).
   // Mirrors the TigomFace component in the redesign reference exactly.
-  function applyTigomFaceMood(mouthEl, leftEyeEl, rightEyeEl, mood) {
+  function applyTigomFaceMood(dom_element, mood) {
+    /*
     // Eye size: alarmed = h-3 w-3 (0.75rem), others = h-2.5 w-2.5 (0.625rem)
     var eyeSize = mood === "alarmed" ? "0.75rem" : "0.625rem";
     if (leftEyeEl) { leftEyeEl.style.height = eyeSize; leftEyeEl.style.width = eyeSize; leftEyeEl.style.background = "#102b1d"; }
@@ -3432,30 +3437,29 @@
     mouthEl.style.bottom = "26%";
     mouthEl.style.transform = "translateX(-50%)";
 
+    */
+    //Ignore above. Repurposed this function to use the mood imgs instead
+
+    console.log("Current mood: " + mood);
+
     if (mood === "happy") {
-      // Smile: rounded-b-full border-bottom — bottom[26%]
-      mouthEl.style.borderBottom = "4px solid #102b1d";
-      mouthEl.style.borderRadius = "0 0 9999px 9999px";
-      mouthEl.style.bottom = "26%";
-    } else if (mood === "neutral") {
-      // Flat line: solid fill, h-1 — bottom[27%]
-      mouthEl.style.background = "#102b1d";
-      mouthEl.style.height = "0.25rem";
-      mouthEl.style.borderRadius = "9999px";
-      mouthEl.style.bottom = "27%";
-    } else if (mood === "worried") {
-      // Frown: rounded-t-full border-top — bottom[22%]
-      mouthEl.style.borderTop = "4px solid #102b1d";
-      mouthEl.style.borderRadius = "9999px 9999px 0 0";
-      mouthEl.style.bottom = "22%";
-    } else if (mood === "alarmed") {
-      // Open mouth: solid circle h-4 w-4 — bottom[22%]
-      mouthEl.style.background = "#102b1d";
-      mouthEl.style.height = "1rem";
-      mouthEl.style.width = "1rem";
-      mouthEl.style.borderRadius = "9999px";
-      mouthEl.style.bottom = "22%";
+      dom_element.src = "assets/images/mascot/head-happy.png"
+
+    } 
+    else if (mood === "neutral") {
+      dom_element.src = "assets/images/mascot/head-neutral.png"
+    } 
+    else if (mood === "worried") {
+      dom_element.src = "assets/images/mascot/head-worried.png"
+    } 
+    else if (mood === "alarmed") {
+      dom_element.src = "assets/images/mascot/head-shocked.png"
+      
     }
+
+
+
+
   }
 
   // updateTigomMood is now a no-arg shim for backward-compat.

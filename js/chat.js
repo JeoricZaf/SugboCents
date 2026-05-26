@@ -99,15 +99,11 @@
     el.setAttribute("data-mood", dataMood);
     el.setAttribute("aria-hidden", "true");
     el.innerHTML =
-      '<div class="tf-ear-l"></div>' +
-      '<div class="tf-ear-r"></div>' +
-      '<div class="tf-head"></div>' +
-      '<div class="tf-eye-white-l"></div>' +
-      '<div class="tf-eye-white-r"></div>' +
-      '<div class="tf-pupil-l"></div>' +
-      '<div class="tf-pupil-r"></div>' +
-      '<div class="tf-mouth"></div>' +
-      '<div class="tf-badge">\u20b1</div>';
+      `
+      <div id="mascot-chat-img">
+        <img id="chat-img-itself" src="assets/images/mascot/head-neutral.png" alt="" style="max-height: 200%; margin: auto auto">
+      </div>
+      `
     return el;
   }
 

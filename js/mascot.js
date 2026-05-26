@@ -29,6 +29,8 @@
   // ── Compute mascot state from data + overrides ───────────
   var STREAK_MILESTONES = [7, 14, 30, 60, 100];
 
+  
+
   function getMascotState() {
     // 1. Timed override (e.g., set by gamification.js on level-up)
     if (window._mascotOverrideState) {
@@ -53,9 +55,13 @@
     // 4. Budget-based states
     var summary = window.StorageAPI.getBudgetSummary();
     var pct = summary.percentageSpent;
-    if (pct >= 90) { return "alarmed"; }
-    if (pct >= 65) { return "worried"; }
-    if (pct >= 30) { return "neutral"; }
+    
+    console.log("Current summary: "+ summary);
+    console.log("current percentage: "+ pct);
+
+    if (pct >= 90) {  return "alarmed"; }
+    else if (pct >= 65) { return "worried"; }
+    else if (pct >= 30) { return "neutral"; }
     return "happy";
   }
 
@@ -369,8 +375,21 @@
       });
     }
 
-    window.addEventListener("sugbocents:synced", updateMascotState);
-    window.addEventListener("sugbocents:dataChanged", updateMascotState);
+    // Use a safe wrapper so any Promise returned by StorageAPI calls
+    // inside updateMascotState() won't create an unhandled rejection.
+    function safeRun(fn) {
+      try {
+        var res = fn();
+        if (res && typeof res.then === 'function') {
+          res.catch(function (err) { console.error('Mascot update failed:', err); });
+        }
+      } catch (err) {
+        console.error('Mascot update exception:', err);
+      }
+    }
+
+    window.addEventListener("sugbocents:synced", function () { safeRun(updateMascotState); });
+    window.addEventListener("sugbocents:dataChanged", function () { safeRun(updateMascotState); });
   }
 
   document.addEventListener("DOMContentLoaded", function () {

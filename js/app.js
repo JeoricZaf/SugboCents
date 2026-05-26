@@ -160,17 +160,11 @@
     fab.className = "sc-chat-fab";
     fab.setAttribute("aria-label", "Open Tigom AI chat");
     fab.innerHTML =
-      '<div class="relative h-10 w-10" aria-hidden="true">' +
-        '<div class="absolute left-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>' +
-        '<div class="absolute right-1.5 top-0 h-4 w-4 rounded-full" style="background:#2b8259"></div>' +
-        '<div class="absolute inset-1 rounded-[38%_38%_44%_44%]" style="background:#2b8259;box-shadow:inset 0 -8px 0 rgba(22,79,51,0.26)"></div>' +
-        '<div class="absolute left-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)"></div>' +
-        '<div class="absolute right-[27%] top-[36%] h-2.5 w-2.5 rounded-full" style="background:rgba(255,255,255,0.8)"></div>' +
-        '<div class="absolute left-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>' +
-        '<div class="absolute right-[31%] top-[39%] h-2 w-2 rounded-full" style="background:#102b1d"></div>' +
-        '<div class="absolute bottom-[26%] left-1/2 rounded-b-full" style="height:3px;width:1.5rem;border-bottom:3px solid #102b1d;transform:translateX(-50%)"></div>' +
-        '<div class="absolute -bottom-1 left-1/2 flex h-5 w-6 items-center justify-center rounded-full text-[0.55rem] font-black" style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">\u20B1</div>' +
-      '</div>';
+      `
+      
+        <img id="mascot-img-itself" src="assets/images/mascot/head-neutral.png" alt="" style="max-height: 100%; margin: auto auto">
+      
+      `;
 
     document.body.appendChild(fab);
   }

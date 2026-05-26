@@ -1545,6 +1545,9 @@
       ? Math.min(100, Math.round((totalSpentThisWeek / weeklyBudget) * 100))
       : 0;
 
+    // console.log("total spent : " + totalSpentThisWeek);
+    // console.log("weekly budget : " + weeklyBudget);
+
     return {
       weeklyBudget: weeklyBudget,
       totalSpentThisWeek: totalSpentThisWeek,
