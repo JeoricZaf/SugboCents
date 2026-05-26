@@ -90,18 +90,9 @@
 
     // Mascot icon — hero-card size, hidden when sidebar is collapsed (replaced by toggle button)
     '<a href="dashboard.html" class="sc-sidebar-logo" aria-label="SugboCents home" style="text-decoration:none;overflow:visible">',
-    '<div class="relative h-12 w-12 shrink-0 animate-float" aria-hidden="true">',
-    '<div class="absolute left-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>',
-    '<div class="absolute right-2 top-0 h-5 w-5 rounded-full" style="background:#2b8259"></div>',
-    '<div class="absolute inset-1" style="border-radius:38% 38% 44% 44%;background:#2b8259;box-shadow:inset 0 -10px 0 rgba(22,79,51,0.26)"></div>',
-    '<div class="absolute left-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)"></div>',
-    '<div class="absolute right-[27%] top-[36%] h-3 w-3 rounded-full" style="background:rgba(255,255,255,0.8)"></div>',
-    '<div class="absolute left-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>',
-    '<div class="absolute right-[31%] top-[39%] h-2.5 w-2.5 rounded-full" style="background:#102b1d"></div>',
-    '<div class="absolute bottom-[26%] left-1/2 h-4 w-8 rounded-b-full" style="border-bottom:4px solid #102b1d;transform:translateX(-50%)"></div>',
-    '<div class="absolute -bottom-1 left-1/2 flex h-6 w-8 items-center justify-center rounded-full text-xs font-black"',
-    ' style="background:#f7f3e8;color:#164f33;transform:translateX(-50%)">&#8369;</div>',
-    '</div>',
+    `<div id="mascot-img-sidebar" class="relative h-12 w-12 shrink-0" aria-hidden="true">
+      <img src="icons/icon-512.png" alt="">
+            </div>`,
     '</a>',
 
     // Wordmark — collapses with the sidebar via .nav-link-label transition

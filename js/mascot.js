@@ -1,10 +1,10 @@
 (function () {
   // ── Mascot state definitions ─────────────────────────────
   var STATES = {
-    happy:       { img: "assets/images/mascot/mascot-happy.png",    label: "Doing great!",                           cls: "mascot-happy"       },
-    neutral:     { img: "assets/images/mascot/mascot-neutral.png",   label: "On track",                               cls: "mascot-neutral"     },
-    worried:     { img: "assets/images/mascot/mascot-sad.png",       label: "Heads up!",                              cls: "mascot-worried"     },
-    alarmed:     { img: "assets/images/mascot/mascot-shocked.png",   label: "Budget alert!",                          cls: "mascot-alarmed"     },
+    happy:       { img: "assets/images/mascot/fullbody-cheer.gif",    label: "Doing great!",                           cls: "mascot-happy"       },
+    neutral:     { img: "assets/images/mascot/fullbody-wave.gif",   label: "On track",                               cls: "mascot-neutral"     },
+    worried:     { img: "assets/images/mascot/fullbody-sad.gif",       label: "Heads up!",                              cls: "mascot-worried"     },
+    alarmed:     { img: "assets/images/mascot/fullbody-shocked.gif",   label: "Budget alert!",                          cls: "mascot-alarmed"     },
     // Extended states — celebrating PLACEHOLDER: swap mascot-happy.png → mascot-celebrating.png when asset is ready
     celebrating: { img: "assets/images/mascot/mascot-happy.png",    label: "You leveled up! 🎉",              cls: "mascot-celebrating" },
     streak:      { img: "assets/images/mascot/mascot-happy.png",    labelFn: function (n) { return "🔥 " + n + "-day streak!"; }, cls: "mascot-streak"      },
@@ -28,6 +28,8 @@
 
   // ── Compute mascot state from data + overrides ───────────
   var STREAK_MILESTONES = [7, 14, 30, 60, 100];
+
+  
 
   function getMascotState() {
     // 1. Timed override (e.g., set by gamification.js on level-up)
@@ -53,9 +55,13 @@
     // 4. Budget-based states
     var summary = window.StorageAPI.getBudgetSummary();
     var pct = summary.percentageSpent;
-    if (pct >= 90) { return "alarmed"; }
-    if (pct >= 65) { return "worried"; }
-    if (pct >= 30) { return "neutral"; }
+    
+    console.log("Current summary: "+ summary);
+    console.log("current percentage: "+ pct);
+
+    if (pct >= 90) {  return "alarmed"; }
+    else if (pct >= 65) { return "worried"; }
+    else if (pct >= 30) { return "neutral"; }
     return "happy";
   }
 
@@ -369,8 +375,21 @@
       });
     }
 
-    window.addEventListener("sugbocents:synced", updateMascotState);
-    window.addEventListener("sugbocents:dataChanged", updateMascotState);
+    // Use a safe wrapper so any Promise returned by StorageAPI calls
+    // inside updateMascotState() won't create an unhandled rejection.
+    function safeRun(fn) {
+      try {
+        var res = fn();
+        if (res && typeof res.then === 'function') {
+          res.catch(function (err) { console.error('Mascot update failed:', err); });
+        }
+      } catch (err) {
+        console.error('Mascot update exception:', err);
+      }
+    }
+
+    window.addEventListener("sugbocents:synced", function () { safeRun(updateMascotState); });
+    window.addEventListener("sugbocents:dataChanged", function () { safeRun(updateMascotState); });
   }
 
   document.addEventListener("DOMContentLoaded", function () {
@@ -392,19 +411,30 @@
 
 
 //MASCTOT ANIMATIONS IN DASHBOARD-------------------------------
+
+// var mascotImg = document.getElementById("dashboardMascotImg");
+var mascotImg = document.getElementById("mascot-img-itself");
+  var speechBubble = document.getElementById("mascotSpeechBubble"); //move back inside event listener later
+var fullBodyGifs = [
+    "assets/images/mascot/fullbody-wave.gif",
+    "assets/images/mascot/fullbody-dance1.gif",
+    "assets/images/mascot/fullbody-dance2.gif",
+    "assets/images/mascot/fullbody-cheer.gif",
+    "assets/images/mascot/fullbody-shocked1.gif"
+  ];
+
 document.addEventListener("DOMContentLoaded", function() {
-  var mascotImg = document.getElementById("dashboardMascotImg");
-  var speechBubble = document.getElementById("mascotSpeechBubble");
+  console.log("DOM Content loaded");
   
   if (!mascotImg || !speechBubble) return; // Exit if not on the dashboard
 
   // 📝 Update these paths with your actual GIF files!
   var fullBodyGifs = [
     "assets/images/mascot/fullbody-wave.gif",
-    "assets/images/mascot/fullbody-sleepy.gif",
-    "assets/images/mascot/fullbody-shocked.gif",
-    "assets/images/mascot/fullbody-confused.gif",
-    "assets/images/mascot/fullbody-dance.gif"
+    "assets/images/mascot/fullbody-dance1.gif",
+    "assets/images/mascot/fullbody-dance2.gif",
+    "assets/images/mascot/fullbody-cheer.gif",
+    "assets/images/mascot/fullbody-shocked1.gif"
   ];
   
   // 💬 Random encouraging messages
@@ -452,4 +482,49 @@ document.addEventListener("DOMContentLoaded", function() {
   mascotImg.addEventListener("click", function() {
     interactWithMascot(true);
   });
+
+
+
 });
+
+
+
+  function playRandomMascot() {
+    // var choices = [fullBodyGifs.wave, fullBodyGifs.sleepy, fullBodyGifs.confused, fullBodyGifs.dance];
+    var choices = [fullBodyGifs[0], fullBodyGifs[1], fullBodyGifs[2], fullBodyGifs[3] ];
+    // var choices = [fullybody-cheer, fullbody-dance1, fullBodyGifs.sleepy, fullBodyGifs.confused, fullBodyGifs.dance];
+    var randomGif = choices[Math.floor(Math.random() * choices.length)];
+
+    mascotImg.src = randomGif;
+    // setMascotImage(randomGif);
+    // mascotWrapper.classList.remove("dashboard-alert-active");
+    // hideBubble();
+  }
+
+  function setMascotImage(src) {
+    // mascotImg.src = src + "?t=" + new Date().getTime();
+
+  }
+
+  
+  function interactWithMascot(isClick) {
+    // var state = getBudgetState();
+
+    // if (state === "alarmed") {
+    //   playAlertMascot(isClick !== false);
+    //   return;
+    // }
+
+    console.log("Mascot was clicked");
+    playRandomMascot();
+
+    // if (isClick) {
+    //   var randomMsg = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
+    //   showBubble(randomMsg, false);
+    // }
+  }
+
+  
+  mascotImg.addEventListener("click", function() {
+    interactWithMascot(true);
+  });

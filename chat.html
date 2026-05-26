@@ -20,7 +20,7 @@
     â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â” */
     .tigom-face {
       position: relative; flex-shrink: 0;
-      animation: tigomFloat 4s ease-in-out infinite;
+      /* animation: tigomFloat 4s ease-in-out infinite; dont make it float */
     }
     .tigom-face--sm { width: 3rem; height: 3rem; }
     .tigom-face--md { width: 4rem; height: 4rem; }
@@ -563,15 +563,9 @@
 
               <!-- TigomFace sm -->
               <div class="tigom-face tigom-face--sm" id="chatTigomFace" data-mood="happy" aria-label="Tigom is happy">
-                <div class="tf-ear-l"></div>
-                <div class="tf-ear-r"></div>
-                <div class="tf-head"></div>
-                <div class="tf-eye-white-l"></div>
-                <div class="tf-eye-white-r"></div>
-                <div class="tf-pupil-l"></div>
-                <div class="tf-pupil-r"></div>
-                <div class="tf-mouth"></div>
-                <div class="tf-badge">&#8369;</div>
+                <div id="mascot-chat-img" style="max-width: 100px;">
+                  <img id="chat-img-itself" src="assets/images/mascot/head-neutral.png" alt="" style="height: 100%; max-height: 50px; margin: auto auto">
+                </div>
               </div>
 
               <!-- title + subtitle -->
@@ -631,15 +625,9 @@
             <section class="chat-footer" role="form" aria-label="Send a message">
               <!-- TigomFace sm in footer -->
               <div class="tigom-face tigom-face--sm" id="chatFooterTigomFace" data-mood="happy" aria-hidden="true">
-                <div class="tf-ear-l"></div>
-                <div class="tf-ear-r"></div>
-                <div class="tf-head"></div>
-                <div class="tf-eye-white-l"></div>
-                <div class="tf-eye-white-r"></div>
-                <div class="tf-pupil-l"></div>
-                <div class="tf-pupil-r"></div>
-                <div class="tf-mouth"></div>
-                <div class="tf-badge">&#8369;</div>
+                <div id="mascot-chat-img" style="max-width: 100px;">
+                  <img id="chat-img-itself" src="assets/images/mascot/head-neutral.png" alt="" style="height: 100%; max-height: 50px; margin: auto auto">
+                </div>
               </div>
               <!-- min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none -->
               <input

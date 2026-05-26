@@ -14,8 +14,8 @@ try {
   // Firebase app may already be initialized in this worker scope.
 }
 
-const CACHE_NAME = "sugbocents-shell-v166";
-const RUNTIME_CACHE = "sugbocents-runtime-v166";
+const CACHE_NAME = "sugbocents-shell-v167";
+const RUNTIME_CACHE = "sugbocents-runtime-v167";
 const SHELL_FILES = [
   "./",
   "index.html",
@@ -78,6 +78,19 @@ const SHELL_FILES = [
   "assets/images/reviews/Oliver_Review.jpg",
   "assets/images/reviews/Jon_Review.jpg",
   "assets/images/reviews/Jeoric_Review.png",
+  "assets/images/mascot/fullbody-cheer.gif",
+  "assets/images/mascot/fullbody-dance1.gif",
+  "assets/images/mascot/fullbody-dance2.gif",
+  "assets/images/mascot/fullbody-sad.gif",
+  "assets/images/mascot/fullbody-shocked1.gif",
+  "assets/images/mascot/fullbody-shocked2.gif",
+  "assets/images/mascot/fullbody-wave.gif",
+  "assets/images/mascot/head-happy.png",
+  "assets/images/mascot/head-neutral.png",
+  "assets/images/mascot/head-sad1.png",
+  "assets/images/mascot/head-sad2.png",
+  "assets/images/mascot/head-shocked.png",
+  "assets/images/mascot/head-worried.png",
   "icons/icon-192.png",
   "icons/icon-512.png"
 ];
