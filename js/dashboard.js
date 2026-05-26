@@ -17,6 +17,7 @@
     var data;
     try { data = JSON.parse(localStorage.getItem(EXP_RL_KEY)) || { timestamps: [] }; }
     catch (_) { data = { timestamps: [] }; }
+    
     data.timestamps = data.timestamps.filter(function (t) { return now - t < EXP_RL_WINDOW_MS; });
     if (data.timestamps.length >= EXP_RL_MAX) {
       var resetMins = Math.ceil((EXP_RL_WINDOW_MS - (now - data.timestamps[0])) / 60000);
