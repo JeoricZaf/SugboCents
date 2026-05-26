@@ -28,7 +28,13 @@
   --radius-sm:  0.75rem;
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; 
+    
+}
+
+html {
+  overflow-x: hidden;
+}
 
 body.landing-body {
   margin: 0;
